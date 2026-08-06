@@ -20,17 +20,50 @@ export type ProductData = {
 
 const DATA_FILE = path.join(process.cwd(), 'app', 'data', 'products.json');
 const LOCAL_PRODUCT_PLACEHOLDER = '/images/products/placeholder.svg';
+const CATEGORY_IMAGE_MAP: Record<string, string> = {
+  Belts: '/images/categories/belts.svg',
+  Bags: '/images/categories/bags.svg',
+  Kurti: '/images/categories/kurti.svg',
+  'Karachi Suit': '/images/categories/karachi-suit.svg',
+  Earrings: '/images/categories/earrings.svg',
+  Jhumka: '/images/categories/jhumka.svg',
+  'New Arrivals': '/images/categories/new-arrivals.svg',
+  Sale: '/images/categories/sale.svg',
+  Men: '/images/categories/belts.svg',
+  Women: '/images/categories/bags.svg',
+  Shirts: '/images/categories/kurti.svg',
+  'T-Shirts': '/images/categories/kurti.svg',
+  Pants: '/images/categories/belts.svg',
+  Jeans: '/images/categories/belts.svg',
+};
 
-function sanitizeProductImages<T extends { mainImage?: string; images?: unknown[] }>(product: T): T {
+function getCategoryProductImage(category: string) {
+  return CATEGORY_IMAGE_MAP[category] ?? LOCAL_PRODUCT_PLACEHOLDER;
+}
+
+function isLocalImage(image: unknown) {
+  return typeof image === 'string' && (image.startsWith('/') || image.startsWith('data:'));
+}
+
+function sanitizeImage(image: unknown, category: string) {
+  if (isLocalImage(image)) return String(image);
+  return getCategoryProductImage(category);
+}
+
+function sanitizeProductImages<T extends { mainImage?: string; images?: unknown[]; category?: string }>(product: T): T {
   const next = { ...product } as typeof product;
-  if (next.mainImage && String(next.mainImage).startsWith('https://images.unsplash.com')) {
-    next.mainImage = LOCAL_PRODUCT_PLACEHOLDER;
+  const category = String(product.category ?? '');
+
+  if (!isLocalImage(next.mainImage)) {
+    next.mainImage = getCategoryProductImage(category);
   }
+
   if (Array.isArray(next.images)) {
-    next.images = next.images.map((image) =>
-      String(image).startsWith('https://images.unsplash.com') ? LOCAL_PRODUCT_PLACEHOLDER : String(image)
-    );
+    next.images = next.images.map((image) => sanitizeImage(image, category));
+  } else {
+    next.images = [getCategoryProductImage(category)];
   }
+
   return next;
 }
 

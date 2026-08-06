@@ -1,7 +1,7 @@
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ProductDetailClient from "./ProductDetailClient";
-import { findProductByIdAsync } from "../../data/products";
+import { fetchProductById } from "../../lib/products";
 
 type Props = {
   params: { id: string | string[] } | Promise<{ id: string | string[] }>;
@@ -11,7 +11,7 @@ export default async function Page({ params }: Props) {
   const resolvedParams = await params;
   const idValue = resolvedParams?.id;
   const id = Array.isArray(idValue) ? idValue[0] : idValue;
-  const product = await findProductByIdAsync(id ?? "");
+  const product = id ? await fetchProductById(id) : null;
 
   if (!product) {
     return (

@@ -2,7 +2,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import Link from "next/link";
-import { getProductsByCategory } from "../data/products";
+import { fetchProductsByCategory } from "../lib/products";
 
 function toCard(product: any) {
   return {
@@ -16,7 +16,7 @@ function toCard(product: any) {
 }
 
 export default async function Page() {
-  const data = await getProductsByCategory('Shirts');
+  const data = await fetchProductsByCategory('Shirts');
   const products = data.map(toCard);
   return (
     <div className="min-h-screen bg-white text-slate-900">

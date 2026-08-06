@@ -56,7 +56,12 @@ export default function Page() {
               {items.map((item) => (
                 <div key={item.id} className="rounded-3xl border border-gray-200 p-4 shadow-sm">
                   <div className="flex gap-4">
-                    <img src={item.image} alt={item.name} className="h-28 w-28 rounded-2xl object-cover" />
+                    <img
+                    src={item.image || '/images/products/placeholder.svg'}
+                    alt={item.name}
+                    onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+                    className="h-28 w-28 rounded-2xl object-cover"
+                  />
                     <div className="flex-1">
                       <Link href={item.productUrl} className="text-lg font-semibold text-slate-950 hover:underline">{item.name}</Link>
                       <p className="mt-2 text-sm text-slate-600">{item.qty} × {item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</p>

@@ -4,11 +4,13 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
   DocumentData,
 } from "firebase/firestore";
 
@@ -26,6 +28,9 @@ export interface ProductRecord {
   slug: string;
   createdAt: any;
   lastUpdated: any;
+  sizes?: string[];
+  colors?: string[];
+  rating?: number;
 }
 
 function createSlug(value: string) {
@@ -53,6 +58,9 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
     createdAt: data.createdAt ?? null,
     lastUpdated: data.lastUpdated ?? null,
+    sizes: Array.isArray(data.sizes) ? data.sizes.map((item: any) => String(item ?? "")) : undefined,
+    colors: Array.isArray(data.colors) ? data.colors.map((item: any) => String(item ?? "")) : undefined,
+    rating: data.rating != null ? Number(data.rating) : undefined,
   };
 }
 
@@ -61,6 +69,27 @@ export async function fetchProducts(): Promise<ProductRecord[]> {
   const productsQuery = query(productsRef, orderBy("createdAt", "desc"));
   const snapshot = await getDocs(productsQuery);
   return snapshot.docs.map(normalizeProduct);
+}
+
+export async function fetchProductById(id: string): Promise<ProductRecord | null> {
+  const docRef = doc(db, "products", id);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) return null;
+  return normalizeProduct(docSnap);
+}
+
+export async function fetchProductsByCategory(category: string): Promise<ProductRecord[]> {
+  const productsRef = collection(db, "products");
+  const productsQuery = query(productsRef, where("category", "==", category));
+  const snapshot = await getDocs(productsQuery);
+  const results = snapshot.docs.map(normalizeProduct);
+
+  return results
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() ?? (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+      const bTime = b.createdAt?.toMillis?.() ?? (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+      return bTime - aTime;
+    });
 }
 
 export async function createProduct(payload: Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated">) {

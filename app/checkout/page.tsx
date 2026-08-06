@@ -126,6 +126,28 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setSaveError("");
 
+    // Ensure pincode maps to city/state and matches user input (or autofill if blank)
+    try {
+      const location = await fetchPincodeLocation(form.pincode.trim());
+      // If user has manually entered city/state, ensure they match the pincode lookup
+      if (form.city.trim() && form.state.trim()) {
+        const cityMatch = String(location.city || "").trim().toLowerCase();
+        const stateMatch = String(location.state || "").trim().toLowerCase();
+        if (cityMatch !== form.city.trim().toLowerCase() || stateMatch !== form.state.trim().toLowerCase()) {
+          setErrors((current) => ({ ...current, pincode: "Pincode does not match entered city/state. Use Auto-fill or correct the fields." }));
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        // Auto-fill city/state when user hasn't provided them
+        setForm((current) => ({ ...current, city: location.city, state: location.state }));
+      }
+    } catch (err) {
+      setErrors((current) => ({ ...current, pincode: err instanceof Error ? err.message : "Unable to verify pincode." }));
+      setSubmitting(false);
+      return;
+    }
+
     const cartItems = sanitizeCartItems(items);
     const shipping = sanitizeShipping({
       name: form.fullName.trim(),
@@ -257,6 +279,16 @@ export default function CheckoutPage() {
 
     const docRef = await addDoc(collection(db, 'orders'), payloadForSave);
     const orderId = docRef.id;
+
+    try {
+      await fetch('/api/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+    } catch (invoiceError) {
+      console.warn('Invoice generation failed after order placement:', invoiceError);
+    }
 
     clearCart();
     setItems([]);
@@ -484,7 +516,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={placeOrder}
-                className="mt-4 w-full rounded-full btn-primary px-6 py-4 text-sm font-semibold text-black shadow-lg shadow-emerald/20 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 w-full rounded-full bg-black px-6 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={submitting || !items.length}
               >
                 {submitting ? "Placing order..." : "Place Order"}

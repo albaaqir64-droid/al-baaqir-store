@@ -50,17 +50,17 @@ const categories = [
 ];
 
 const newArrivals: Product[] = [
-  { id: "1", name: "Ariella Belt", price: "₹8,200", image: "/images/products/placeholder.svg", description: "Polished buckle with soft calfskin leather." },
-  { id: "2", name: "Marconi Tote", price: "₹32,500", image: "/images/products/placeholder.svg", description: "Structured silhouette for everyday luxury." },
-  { id: "3", name: "Dorian Strap", price: "₹7,950", image: "/images/products/placeholder.svg", description: "Textured belt made to elevate any look." },
-  { id: "4", name: "Nara Crossbody", price: "₹28,400", image: "/images/products/placeholder.svg", description: "Compact yet roomy for daily essentials." },
+  { id: "1", name: "Ariella Belt", price: "₹8,200", image: "/images/categories/belts.svg", description: "Polished buckle with soft calfskin leather." },
+  { id: "2", name: "Marconi Tote", price: "₹32,500", image: "/images/categories/bags.svg", description: "Structured silhouette for everyday luxury." },
+  { id: "3", name: "Dorian Strap", price: "₹7,950", image: "/images/categories/belts.svg", description: "Textured belt made to elevate any look." },
+  { id: "4", name: "Nara Crossbody", price: "₹28,400", image: "/images/categories/bags.svg", description: "Compact yet roomy for daily essentials." },
 ];
 
 const bestSellers: Product[] = [
-  { id: "5", name: "Milan Waist Belt", price: "₹10,200", image: "/images/products/placeholder.svg", description: "Timeless piece with a refined finish." },
-  { id: "6", name: "Verde Shoulder Bag", price: "₹35,900", image: "/images/products/placeholder.svg", description: "Versatile and elegant for all occasions." },
-  { id: "7", name: "Luna Leather Belt", price: "₹9,150", image: "/images/products/placeholder.svg", description: "Clean lines and premium craftsmanship." },
-  { id: "8", name: "Ari Crossbody", price: "₹27,600", image: "/images/products/placeholder.svg", description: "Sleek hardware and soft leather construction." },
+  { id: "5", name: "Milan Waist Belt", price: "₹10,200", image: "/images/categories/belts.svg", description: "Timeless piece with a refined finish." },
+  { id: "6", name: "Verde Shoulder Bag", price: "₹35,900", image: "/images/categories/bags.svg", description: "Versatile and elegant for all occasions." },
+  { id: "7", name: "Luna Leather Belt", price: "₹9,150", image: "/images/categories/belts.svg", description: "Clean lines and premium craftsmanship." },
+  { id: "8", name: "Ari Crossbody", price: "₹27,600", image: "/images/categories/bags.svg", description: "Sleek hardware and soft leather construction." },
 ];
 
 export default function Home() {

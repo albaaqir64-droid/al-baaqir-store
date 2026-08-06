@@ -1,7 +1,9 @@
 export interface PincodeLocation {
   pincode: string;
+  district: string;
   city: string;
   state: string;
+  officeName: string;
 }
 
 export async function fetchPincodeLocation(pincode: string): Promise<PincodeLocation> {
@@ -10,22 +12,24 @@ export async function fetchPincodeLocation(pincode: string): Promise<PincodeLoca
     throw new Error("Enter a valid 6-digit Indian pincode.");
   }
 
-  const response = await fetch(`https://api.postalpincode.in/pincode/${normalized}`);
-  const data = await response.json();
+  const endpoint = typeof window !== "undefined"
+    ? `/api/pincode?pincode=${encodeURIComponent(normalized)}`
+    : `https://api.postalpincode.in/pincode/${normalized}`;
 
-  if (!Array.isArray(data) || data.length === 0) {
+  const response = await fetch(endpoint);
+  if (!response.ok) {
     throw new Error("Unable to fetch pincode details.");
   }
 
-  const result = data[0];
-  if (result.Status !== "Success" || !Array.isArray(result.PostOffice) || result.PostOffice.length === 0) {
+  const data = await response.json();
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Unable to parse pincode details.");
+  }
+
+  const location = data as PincodeLocation;
+  if (!location.state || !location.district) {
     throw new Error("Pincode not found or unsupported for delivery.");
   }
 
-  const office = result.PostOffice[0];
-  return {
-    pincode: normalized,
-    city: String(office.District || office.Name || "Unknown"),
-    state: String(office.State || "Unknown"),
-  };
+  return location;
 }

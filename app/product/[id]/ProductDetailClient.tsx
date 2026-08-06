@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { addCartItem } from "../../lib/cart";
 import { fetchPincodeLocation, PincodeLocation } from "../../lib/pincode";
 import { toggleWishlistItem, isWishlisted } from "../../lib/wishlist";
-import { ProductData } from "../../data/products";
+import { ProductRecord } from "../../lib/products";
 import { Toast } from "../../components/Toast";
 
-export default function ProductDetailClient({ product }: { product: ProductData }) {
+export default function ProductDetailClient({ product }: { product: ProductRecord }) {
   const router = useRouter();
   const [mainIndex, setMainIndex] = useState(0);
   const [size, setSize] = useState<string | null>(product.sizes?.[0] ?? null);
@@ -55,13 +55,23 @@ export default function ProductDetailClient({ product }: { product: ProductData 
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
             <div className="rounded-3xl border border-gray-200 overflow-hidden bg-gray-100">
-            <img src={allImages[mainIndex]} alt={product.name} className="w-full h-[420px] object-cover" />
+            <img
+              src={allImages[mainIndex] || '/images/products/placeholder.svg'}
+              alt={product.name}
+              onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+              className="w-full h-[420px] object-cover"
+            />
           </div>
 
           <div className="mt-4 flex gap-3">
             {allImages.map((img, i) => (
               <button key={String(i)} onClick={() => setMainIndex(i)} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-gray-200'}`}>
-                <img src={img} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={img || '/images/products/placeholder.svg'}
+                  alt={`${product.name} ${i + 1}`}
+                  onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+                  className="w-full h-full object-cover"
+                />
               </button>
             ))}
           </div>

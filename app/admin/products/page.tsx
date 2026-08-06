@@ -23,6 +23,9 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<ProductForm>({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function fetchProducts() {
     setLoading(true);
@@ -71,6 +74,10 @@ export default function AdminProductsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setStatusMessage(null);
+    setErrorMessage(null);
+    setSaving(true);
+
     const payload: any = {
       name: form.name,
       category: form.category,
@@ -83,16 +90,26 @@ export default function AdminProductsPage() {
       active: form.active,
     };
 
-    if (editingId) {
-      payload.id = editingId;
-      await fetch('/api/products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    } else {
-      await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    }
+    try {
+      const response = await fetch('/api/products', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to save product.');
+      }
 
-    setForm({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true });
-    setEditingId(null);
-    await fetchProducts();
+      setStatusMessage(editingId ? 'Product updated successfully.' : 'Product added successfully.');
+      setForm({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true });
+      setEditingId(null);
+      await fetchProducts();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to save product.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function startEdit(p: any) {
@@ -203,8 +220,8 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="md:col-span-2">
-            <button className="w-full rounded-xl bg-emerald px-6 py-3 text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600" type="submit">
-              Save Product
+            <button className="w-full rounded-xl bg-emerald px-6 py-3 text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 disabled:opacity-60" type="submit" disabled={saving}>
+              {saving ? 'Saving…' : 'Save Product'}
             </button>
           </div>
 
@@ -214,7 +231,13 @@ export default function AdminProductsPage() {
         </form>
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Products</h2>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold">Products</h2>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+              {statusMessage && <span className="rounded-full bg-emerald-50 px-4 py-2 text-emerald-900">{statusMessage}</span>}
+              {errorMessage && <span className="rounded-full bg-rose-50 px-4 py-2 text-rose-900">{errorMessage}</span>}
+            </div>
+          </div>
           {loading ? <p className="mt-4">Loading…</p> : (
             <div className="mt-4 grid gap-4">
               {products.map((p) => (

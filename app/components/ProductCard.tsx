@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +44,17 @@ export default function ProductCard({ product }: { product: Product }) {
       className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
     >
       <div className="relative h-64 overflow-hidden bg-gray-100 sm:h-72">
-        <img src={product.image} alt={product.name} className="absolute inset-0 h-full w-full img-cover transition duration-500 group-hover:scale-105" />
+        <Image
+          src={product.image || '/images/products/placeholder.svg'}
+          alt={product.name}
+          fill
+          className="object-cover transition duration-500 group-hover:scale-105"
+          onError={(event) => {
+            const target = event.target as HTMLImageElement;
+            target.src = '/images/products/placeholder.svg';
+          }}
+          loading="lazy"
+        />
         {product.discount && (
           <div className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-semibold text-white">{product.discount}</div>
         )}
