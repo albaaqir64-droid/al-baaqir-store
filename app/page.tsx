@@ -10,57 +10,57 @@ const categories = [
   {
     title: "Belts",
     subtitle: "Mirror-polished buckles, rich leather finishes.",
-    image: "https://images.unsplash.com/photo-1519741490176-cc12f1a6a0d8?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/belts.svg",
   },
   {
     title: "Bags",
     subtitle: "Luxury silhouettes made for every occasion.",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/bags.svg",
   },
   {
     title: "Kurti",
     subtitle: "Easy elegance with refined everyday tailoring.",
-    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/kurti.svg",
   },
   {
     title: "Karachi Suit",
     subtitle: "Classic silhouettes with polished festive energy.",
-    image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/karachi-suit.svg",
   },
   {
     title: "Earrings",
     subtitle: "Subtle shine and expressive details.",
-    image: "https://images.unsplash.com/photo-1535632787350-4e68ef0ac584?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/earrings.svg",
   },
   {
     title: "Jhumka",
     subtitle: "Traditional charm with contemporary flair.",
-    image: "https://images.unsplash.com/photo-1617038220319-276d3cfab534?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/jhumka.svg",
   },
   {
     title: "New Arrivals",
     subtitle: "Fresh designs for the modern wardrobe.",
-    image: "https://images.unsplash.com/photo-1540574163026-643ea20ade25?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/new-arrivals.svg",
   },
   {
     title: "Sale",
     subtitle: "Exclusive pieces at elegant prices.",
-    image: "https://images.unsplash.com/photo-1520975698512-6ee7f2b9b8f6?q=80&w=1200&auto=format&fit=crop",
+    image: "/images/categories/sale.svg",
   },
 ];
 
 const newArrivals: Product[] = [
-  { id: "1", name: "Ariella Belt", price: "₹8,200", image: "https://images.unsplash.com/photo-1519741490176-cc12f1a6a0d8?q=80&w=800&auto=format&fit=crop", description: "Polished buckle with soft calfskin leather." },
-  { id: "2", name: "Marconi Tote", price: "₹32,500", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop", description: "Structured silhouette for everyday luxury." },
-  { id: "3", name: "Dorian Strap", price: "₹7,950", image: "https://images.unsplash.com/photo-1540574163026-643ea20ade25?q=80&w=800&auto=format&fit=crop", description: "Textured belt made to elevate any look." },
-  { id: "4", name: "Nara Crossbody", price: "₹28,400", image: "https://images.unsplash.com/photo-1520975698512-6ee7f2b9b8f6?q=80&w=800&auto=format&fit=crop", description: "Compact yet roomy for daily essentials." },
+  { id: "1", name: "Ariella Belt", price: "₹8,200", image: "/images/products/placeholder.svg", description: "Polished buckle with soft calfskin leather." },
+  { id: "2", name: "Marconi Tote", price: "₹32,500", image: "/images/products/placeholder.svg", description: "Structured silhouette for everyday luxury." },
+  { id: "3", name: "Dorian Strap", price: "₹7,950", image: "/images/products/placeholder.svg", description: "Textured belt made to elevate any look." },
+  { id: "4", name: "Nara Crossbody", price: "₹28,400", image: "/images/products/placeholder.svg", description: "Compact yet roomy for daily essentials." },
 ];
 
 const bestSellers: Product[] = [
-  { id: "5", name: "Milan Waist Belt", price: "₹10,200", image: "https://images.unsplash.com/photo-1519741490176-cc12f1a6a0d8?q=80&w=800&auto=format&fit=crop", description: "Timeless piece with a refined finish." },
-  { id: "6", name: "Verde Shoulder Bag", price: "₹35,900", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop", description: "Versatile and elegant for all occasions." },
-  { id: "7", name: "Luna Leather Belt", price: "₹9,150", image: "https://images.unsplash.com/photo-1540574163026-643ea20ade25?q=80&w=800&auto=format&fit=crop", description: "Clean lines and premium craftsmanship." },
-  { id: "8", name: "Ari Crossbody", price: "₹27,600", image: "https://images.unsplash.com/photo-1520975698512-6ee7f2b9b8f6?q=80&w=800&auto=format&fit=crop", description: "Sleek hardware and soft leather construction." },
+  { id: "5", name: "Milan Waist Belt", price: "₹10,200", image: "/images/products/placeholder.svg", description: "Timeless piece with a refined finish." },
+  { id: "6", name: "Verde Shoulder Bag", price: "₹35,900", image: "/images/products/placeholder.svg", description: "Versatile and elegant for all occasions." },
+  { id: "7", name: "Luna Leather Belt", price: "₹9,150", image: "/images/products/placeholder.svg", description: "Clean lines and premium craftsmanship." },
+  { id: "8", name: "Ari Crossbody", price: "₹27,600", image: "/images/products/placeholder.svg", description: "Sleek hardware and soft leather construction." },
 ];
 
 export default function Home() {
@@ -85,7 +85,7 @@ export default function Home() {
               <div className="flex justify-center lg:justify-end">
                 <div className="relative overflow-hidden rounded-[32px] border border-gray-200 bg-gray-100" style={{ minWidth: '320px', maxWidth: '500px' }}>
                   <div className="relative h-[300px] sm:h-[380px] lg:h-[420px]">
-                    <img src="https://images.unsplash.com/photo-1519741490176-cc12f1a6a0d8?q=80&w=1200&auto=format&fit=crop" alt="Premium leather belt" className="absolute inset-0 h-full w-full img-cover" />
+                    <img src="/images/categories/hero.svg" alt="Premium leather belt" className="absolute inset-0 h-full w-full img-cover" />
                   </div>
                 </div>
               </div>

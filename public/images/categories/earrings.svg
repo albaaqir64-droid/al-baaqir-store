@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="earringsTitle earringsDesc">
+  <title id="earringsTitle">Earrings category image</title>
+  <desc id="earringsDesc">Stylized earrings placeholder with gold accent circles.</desc>
+  <rect width="1200" height="900" fill="#1d4ed8"/>
+  <circle cx="450" cy="420" r="160" fill="#fef3c7"/>
+  <circle cx="750" cy="420" r="160" fill="#fef3c7"/>
+  <circle cx="450" cy="420" r="60" fill="#f59e0b"/>
+  <circle cx="750" cy="420" r="60" fill="#f59e0b"/>
+  <text x="600" y="700" font-family="Inter, system-ui, sans-serif" font-size="72" text-anchor="middle" fill="#ffffff">Earrings</text>
+</svg>

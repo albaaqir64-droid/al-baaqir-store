@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="newArrivalsTitle newArrivalsDesc">
+  <title id="newArrivalsTitle">New Arrivals category image</title>
+  <desc id="newArrivalsDesc">Stylized new arrivals placeholder with modern shapes.</desc>
+  <rect width="1200" height="900" fill="#14532d"/>
+  <circle cx="360" cy="420" r="160" fill="#d1fae5"/>
+  <rect x="520" y="260" width="420" height="320" rx="60" fill="#86efac"/>
+  <path d="M660 320h120v220H660z" fill="#22c55e"/>
+  <text x="600" y="720" font-family="Inter, system-ui, sans-serif" font-size="72" text-anchor="middle" fill="#ffffff">New Arrivals</text>
+</svg>

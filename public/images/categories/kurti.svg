@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="kurtiTitle kurtiDesc">
+  <title id="kurtiTitle">Kurti category image</title>
+  <desc id="kurtiDesc">Stylized kurti placeholder with soft warm colors.</desc>
+  <rect width="1200" height="900" fill="#be123c"/>
+  <path d="M300 220h600v480c0 80-60 120-120 120H420c-60 0-120-40-120-120V220Z" fill="#fdf2f8"/>
+  <path d="M420 220c40-80 160-80 180 0h120c20-80 140-80 180 0v100H420V220Z" fill="#f9a8d4"/>
+  <text x="600" y="620" font-family="Inter, system-ui, sans-serif" font-size="80" text-anchor="middle" fill="#be123c">Kurti</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="heroTitle heroDesc">
+  <title id="heroTitle">Hero product image placeholder</title>
+  <desc id="heroDesc">Stylized premium product placeholder for the hero section.</desc>
+  <rect width="1200" height="900" fill="#f8fafc"/>
+  <path d="M220 220h760v460c0 80-70 140-150 140H370c-80 0-150-60-150-140V220Z" fill="#d1fae5"/>
+  <path d="M320 240h560v380c0 40-32 80-72 80H392c-40 0-72-40-72-80V240Z" fill="#4ade80"/>
+  <rect x="360" y="300" width="480" height="240" rx="40" fill="#ecfccb"/>
+  <circle cx="600" cy="480" r="48" fill="#65a30d"/>
+  <text x="600" y="680" font-family="Inter, system-ui, sans-serif" font-size="70" text-anchor="middle" fill="#134e4a">Premium</text>
+</svg>

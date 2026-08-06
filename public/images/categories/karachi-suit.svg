@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="karachiTitle karachiDesc">
+  <title id="karachiTitle">Karachi Suit category image</title>
+  <desc id="karachiDesc">Stylized Karachi suit placeholder with elegant dark teal palette.</desc>
+  <rect width="1200" height="900" fill="#0f172a"/>
+  <rect x="180" y="180" width="840" height="540" rx="90" fill="#cffafe"/>
+  <path d="M300 220h240v420H300z" fill="#0f766e"/>
+  <path d="M660 220h240v420H660z" fill="#0f766e"/>
+  <text x="600" y="620" font-family="Inter, system-ui, sans-serif" font-size="72" text-anchor="middle" fill="#0f172a">Karachi Suit</text>
+</svg>

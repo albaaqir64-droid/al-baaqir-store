@@ -19,6 +19,20 @@ export type ProductData = {
 };
 
 const DATA_FILE = path.join(process.cwd(), 'app', 'data', 'products.json');
+const LOCAL_PRODUCT_PLACEHOLDER = '/images/products/placeholder.svg';
+
+function sanitizeProductImages<T extends { mainImage?: string; images?: unknown[] }>(product: T): T {
+  const next = { ...product } as typeof product;
+  if (next.mainImage && String(next.mainImage).startsWith('https://images.unsplash.com')) {
+    next.mainImage = LOCAL_PRODUCT_PLACEHOLDER;
+  }
+  if (Array.isArray(next.images)) {
+    next.images = next.images.map((image) =>
+      String(image).startsWith('https://images.unsplash.com') ? LOCAL_PRODUCT_PLACEHOLDER : String(image)
+    );
+  }
+  return next;
+}
 
 const CATEGORY_FALLBACKS: Record<string, ProductData[]> = {
   Kurti: [
@@ -126,7 +140,8 @@ async function ensureDataFile() {
 export async function readProducts(): Promise<ProductData[]> {
   await ensureDataFile();
   const raw = await fs.readFile(DATA_FILE, 'utf-8');
-  return JSON.parse(raw) as ProductData[];
+  const products = JSON.parse(raw) as ProductData[];
+  return products.map((product) => sanitizeProductImages(product));
 }
 
 export async function writeProducts(products: ProductData[]) {
@@ -143,9 +158,9 @@ export async function getProductsByCategory(category: string): Promise<ProductDa
   const match = products.filter((p) => p.category.toLowerCase() === category.toLowerCase() && p.active !== false);
 
   if (match.length > 0) {
-    return match;
+    return match.map((product) => sanitizeProductImages(product));
   }
 
-  return (CATEGORY_FALLBACKS[category] ?? []).filter((p) => p.active !== false);
+  return (CATEGORY_FALLBACKS[category] ?? []).filter((p) => p.active !== false).map((product) => sanitizeProductImages(product));
 }
 

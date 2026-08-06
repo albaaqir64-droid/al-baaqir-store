@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="beltsTitle beltsDesc">
+  <title id="beltsTitle">Belts category image</title>
+  <desc id="beltsDesc">Stylized leather belt placeholder with green and gold accents.</desc>
+  <rect width="1200" height="900" fill="#0f766e"/>
+  <rect x="120" y="240" width="960" height="420" rx="60" fill="#f8fafc"/>
+  <rect x="180" y="320" width="840" height="260" rx="40" fill="#115e59"/>
+  <circle cx="980" cy="450" r="80" fill="#facc15"/>
+  <text x="600" y="520" font-family="Inter, system-ui, sans-serif" font-size="80" text-anchor="middle" fill="#0f766e">Belts</text>
+</svg>

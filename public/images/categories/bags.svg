@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="bagsTitle bagsDesc">
+  <title id="bagsTitle">Bags category image</title>
+  <desc id="bagsDesc">Stylized handbag placeholder with rich tan tones.</desc>
+  <rect width="1200" height="900" fill="#7c2d12"/>
+  <rect x="170" y="220" width="860" height="480" rx="80" fill="#fde68a"/>
+  <path d="M310 220c0-80 50-140 110-140h370c60 0 110 60 110 140v120H310V220Z" fill="#f59e0b"/>
+  <text x="600" y="560" font-family="Inter, system-ui, sans-serif" font-size="80" text-anchor="middle" fill="#7c2d12">Bags</text>
+</svg>

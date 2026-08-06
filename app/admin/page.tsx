@@ -3,7 +3,6 @@
 import { DragEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import AdminGuard from "../components/AdminGuard";
 import { fetchOrders, OrderRecord } from "../lib/orders";
-import { createProduct, deleteProductById, fetchProducts as fetchProductsFromFirestore, updateProduct } from "../lib/products";
 
 const CATEGORY_OPTIONS = ["Men", "Women", "Belts", "Bags", "Kurti", "Karachi Suit", "Earrings", "Jhumka", "New Arrivals", "Sale"];
 
@@ -96,8 +95,9 @@ export default function AdminPage() {
 
   async function loadProducts() {
     try {
-      const data = await fetchProductsFromFirestore();
-      setProducts(data || []);
+      const response = await fetch("/api/products");
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load products:", error);
       setProducts([]);
@@ -163,8 +163,12 @@ export default function AdminPage() {
         mainImage: form.mainImage,
         images: form.gallery,
       };
-      if (form.id) {
-        await updateProduct(form.id, {
+      const method = form.id ? "PUT" : "POST";
+      const response = await fetch("/api/products", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: form.id,
           name: payload.name,
           category: payload.category,
           price: payload.price,
@@ -174,24 +178,13 @@ export default function AdminPage() {
           description: payload.description,
           mainImage: payload.mainImage,
           images: payload.images,
-        });
-        setToastType("success");
-        setToastMessage("Product updated successfully.");
-      } else {
-        await createProduct({
-          name: payload.name,
-          category: payload.category,
-          price: payload.price,
-          stock: payload.stock,
-          discountPercent: payload.discountPercent,
-          active: payload.active,
-          description: payload.description,
-          mainImage: payload.mainImage,
-          images: payload.images,
-        });
-        setToastType("success");
-        setToastMessage("Product added successfully.");
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save product");
       }
+      setToastType("success");
+      setToastMessage(form.id ? "Product updated successfully." : "Product added successfully.");
       await loadProducts();
       setDialogOpen(false);
       resetForm();
@@ -208,12 +201,18 @@ export default function AdminPage() {
     if (!deleteProduct) return;
     setDeleting(true);
     setToastMessage("");
-    await fetch(`/api/products?id=${encodeURIComponent(deleteProduct.id)}`, { method: "DELETE" });
+    const response = await fetch(`/api/products?id=${encodeURIComponent(deleteProduct.id)}`, { method: "DELETE" });
+    if (!response.ok) {
+      console.error("Failed to delete product", response.statusText);
+      setToastType("error");
+      setToastMessage("Unable to delete product.");
+    } else {
+      setToastType("success");
+      setToastMessage("Product deleted successfully.");
+    }
     setDeleteProduct(null);
     await loadProducts();
     setDeleting(false);
-    setToastType("success");
-    setToastMessage("Product deleted successfully.");
   }
 
   function handleFiles(files: FileList | null) {

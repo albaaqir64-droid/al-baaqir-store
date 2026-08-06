@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="jhumkaTitle jhumkaDesc">
+  <title id="jhumkaTitle">Jhumka category image</title>
+  <desc id="jhumkaDesc">Stylized jhumka placeholder with elegant gold motifs.</desc>
+  <rect width="1200" height="900" fill="#831843"/>
+  <path d="M300 280c120-120 420-120 540 0v240c0 120-120 220-270 220S300 640 300 520V280Z" fill="#fde68a"/>
+  <ellipse cx="600" cy="350" rx="120" ry="90" fill="#fff7ed"/>
+  <path d="M600 420l-80 240h160l-80-240z" fill="#f59e0b"/>
+  <text x="600" y="730" font-family="Inter, system-ui, sans-serif" font-size="72" text-anchor="middle" fill="#ffffff">Jhumka</text>
+</svg>
