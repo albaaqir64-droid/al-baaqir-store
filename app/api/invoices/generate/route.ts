@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateInvoicePDF } from "@/app/lib/invoice";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/app/lib/email";
-import { getOrder } from "@/app/lib/orders";
+import { fetchOrderById } from "@/app/lib/orders";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get order from Firestore
-    const order = await getOrder(orderId);
+    const order = await fetchOrderById(orderId);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }

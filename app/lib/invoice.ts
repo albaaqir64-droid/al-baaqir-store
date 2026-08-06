@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, PDFPage, StandardFonts } from "pdf-lib";
 import { OrderRecord } from "./orders";
 import { format } from "date-fns";
 
@@ -36,6 +36,10 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   const page = pdfDoc.addPage([595, 842]); // A4 size
   const { width, height } = page.getSize();
 
+  // Embed standard fonts
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
   const margin = 40;
   const contentWidth = width - 2 * margin;
   let yPosition = height - margin;
@@ -54,12 +58,13 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     color = rgb(0, 0, 0),
     fontName = "Helvetica"
   ) => {
+    const font = fontName === "Helvetica-Bold" ? helveticaBoldFont : helveticaFont;
     page.drawText(text, {
       x,
       y,
       size,
       color,
-      font: pdfDoc.getFont(fontName),
+      font,
     });
   };
 

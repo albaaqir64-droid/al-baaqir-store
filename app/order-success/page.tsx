@@ -22,7 +22,7 @@ function OrderSuccessPageContent() {
       return;
     }
 
-    const safeOrderId: string = orderId;
+    const safeOrderId = orderId!;
 
     async function loadOrder() {
       setLoading(true);

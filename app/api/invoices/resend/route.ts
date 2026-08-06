@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resendInvoiceEmail } from "@/app/lib/email";
-import { getOrder } from "@/app/lib/orders";
+import { fetchOrderById } from "@/app/lib/orders";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get order from Firestore
-    const order = await getOrder(orderId);
+    const order = await fetchOrderById(orderId);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }

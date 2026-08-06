@@ -46,3 +46,4 @@ Issues? Report them at https://github.com/firebase/firebase-tools/issues and att
 [error] !!  apphosting: failed to start Dev Server: Error: Error: spawn(npm run dev) 
  exited with code: 1 {"metadata":{"emulator":{"name":"apphosting"},"message":"failed to start Dev Server: Error: Error: spawn(npm run dev) \n exited with code: 1"}}
 [info] i  apphosting: Dev Server stopped {"metadata":{"emulator":{"name":"apphosting"},"message":"Dev Server stopped"}}
+[debug] [2026-08-06T09:24:24.562Z] Received signal SIGHUP 1
