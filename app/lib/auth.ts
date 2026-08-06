@@ -2,7 +2,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
 const ADMIN_SESSION_KEY = "albaaqir_admin_session";
-const ADMIN_PASSWORD = "EmeraldGold99!";
+const ADMIN_PASSWORD = "Munna@6464";
 const CUSTOMER_CONTACT_KEY = "albaaqir_customer_contact";
 const CURRENT_USER_ID_KEY = "albaaqir_current_user_id";
 const USERS_COLLECTION = "users";
