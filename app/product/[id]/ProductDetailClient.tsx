@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addCartItem } from "../../lib/cart";
 import { fetchPincodeLocation, PincodeLocation } from "../../lib/pincode";
 import { toggleWishlistItem, isWishlisted } from "../../lib/wishlist";
-import { ProductRecord } from "../../lib/products";
+import type { ProductRecord } from "../../lib/productTypes";
 import { Toast } from "../../components/Toast";
 
 export default function ProductDetailClient({ product }: { product: ProductRecord }) {

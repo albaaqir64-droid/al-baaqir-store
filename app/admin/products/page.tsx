@@ -2,7 +2,7 @@
 
 import AdminGuard from "../../components/AdminGuard";
 import { FormEvent, useEffect, useState } from "react";
-import { ProductRecord } from "../../lib/products";
+import type { ProductRecord } from "../../lib/productTypes";
 
 type ProductForm = {
   id?: string;

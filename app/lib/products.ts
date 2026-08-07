@@ -1,4 +1,5 @@
 import { db } from "./firebase";
+import { getAdminStorage } from "./firebaseAdmin";
 import {
   collection,
   deleteDoc,
@@ -12,34 +13,7 @@ import {
   where,
   DocumentData,
 } from "firebase/firestore";
-
-export interface ProductRecord {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  discountPercent: number;
-  discount: number;
-  active: boolean;
-  description: string;
-  mainImage: string;
-  images: string[];
-  galleryImages: string[];
-  slug: string;
-  createdAt: any;
-  lastUpdated: any;
-  sizes?: string[];
-  colors?: string[];
-  rating?: number;
-}
-
-export type ProductSavePayload = Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated" | "galleryImages" | "images" | "discount" | "discountPercent"> & {
-  galleryImages?: string[];
-  images?: string[];
-  discount?: number;
-  discountPercent?: number;
-};
+import type { ProductRecord, ProductSavePayload } from "./productTypes";
 
 function createSlug(value: string) {
   return String(value)
@@ -48,6 +22,63 @@ function createSlug(value: string) {
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 200);
+}
+
+function isDataUrl(value: unknown): value is string {
+  return typeof value === "string" && /^data:[^;]+;base64,/.test(value);
+}
+
+function parseDataUrl(value: string) {
+  const match = /^data:([^;]+);base64,(.*)$/.exec(value);
+  if (!match) {
+    throw new Error("Invalid data URL");
+  }
+  return {
+    mimeType: match[1],
+    buffer: Buffer.from(match[2], "base64"),
+  };
+}
+
+function getExtensionFromMimeType(mimeType: string) {
+  const normalized = mimeType.toLowerCase();
+  if (normalized === "image/jpeg" || normalized === "image/jpg") return ".jpg";
+  if (normalized === "image/png") return ".png";
+  if (normalized === "image/gif") return ".gif";
+  if (normalized === "image/webp") return ".webp";
+  if (normalized === "image/svg+xml") return ".svg";
+  return "";
+}
+
+async function uploadImageDataUrl(destinationPath: string, data: Buffer, mimeType: string) {
+  const bucket = getAdminStorage().bucket();
+  const file = bucket.file(destinationPath);
+  await file.save(data, {
+    metadata: {
+      contentType: mimeType,
+    },
+  });
+
+  try {
+    await file.makePublic();
+    return `https://storage.googleapis.com/${bucket.name}/${destinationPath}`;
+  } catch {
+    const [signedUrl] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
+    });
+    return signedUrl;
+  }
+}
+
+async function uploadProductImage(productId: string, imageValue: string, index: number, type: "mainImage" | "galleryImages") {
+  if (!isDataUrl(imageValue)) return imageValue;
+  const { mimeType, buffer } = parseDataUrl(imageValue);
+  const extension = getExtensionFromMimeType(mimeType) || "";
+  const filename =
+    type === "mainImage"
+      ? `products/${productId}/main${extension}`
+      : `products/${productId}/gallery-${index}${extension}`;
+  return await uploadImageDataUrl(filename, buffer, mimeType);
 }
 
 function normalizeProduct(docSnap: DocumentData): ProductRecord {
@@ -157,25 +188,42 @@ export async function searchProducts(term: string): Promise<ProductRecord[]> {
 
 export async function createProduct(payload: ProductSavePayload) {
   const docRef = doc(collection(db, "products"));
+  const productId = docRef.id;
   const galleryImages = Array.isArray(payload.galleryImages)
     ? payload.galleryImages
     : Array.isArray(payload.images)
       ? payload.images
       : [];
+  const uploadedMainImage = payload.mainImage
+    ? await uploadProductImage(productId, String(payload.mainImage), 0, "mainImage")
+    : "";
+  const uploadedGalleryImages = await Promise.all(
+    galleryImages.map((image, index) => uploadProductImage(productId, String(image), index, "galleryImages"))
+  );
   const discountValue = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
   const data = {
     ...payload,
-    id: docRef.id,
+    id: productId,
     slug: createSlug(payload.name),
     createdAt: serverTimestamp(),
     lastUpdated: serverTimestamp(),
-    galleryImages,
-    images: galleryImages,
+    mainImage: uploadedMainImage,
+    galleryImages: uploadedGalleryImages,
+    images: uploadedGalleryImages,
     discount: discountValue,
     discountPercent: discountValue,
   };
   await setDoc(docRef, data);
-  return { id: docRef.id, ...payload, slug: data.slug, galleryImages, images: galleryImages, discount: discountValue, discountPercent: discountValue };
+  return {
+    id: productId,
+    ...payload,
+    slug: data.slug,
+    mainImage: uploadedMainImage,
+    galleryImages: uploadedGalleryImages,
+    images: uploadedGalleryImages,
+    discount: discountValue,
+    discountPercent: discountValue,
+  };
 }
 
 export async function updateProduct(
@@ -195,9 +243,20 @@ export async function updateProduct(
     lastUpdated: serverTimestamp(),
   };
 
+  if (payload.mainImage !== undefined) {
+    if (typeof payload.mainImage === "string" && isDataUrl(payload.mainImage)) {
+      updatePayload.mainImage = await uploadProductImage(id, payload.mainImage, 0, "mainImage");
+    } else {
+      updatePayload.mainImage = payload.mainImage;
+    }
+  }
+
   if (galleryImages !== undefined) {
-    updatePayload.galleryImages = galleryImages;
-    updatePayload.images = galleryImages;
+    const uploadedGalleryImages = await Promise.all(
+      galleryImages.map((image, index) => uploadProductImage(id, String(image), index, "galleryImages"))
+    );
+    updatePayload.galleryImages = uploadedGalleryImages;
+    updatePayload.images = uploadedGalleryImages;
   }
 
   if (discountValue !== undefined) {

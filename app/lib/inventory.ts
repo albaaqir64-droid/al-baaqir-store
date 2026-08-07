@@ -1,6 +1,7 @@
 import { db } from "./firebase";
 import { addDoc, collection, doc, getDocs, query, where, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
-import { fetchAllProducts, fetchProductById, ProductRecord } from "./products";
+import { fetchAllProducts, fetchProductById } from "./products";
+import type { ProductRecord } from "./productTypes";
 
 export interface InventoryItem {
   id: string;
