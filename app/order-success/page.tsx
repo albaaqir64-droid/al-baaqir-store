@@ -22,21 +22,27 @@ function OrderSuccessPageContent() {
       return;
     }
 
-    const safeOrderId = orderId!;
+    const safeOrderId = orderId.trim();
 
     async function loadOrder() {
       setLoading(true);
-      const fetched = await fetchOrderById(safeOrderId);
-      if (!fetched) {
-        setError("Order not found.");
-      } else {
-        setOrder(fetched);
-        // Check if invoice already exists
-        if (fetched.invoiceUrl) {
-          setInvoiceUrl(fetched.invoiceUrl);
+      setError("");
+      try {
+        const fetched = await fetchOrderById(safeOrderId);
+        if (!fetched) {
+          setError("Order not found.");
+        } else {
+          setOrder(fetched);
+          if (fetched.invoiceUrl) {
+            setInvoiceUrl(fetched.invoiceUrl);
+          }
         }
+      } catch (err) {
+        console.error("Failed to load order", err);
+        setError("Unable to load your order. Please try again.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     loadOrder();
@@ -55,19 +61,28 @@ function OrderSuccessPageContent() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      const data = await response.json();
+      let data: { error?: string; invoiceUrl?: string; invoiceNumber?: string } | null = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
       
       if (!response.ok) {
-        setInvoiceError(data.error || "Failed to generate invoice");
+        setInvoiceError(data?.error || "Failed to generate invoice");
+        return;
+      }
+
+      if (!data?.invoiceUrl) {
+        setInvoiceError("Invoice was generated but no download link was returned.");
         return;
       }
 
       setInvoiceUrl(data.invoiceUrl);
-      // Update local order state
       if (order) {
         setOrder({
           ...order,
-          invoiceNumber: data.invoiceNumber,
+          invoiceNumber: data.invoiceNumber || order.invoiceNumber,
           invoiceUrl: data.invoiceUrl,
         });
       }
