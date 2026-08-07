@@ -1,7 +1,8 @@
 "use client";
 
 import AdminGuard from "../../components/AdminGuard";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { ProductRecord } from "../../lib/products";
 
 type ProductForm = {
   id?: string;
@@ -18,10 +19,22 @@ type ProductForm = {
 
 const CATEGORIES = ["Men", "Women", "Belts", "Bags", "Kurti", "Karachi Suit", "Earrings", "Jhumka", "New Arrivals", "Sale"];
 
+const initialForm: ProductForm = {
+  name: "",
+  category: "Belts",
+  price: "0",
+  mainImage: "",
+  images: [],
+  description: "",
+  stock: "0",
+  discountPercent: "0",
+  active: true,
+};
+
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<ProductForm>({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true });
+  const [form, setForm] = useState<ProductForm>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,16 +42,43 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     setLoading(true);
-    const res = await fetch('/api/products');
-    const data = await res.json();
-    setProducts(data);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/products');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || 'Unable to load products.');
+      }
+      const data = await res.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setProducts([]);
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to load products.');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => {
+    void fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    if (!statusMessage && !errorMessage) return;
+    const timer = window.setTimeout(() => {
+      setStatusMessage(null);
+      setErrorMessage(null);
+    }, 3200);
+    return () => window.clearTimeout(timer);
+  }, [statusMessage, errorMessage]);
 
   function updateField<K extends keyof ProductForm>(k: K, v: ProductForm[K]) {
     setForm((s) => ({ ...s, [k]: v }));
+  }
+
+  function resetForm() {
+    setForm(initialForm);
+    setEditingId(null);
   }
 
   async function handleFilesChange(files: FileList | null) {
@@ -58,6 +98,10 @@ export default function AdminProductsPage() {
     setForm((s) => ({ ...s, images }));
   }
 
+  function handleRemoveImage(index: number) {
+    setForm((s) => ({ ...s, images: s.images.filter((_, i) => i !== index) }));
+  }
+
   async function handleMainFileChange(file: File | null) {
     if (!file) return;
     const src = await new Promise<string>((resolve, reject) => {
@@ -72,13 +116,13 @@ export default function AdminProductsPage() {
     setForm((s) => ({ ...s, mainImage: src }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatusMessage(null);
     setErrorMessage(null);
     setSaving(true);
 
-    const payload: any = {
+    const payload = {
       name: form.name,
       category: form.category,
       price: Number(form.price || 0),
@@ -102,8 +146,7 @@ export default function AdminProductsPage() {
       }
 
       setStatusMessage(editingId ? 'Product updated successfully.' : 'Product added successfully.');
-      setForm({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true });
-      setEditingId(null);
+      resetForm();
       await fetchProducts();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save product.');
@@ -112,7 +155,7 @@ export default function AdminProductsPage() {
     }
   }
 
-  function startEdit(p: any) {
+  function startEdit(p: ProductRecord) {
     setEditingId(p.id);
     setForm({
       name: p.name || '',
@@ -130,8 +173,18 @@ export default function AdminProductsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete product?')) return;
-    await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-    await fetchProducts();
+    try {
+      const response = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Unable to delete product.');
+      }
+      setStatusMessage('Product deleted successfully.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to delete product.');
+    } finally {
+      await fetchProducts();
+    }
   }
 
   return (
@@ -144,6 +197,20 @@ export default function AdminProductsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Admin — Products</h1>
+            <p className="text-sm text-slate-600">Create, edit, and manage your store inventory.</p>
+          </div>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="inline-flex items-center justify-center rounded-xl bg-emerald px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600"
+          >
+            Add new product
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium">Name</label>
@@ -196,8 +263,15 @@ export default function AdminProductsPage() {
             {form.images.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {form.images.map((src, index) => (
-                  <div key={index} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  <div key={index} className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1">
                     <img src={src} alt={`Preview ${index + 1}`} className="h-32 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute right-2 top-2 rounded-full bg-slate-900/80 px-2 py-1 text-xs text-white"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
@@ -226,7 +300,15 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="md:col-span-2 flex items-center gap-3">
-            {editingId && <button type="button" className="rounded border px-3 py-2" onClick={() => { setEditingId(null); setForm({ name: "", category: "Belts", price: "0", mainImage: "", images: [], description: "", stock: "0", discountPercent: "0", active: true }); }}>Cancel</button>}
+            {editingId && (
+              <button
+                type="button"
+                className="rounded border px-3 py-2"
+                onClick={resetForm}
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
 
@@ -240,10 +322,16 @@ export default function AdminProductsPage() {
           </div>
           {loading ? <p className="mt-4">Loading…</p> : (
             <div className="mt-4 grid gap-4">
-              {products.map((p) => (
+              {products.map((p: ProductRecord) => (
                 <div key={p.id} className="flex items-center justify-between gap-4 rounded border p-3">
                   <div className="flex items-center gap-4">
-                    <img src={p.mainImage} alt={p.name} className="h-16 w-16 rounded-xl object-cover" />
+                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-slate-100 text-slate-400">
+                      {p.mainImage ? (
+                        <img src={p.mainImage} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xl">📦</span>
+                      )}
+                    </div>
                     <div>
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-slate-500">₹{p.price}</p>

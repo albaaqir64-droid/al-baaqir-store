@@ -1,11 +1,6 @@
 import { db } from "./firebase";
-import { collection, doc, getDoc, getDocs, query, where, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
-import { ProductData } from "../data/products";
-import * as fs from "fs/promises";
-import * as path from "path";
-
-const PRODUCTS_FILE = path.join(process.cwd(), "app", "data", "products.json");
-const INVENTORY_COLLECTION = "inventory";
+import { addDoc, collection, doc, getDocs, query, where, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { fetchAllProducts, fetchProductById, ProductRecord } from "./products";
 
 export interface InventoryItem {
   id: string;
@@ -16,9 +11,8 @@ export interface InventoryItem {
   minStock: number;
   maxStock: number;
   sku?: string;
-  lastRestocked?: any;
   reorderStatus: "sufficient" | "low" | "out_of_stock";
-  updatedAt: any;
+  updatedAt: number;
 }
 
 export interface StockUpdate {
@@ -28,86 +22,56 @@ export interface StockUpdate {
   updatedBy?: string;
 }
 
-// Get all inventory from local JSON
+function toInventoryItem(product: ProductRecord): InventoryItem {
+  return {
+    id: product.id,
+    productId: product.id,
+    productName: product.name,
+    category: product.category,
+    currentStock: Number(product.stock ?? 0),
+    minStock: 5,
+    maxStock: 100,
+    sku: `SKU-${product.id}`,
+    reorderStatus: getReorderStatus(Number(product.stock ?? 0)),
+    updatedAt: Number(product.lastUpdated ?? product.createdAt ?? Date.now()),
+  };
+}
+
 export async function getAllInventory(): Promise<InventoryItem[]> {
-  try {
-    const data = await fs.readFile(PRODUCTS_FILE, "utf-8");
-    const products: ProductData[] = JSON.parse(data);
-
-    return products.map((product) => ({
-      id: product.id,
-      productId: product.id,
-      productName: product.name,
-      category: product.category,
-      currentStock: product.stock || 0,
-      minStock: 5,
-      maxStock: 100,
-      sku: `SKU-${product.id}`,
-      reorderStatus: getReorderStatus(product.stock || 0),
-      updatedAt: new Date(),
-    }));
-  } catch (error) {
-    console.error("Error reading inventory:", error);
-    return [];
-  }
+  const products = await fetchAllProducts();
+  return products.map(toInventoryItem);
 }
 
-// Get single product inventory
 export async function getProductInventory(productId: string): Promise<InventoryItem | null> {
-  try {
-    const data = await fs.readFile(PRODUCTS_FILE, "utf-8");
-    const products: ProductData[] = JSON.parse(data);
-    const product = products.find((p) => p.id === productId);
-
-    if (!product) return null;
-
-    return {
-      id: product.id,
-      productId: product.id,
-      productName: product.name,
-      category: product.category,
-      currentStock: product.stock || 0,
-      minStock: 5,
-      maxStock: 100,
-      sku: `SKU-${product.id}`,
-      reorderStatus: getReorderStatus(product.stock || 0),
-      updatedAt: new Date(),
-    };
-  } catch (error) {
-    console.error("Error reading inventory:", error);
-    return null;
-  }
+  const product = await fetchProductById(productId);
+  if (!product) return null;
+  return toInventoryItem(product);
 }
 
-// Get low stock items
 export async function getLowStockItems(): Promise<InventoryItem[]> {
   const allInventory = await getAllInventory();
   return allInventory.filter((item) => item.reorderStatus !== "sufficient");
 }
 
-// Update product stock
 export async function updateProductStock(
   productId: string,
   quantityChange: number,
   reason: string = "Manual update"
 ): Promise<boolean> {
+  const product = await fetchProductById(productId);
+  if (!product) return false;
+
+  const currentStock = Number(product.stock ?? 0);
+  const newStock = Math.max(0, currentStock + quantityChange);
+
   try {
-    const data = await fs.readFile(PRODUCTS_FILE, "utf-8");
-    const products: ProductData[] = JSON.parse(data);
+    const productRef = doc(db, "products", productId);
+    await updateDoc(productRef, {
+      stock: newStock,
+      lastUpdated: serverTimestamp(),
+    });
 
-    const productIndex = products.findIndex((p) => p.id === productId);
-    if (productIndex === -1) return false;
-
-    const currentStock = products[productIndex].stock || 0;
-    const newStock = Math.max(0, currentStock + quantityChange);
-
-    products[productIndex].stock = newStock;
-
-    await fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 2));
-
-    // Log to Firestore for audit trail
-    await logStockChange(productId, products[productIndex].name, quantityChange, reason);
-
+    await logStockChange(productId, product.name, quantityChange, reason, newStock);
     return true;
   } catch (error) {
     console.error("Error updating stock:", error);
@@ -115,7 +79,6 @@ export async function updateProductStock(
   }
 }
 
-// Batch update stock
 export async function batchUpdateStock(
   updates: Array<{ productId: string; quantity: number; reason: string }>
 ): Promise<boolean> {
@@ -130,12 +93,12 @@ export async function batchUpdateStock(
   }
 }
 
-// Log stock changes to Firestore for audit trail
 async function logStockChange(
   productId: string,
   productName: string,
   quantityChange: number,
-  reason: string
+  reason: string,
+  newStock: number
 ): Promise<void> {
   try {
     await addDoc(collection(db, "stock_logs"), {
@@ -143,6 +106,7 @@ async function logStockChange(
       productName,
       quantityChange,
       reason,
+      newStock,
       timestamp: serverTimestamp(),
     });
   } catch (error) {
@@ -150,33 +114,20 @@ async function logStockChange(
   }
 }
 
-// Get stock history
 export async function getStockHistory(productId?: string, limit: number = 50): Promise<any[]> {
   try {
-    let q;
-    if (productId) {
-      q = query(
-        collection(db, "stock_logs"),
-        where("productId", "==", productId)
-      );
-    } else {
-      q = query(collection(db, "stock_logs"));
-    }
+    const stockLogsQuery = productId
+      ? query(collection(db, "stock_logs"), where("productId", "==", productId), orderBy("timestamp", "desc"))
+      : query(collection(db, "stock_logs"), orderBy("timestamp", "desc"));
 
-    const snapshot = await getDocs(q);
-    const logs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return logs.slice(0, limit);
+    const snapshot = await getDocs(stockLogsQuery);
+    return snapshot.docs.slice(0, limit).map((doc) => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error("Error fetching stock history:", error);
     return [];
   }
 }
 
-// Get inventory statistics
 export async function getInventoryStats(): Promise<{
   totalProducts: number;
   totalStock: number;
@@ -185,29 +136,27 @@ export async function getInventoryStats(): Promise<{
   averageStock: number;
 }> {
   const inventory = await getAllInventory();
+  const totalStock = inventory.reduce((sum, item) => sum + item.currentStock, 0);
 
   return {
     totalProducts: inventory.length,
-    totalStock: inventory.reduce((sum, item) => sum + item.currentStock, 0),
+    totalStock,
     lowStockItems: inventory.filter((item) => item.reorderStatus === "low").length,
     outOfStockItems: inventory.filter((item) => item.reorderStatus === "out_of_stock").length,
-    averageStock: Math.round(
-      inventory.reduce((sum, item) => sum + item.currentStock, 0) / inventory.length
-    ),
+    averageStock: inventory.length ? Math.round(totalStock / inventory.length) : 0,
   };
 }
 
-// Helper function to determine reorder status
 function getReorderStatus(stock: number): "sufficient" | "low" | "out_of_stock" {
   if (stock === 0) return "out_of_stock";
   if (stock < 5) return "low";
   return "sufficient";
 }
 
-// Search inventory
-export async function searchInventory(query: string): Promise<InventoryItem[]> {
+export async function searchInventory(searchQuery: string): Promise<InventoryItem[]> {
   const allInventory = await getAllInventory();
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = searchQuery.toLowerCase().trim();
+  if (!lowerQuery) return allInventory;
 
   return allInventory.filter(
     (item) =>

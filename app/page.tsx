@@ -3,8 +3,7 @@ import Footer from "./components/Footer";
 import ProductCard from "./components/ProductCard";
 import Newsletter from "./components/Newsletter";
 import Link from "next/link";
-
-type Product = { id: string; name: string; price: string; image: string; description: string };
+import { fetchNewArrivals, fetchProducts } from "./lib/products";
 
 const categories = [
   {
@@ -49,21 +48,10 @@ const categories = [
   },
 ];
 
-const newArrivals: Product[] = [
-  { id: "1", name: "Ariella Belt", price: "₹8,200", image: "/images/categories/belts.svg", description: "Polished buckle with soft calfskin leather." },
-  { id: "2", name: "Marconi Tote", price: "₹32,500", image: "/images/categories/bags.svg", description: "Structured silhouette for everyday luxury." },
-  { id: "3", name: "Dorian Strap", price: "₹7,950", image: "/images/categories/belts.svg", description: "Textured belt made to elevate any look." },
-  { id: "4", name: "Nara Crossbody", price: "₹28,400", image: "/images/categories/bags.svg", description: "Compact yet roomy for daily essentials." },
-];
+export default async function Home() {
+  const newArrivals = await fetchNewArrivals(4);
+  const featuredProducts = (await fetchProducts()).slice(0, 4);
 
-const bestSellers: Product[] = [
-  { id: "5", name: "Milan Waist Belt", price: "₹10,200", image: "/images/categories/belts.svg", description: "Timeless piece with a refined finish." },
-  { id: "6", name: "Verde Shoulder Bag", price: "₹35,900", image: "/images/categories/bags.svg", description: "Versatile and elegant for all occasions." },
-  { id: "7", name: "Luna Leather Belt", price: "₹9,150", image: "/images/categories/belts.svg", description: "Clean lines and premium craftsmanship." },
-  { id: "8", name: "Ari Crossbody", price: "₹27,600", image: "/images/categories/bags.svg", description: "Sleek hardware and soft leather construction." },
-];
-
-export default function Home() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <Header />
@@ -136,25 +124,53 @@ export default function Home() {
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">New Arrivals</p>
               <h2 className="mt-3 text-3xl font-semibold text-slate-950">Fresh leather goods for the season.</h2>
             </div>
-            <p className="max-w-xl text-sm text-slate-600">Shop the latest belt and bag styles with premium finishes and modern silhouettes.</p>
+            <p className="max-w-xl text-sm text-slate-600">Shop the newest products added to our Firestore catalog.</p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {newArrivals.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {newArrivals.length === 0 ? (
+              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-slate-600">No products available.</div>
+            ) : (
+              newArrivals.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: `₹${product.price.toLocaleString("en-IN")}`,
+                    image: product.mainImage ?? product.images?.[0] ?? "",
+                    description: product.description,
+                    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+                  }}
+                />
+              ))
+            )}
           </div>
         </section>
 
-        <section id="best-sellers" className="max-w-7xl mx-auto px-6 py-16">
+        <section id="featured" className="max-w-7xl mx-auto px-6 py-16">
           <div className="mb-10 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Best Sellers</p>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Customer favorites, refined for every wardrobe.</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Featured</p>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Featured Firestore products</h2>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {bestSellers.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {featuredProducts.length === 0 ? (
+              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-slate-600">No products available.</div>
+            ) : (
+              featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: `₹${product.price.toLocaleString("en-IN")}`,
+                    image: product.mainImage ?? product.images?.[0] ?? "",
+                    description: product.description,
+                    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+                  }}
+                />
+              ))
+            )}
           </div>
         </section>
 

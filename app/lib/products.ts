@@ -6,7 +6,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -44,6 +43,16 @@ function createSlug(value: string) {
 
 function normalizeProduct(docSnap: DocumentData): ProductRecord {
   const data = docSnap.data();
+  const createdAtValue = data.createdAt;
+  const lastUpdatedValue = data.lastUpdated;
+
+  const normalizeTimestamp = (value: any) => {
+    if (value?.toMillis) return value.toMillis();
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "number") return value;
+    return null;
+  };
+
   return {
     id: docSnap.id,
     name: String(data.name ?? ""),
@@ -56,19 +65,38 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     mainImage: String(data.mainImage ?? ""),
     images: Array.isArray(data.images) ? data.images.map((item: any) => String(item ?? "")) : [],
     slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
-    createdAt: data.createdAt ?? null,
-    lastUpdated: data.lastUpdated ?? null,
+    createdAt: normalizeTimestamp(createdAtValue),
+    lastUpdated: normalizeTimestamp(lastUpdatedValue),
     sizes: Array.isArray(data.sizes) ? data.sizes.map((item: any) => String(item ?? "")) : undefined,
     colors: Array.isArray(data.colors) ? data.colors.map((item: any) => String(item ?? "")) : undefined,
     rating: data.rating != null ? Number(data.rating) : undefined,
   };
 }
 
-export async function fetchProducts(): Promise<ProductRecord[]> {
+function productTimestampMs(product: ProductRecord) {
+  const timestamp = product.createdAt;
+  if (timestamp?.toMillis) return timestamp.toMillis();
+  if (timestamp instanceof Date) return timestamp.getTime();
+  return 0;
+}
+
+function sortByCreatedAtDesc(a: ProductRecord, b: ProductRecord) {
+  return productTimestampMs(b) - productTimestampMs(a);
+}
+
+export async function fetchAllProducts(): Promise<ProductRecord[]> {
   const productsRef = collection(db, "products");
-  const productsQuery = query(productsRef, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(productsQuery);
-  return snapshot.docs.map(normalizeProduct);
+  const snapshot = await getDocs(productsRef);
+  return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
+}
+
+export async function fetchProducts(activeOnly: boolean = true): Promise<ProductRecord[]> {
+  const productsRef = collection(db, "products");
+  const snapshot = activeOnly
+    ? await getDocs(query(productsRef, where("active", "==", true)))
+    : await getDocs(productsRef);
+  const products = snapshot.docs.map(normalizeProduct);
+  return products.sort(sortByCreatedAtDesc);
 }
 
 export async function fetchProductById(id: string): Promise<ProductRecord | null> {
@@ -80,16 +108,33 @@ export async function fetchProductById(id: string): Promise<ProductRecord | null
 
 export async function fetchProductsByCategory(category: string): Promise<ProductRecord[]> {
   const productsRef = collection(db, "products");
-  const productsQuery = query(productsRef, where("category", "==", category));
-  const snapshot = await getDocs(productsQuery);
-  const results = snapshot.docs.map(normalizeProduct);
+  const categoryQuery = query(productsRef, where("category", "==", category), where("active", "==", true));
+  const snapshot = await getDocs(categoryQuery);
+  return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
+}
 
-  return results
-    .sort((a, b) => {
-      const aTime = a.createdAt?.toMillis?.() ?? (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-      const bTime = b.createdAt?.toMillis?.() ?? (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-      return bTime - aTime;
-    });
+export async function fetchSaleProducts(limit: number = 12): Promise<ProductRecord[]> {
+  const productsRef = collection(db, "products");
+  const saleQuery = query(productsRef, where("discountPercent", ">", 0), where("active", "==", true));
+  const snapshot = await getDocs(saleQuery);
+  return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc).slice(0, limit);
+}
+
+export async function fetchNewArrivals(limit: number = 12): Promise<ProductRecord[]> {
+  const products = await fetchProducts();
+  return products.slice(0, limit);
+}
+
+export async function searchProducts(term: string): Promise<ProductRecord[]> {
+  const products = await fetchProducts();
+  const queryTerm = term.trim().toLowerCase();
+  if (!queryTerm) return products;
+
+  return products.filter((product) =>
+    [product.name, product.category, product.description, product.slug]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(queryTerm))
+  );
 }
 
 export async function createProduct(payload: Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated">) {
@@ -100,7 +145,7 @@ export async function createProduct(payload: Omit<ProductRecord, "id" | "slug" |
     lastUpdated: serverTimestamp(),
   };
   const docRef = await addDoc(collection(db, "products"), data);
-  return { id: docRef.id, ...payload, slug: createSlug(payload.name), createdAt: data.createdAt, lastUpdated: data.lastUpdated };
+  return { id: docRef.id, ...payload, slug: data.slug };
 }
 
 export async function updateProduct(id: string, payload: Partial<Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated">>) {

@@ -1,8 +1,40 @@
 import { NextResponse } from 'next/server';
 import { createProduct, deleteProductById, fetchProducts, updateProduct } from '@/app/lib/products';
 
-export async function GET() {
-  const products = await fetchProducts();
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const category = url.searchParams.get("category")?.trim() || undefined;
+  const search = url.searchParams.get("search")?.trim() || undefined;
+  const discount = url.searchParams.get("discount") === "true";
+  const sort = url.searchParams.get("sort")?.trim() || "newest";
+
+  let products = await fetchProducts();
+
+  if (category) {
+    products = products.filter((product) => product.category === category);
+  }
+
+  if (discount) {
+    products = products.filter((product) => product.discountPercent > 0);
+  }
+
+  if (search) {
+    const searchTerm = search.toLowerCase();
+    products = products.filter((product) =>
+      [product.name, product.category, product.description, product.slug]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (sort === "price_asc") {
+    products = products.sort((a, b) => a.price - b.price);
+  } else if (sort === "price_desc") {
+    products = products.sort((a, b) => b.price - a.price);
+  } else {
+    products = products.sort((a, b) => a.createdAt - b.createdAt);
+  }
+
   return NextResponse.json(products);
 }
 
