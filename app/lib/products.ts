@@ -1,6 +1,5 @@
 import { db } from "./firebase";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -8,6 +7,7 @@ import {
   getDocs,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
   DocumentData,
@@ -20,10 +20,12 @@ export interface ProductRecord {
   price: number;
   stock: number;
   discountPercent: number;
+  discount: number;
   active: boolean;
   description: string;
   mainImage: string;
   images: string[];
+  galleryImages: string[];
   slug: string;
   createdAt: any;
   lastUpdated: any;
@@ -31,6 +33,13 @@ export interface ProductRecord {
   colors?: string[];
   rating?: number;
 }
+
+export type ProductSavePayload = Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated" | "galleryImages" | "images" | "discount" | "discountPercent"> & {
+  galleryImages?: string[];
+  images?: string[];
+  discount?: number;
+  discountPercent?: number;
+};
 
 function createSlug(value: string) {
   return String(value)
@@ -53,17 +62,26 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     return null;
   };
 
+  const galleryImages = Array.isArray(data.galleryImages)
+    ? data.galleryImages.map((item: any) => String(item ?? ""))
+    : Array.isArray(data.images)
+      ? data.images.map((item: any) => String(item ?? ""))
+      : [];
+  const discountValue = Number(data.discount ?? data.discountPercent ?? 0) || 0;
+
   return {
     id: docSnap.id,
     name: String(data.name ?? ""),
     category: String(data.category ?? ""),
     price: Number(data.price ?? 0),
     stock: Number(data.stock ?? 0),
-    discountPercent: Number(data.discountPercent ?? 0),
+    discountPercent: discountValue,
+    discount: discountValue,
     active: data.active !== false,
     description: String(data.description ?? ""),
     mainImage: String(data.mainImage ?? ""),
-    images: Array.isArray(data.images) ? data.images.map((item: any) => String(item ?? "")) : [],
+    images: galleryImages,
+    galleryImages,
     slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
     createdAt: normalizeTimestamp(createdAtValue),
     lastUpdated: normalizeTimestamp(lastUpdatedValue),
@@ -137,23 +155,57 @@ export async function searchProducts(term: string): Promise<ProductRecord[]> {
   );
 }
 
-export async function createProduct(payload: Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated">) {
+export async function createProduct(payload: ProductSavePayload) {
+  const docRef = doc(collection(db, "products"));
+  const galleryImages = Array.isArray(payload.galleryImages)
+    ? payload.galleryImages
+    : Array.isArray(payload.images)
+      ? payload.images
+      : [];
+  const discountValue = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
   const data = {
     ...payload,
+    id: docRef.id,
     slug: createSlug(payload.name),
     createdAt: serverTimestamp(),
     lastUpdated: serverTimestamp(),
+    galleryImages,
+    images: galleryImages,
+    discount: discountValue,
+    discountPercent: discountValue,
   };
-  const docRef = await addDoc(collection(db, "products"), data);
-  return { id: docRef.id, ...payload, slug: data.slug };
+  await setDoc(docRef, data);
+  return { id: docRef.id, ...payload, slug: data.slug, galleryImages, images: galleryImages, discount: discountValue, discountPercent: discountValue };
 }
 
-export async function updateProduct(id: string, payload: Partial<Omit<ProductRecord, "id" | "slug" | "createdAt" | "lastUpdated">>) {
+export async function updateProduct(
+  id: string,
+  payload: Partial<ProductSavePayload>
+) {
   const productRef = doc(db, "products", id);
+  const galleryImages = Array.isArray(payload.galleryImages)
+    ? payload.galleryImages
+    : Array.isArray(payload.images)
+      ? payload.images
+      : undefined;
+  const discountValue = payload.discount ?? payload.discountPercent;
+
   const updatePayload: Record<string, unknown> = {
     ...payload,
     lastUpdated: serverTimestamp(),
   };
+
+  if (galleryImages !== undefined) {
+    updatePayload.galleryImages = galleryImages;
+    updatePayload.images = galleryImages;
+  }
+
+  if (discountValue !== undefined) {
+    const discountNumber = Number(discountValue) || 0;
+    updatePayload.discount = discountNumber;
+    updatePayload.discountPercent = discountNumber;
+  }
+
   if (payload.name) {
     updatePayload.slug = createSlug(payload.name);
   }

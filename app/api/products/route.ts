@@ -51,13 +51,19 @@ export async function POST(req: Request) {
     stock: Number(body.stock) || 0,
     mainImage: String(body.mainImage ?? '').trim(),
     images: Array.isArray(body.images) ? body.images.map((item: any) => String(item ?? '').trim()) : [],
+    galleryImages: Array.isArray(body.galleryImages) ? body.galleryImages.map((item: any) => String(item ?? '').trim()) : undefined,
     description: String(body.description ?? '').trim(),
     discountPercent: Number(body.discountPercent) || 0,
     active: body.active !== false,
   };
 
-  const createdProduct = await createProduct(payload);
-  return NextResponse.json(createdProduct);
+  try {
+    const createdProduct = await createProduct(payload);
+    return NextResponse.json(createdProduct);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Firebase error while saving product.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function PUT(req: Request) {
@@ -73,12 +79,20 @@ export async function PUT(req: Request) {
     stock: body.stock !== undefined ? Number(body.stock) || 0 : undefined,
     mainImage: body.mainImage !== undefined ? String(body.mainImage ?? '').trim() : undefined,
     images: Array.isArray(body.images) ? body.images.map((item: any) => String(item ?? '').trim()) : undefined,
+    galleryImages: Array.isArray(body.galleryImages) ? body.galleryImages.map((item: any) => String(item ?? '').trim()) : undefined,
     description: body.description !== undefined ? String(body.description ?? '').trim() : undefined,
     discountPercent: body.discountPercent !== undefined ? Number(body.discountPercent) || 0 : undefined,
+    discount: body.discount !== undefined ? Number(body.discount) || 0 : undefined,
     active: body.active !== undefined ? body.active !== false : undefined,
   };
-  await updateProduct(String(body.id), payload as any);
-  return NextResponse.json({ success: true });
+
+  try {
+    await updateProduct(String(body.id), payload as any);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Firebase error while updating product.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: Request) {
@@ -88,6 +102,11 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'missing id' }, { status: 400 });
   }
 
-  await deleteProductById(id);
-  return NextResponse.json({ success: true });
+  try {
+    await deleteProductById(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Firebase error while deleting product.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
