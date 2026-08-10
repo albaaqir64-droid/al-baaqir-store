@@ -3,6 +3,7 @@ import Footer from "../../components/Footer";
 import ProductDetailClient from "./ProductDetailClient";
 import { fetchProductById } from "../../lib/products";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Props = {
   params: any;
 };

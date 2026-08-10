@@ -1,4 +1,5 @@
 import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
+import type { ServiceAccount } from "firebase-admin";
 import { getStorage } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
@@ -55,9 +56,8 @@ function createAdminApp() {
     authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
     clientX509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
   };
-
   return initializeApp({
-    credential: cert(serviceAccount as any),
+    credential: cert(serviceAccount as unknown as ServiceAccount),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }

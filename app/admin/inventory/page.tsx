@@ -39,6 +39,7 @@ export default function InventoryAdminPage() {
   const [updateMessage, setUpdateMessage] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadInventory();
     loadStats();
