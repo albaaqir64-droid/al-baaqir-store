@@ -15,9 +15,20 @@ type ProductForm = {
   stock: string;
   discountPercent: string;
   active: boolean;
+  featured: boolean;
 };
 
-const CATEGORIES = ["Men", "Women", "Belts", "Bags", "Kurti", "Karachi Suit", "Earrings", "Jhumka", "New Arrivals", "Sale"];
+const CATEGORIES = [
+  "Belts",
+  "Bags",
+  "Kurti",
+  "Shirts",
+  "T-Shirts",
+  "Jeans",
+  "Women",
+  "Men",
+  "Other",
+];
 
 const initialForm: ProductForm = {
   name: "",
@@ -29,6 +40,7 @@ const initialForm: ProductForm = {
   stock: "0",
   discountPercent: "0",
   active: true,
+  featured: false,
 };
 
 export default function AdminProductsPage() {
@@ -123,16 +135,35 @@ export default function AdminProductsPage() {
     setSaving(true);
 
     const payload = {
-      name: form.name,
-      category: form.category,
+      name: form.name.trim(),
+      category: form.category.trim() || 'Other',
       price: Number(form.price || 0),
       mainImage: form.mainImage,
       images: form.images,
-      description: form.description,
+      description: form.description.trim(),
       stock: Number(form.stock || 0),
       discountPercent: Number(form.discountPercent || 0),
       active: form.active,
+      featured: form.featured,
     };
+
+    if (!payload.name) {
+      setErrorMessage('Product name is required.');
+      setSaving(false);
+      return;
+    }
+
+    if (payload.price <= 0) {
+      setErrorMessage('Product price must be greater than zero.');
+      setSaving(false);
+      return;
+    }
+
+    if (!payload.category) {
+      setErrorMessage('Product category is required.');
+      setSaving(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/products', {
@@ -167,6 +198,7 @@ export default function AdminProductsPage() {
       stock: String(p.stock || 0),
       discountPercent: String(p.discountPercent || 0),
       active: p.active !== false,
+      featured: p.featured === true,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -291,6 +323,11 @@ export default function AdminProductsPage() {
           <div className="flex items-center gap-2">
             <input id="active" type="checkbox" checked={form.active} onChange={(e) => updateField('active', e.target.checked)} />
             <label htmlFor="active" className="text-sm">Active</label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input id="featured" type="checkbox" checked={form.featured} onChange={(e) => updateField('featured', e.target.checked)} />
+            <label htmlFor="featured" className="text-sm">Featured</label>
           </div>
 
           <div className="md:col-span-2">

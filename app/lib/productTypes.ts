@@ -16,6 +16,7 @@ export interface ProductRecord {
   lastUpdated: any;
   sizes?: string[];
   colors?: string[];
+  featured: boolean;
   rating?: number;
 }
 

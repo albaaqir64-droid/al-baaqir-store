@@ -4,12 +4,11 @@ import ProductDetailClient from "./ProductDetailClient";
 import { fetchProductById } from "../../lib/products";
 
 type Props = {
-  params: { id: string | string[] } | Promise<{ id: string | string[] }>;
+  params: any;
 };
 
 export default async function Page({ params }: Props) {
-  const resolvedParams = await params;
-  const idValue = resolvedParams?.id;
+  const idValue = params?.id;
   const id = Array.isArray(idValue) ? idValue[0] : idValue;
   const product = id ? await fetchProductById(id) : null;
 

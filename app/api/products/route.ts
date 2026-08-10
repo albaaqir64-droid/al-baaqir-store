@@ -80,6 +80,7 @@ export async function POST(req: Request) {
       description: String(body.description ?? '').trim(),
       discountPercent: Number(body.discountPercent) || 0,
       active: body.active !== false,
+      featured: body.featured === true,
     };
 
     try {
@@ -111,7 +112,7 @@ export async function PUT(req: Request) {
     }
 
     if (!body?.id) {
-      return NextResponse.json({ error: 'Product id is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Product id is required' }, { status: 400 });
     }
 
     const payload = {
@@ -126,6 +127,7 @@ export async function PUT(req: Request) {
       discountPercent: body.discountPercent !== undefined ? Number(body.discountPercent) || 0 : undefined,
       discount: body.discount !== undefined ? Number(body.discount) || 0 : undefined,
       active: body.active !== undefined ? body.active !== false : undefined,
+      featured: body.featured !== undefined ? body.featured === true : undefined,
     };
 
     try {
@@ -133,7 +135,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ success: true });
     } catch (error) {
       console.error('Firebase update error in PUT /api/products:', error);
-      return NextResponse.json(formatError(error), { status: 500 });
+      return NextResponse.json({ success: false, ...formatError(error) }, { status: 500 });
     }
   } catch (error) {
     console.error('Unexpected error in PUT /api/products:', error);

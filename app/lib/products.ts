@@ -109,6 +109,7 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     discountPercent: discountValue,
     discount: discountValue,
     active: data.active !== false,
+    featured: data.featured === true,
     description: String(data.description ?? ""),
     mainImage: String(data.mainImage ?? ""),
     images: galleryImages,
@@ -212,6 +213,7 @@ export async function createProduct(payload: ProductSavePayload) {
     images: uploadedGalleryImages,
     discount: discountValue,
     discountPercent: discountValue,
+    featured: payload.featured === true,
   };
   await setDoc(docRef, data);
   return {
@@ -263,6 +265,10 @@ export async function updateProduct(
     const discountNumber = Number(discountValue) || 0;
     updatePayload.discount = discountNumber;
     updatePayload.discountPercent = discountNumber;
+  }
+
+  if (payload.featured !== undefined) {
+    updatePayload.featured = payload.featured;
   }
 
   if (payload.name) {
