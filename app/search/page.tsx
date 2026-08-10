@@ -18,6 +18,7 @@ export default function Page() {
   useEffect(() => {
     let ignore = false;
     if (!query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       return;
     }

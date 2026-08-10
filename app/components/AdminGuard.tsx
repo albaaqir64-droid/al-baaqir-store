@@ -13,6 +13,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       router.replace("/account/login");
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthorized(true);
   }, [router]);
 

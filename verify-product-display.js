@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fetch = globalThis.fetch || require('node-fetch');
 const productName = 'Bot Men Product Display';
 const body = {

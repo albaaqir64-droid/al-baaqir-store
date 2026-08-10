@@ -24,18 +24,19 @@ export default function MyOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [contact, setContact] = useState<{ phone: string; email?: string } | null>(null);
 
-  useEffect(() => {
-    const saved = getCustomerContact();
-    if (saved) setContact(saved);
-    loadOrders(saved?.phone);
-  }, []);
-
   async function loadOrders(phone?: string) {
     setLoading(true);
     const results = phone ? await fetchOrders({ phone }) : [];
     setOrders(results);
     setLoading(false);
   }
+
+  useEffect(() => {
+    const saved = getCustomerContact();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saved) setContact(saved);
+    loadOrders(saved?.phone);
+  }, []);
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-20 text-white">

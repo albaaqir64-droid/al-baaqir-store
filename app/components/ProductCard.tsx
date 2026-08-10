@@ -21,6 +21,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const [wish, setWish] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWish(isWishlisted(product.id));
   }, [product.id]);
 

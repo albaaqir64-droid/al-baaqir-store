@@ -44,7 +44,7 @@ export default function InventoryAdminPage() {
     loadStats();
   }, []);
 
-  const loadInventory = async () => {
+  async function loadInventory() {
     try {
       setLoading(true);
       const response = await fetch("/api/inventory", {
@@ -62,9 +62,9 @@ export default function InventoryAdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const loadStats = async () => {
+  async function loadStats() {
     try {
       const response = await fetch("/api/inventory", {
         method: "POST",
@@ -79,7 +79,7 @@ export default function InventoryAdminPage() {
     } catch (error) {
       console.error("Error loading stats:", error);
     }
-  };
+  }
 
   const filteredInventory = useMemo(() => {
     let filtered = inventory;

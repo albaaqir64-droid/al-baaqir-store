@@ -26,6 +26,16 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
   const allImages = Array.from(new Set([product.mainImage ?? product.images?.[0], ...(product.images ?? [])].filter(Boolean)));
 
+  function seededReviewsCount(id: string | undefined) {
+    if (!id) return 20;
+    let h = 2166136261;
+    for (let i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    return (Math.abs(h) % 200) + 20;
+  }
+
   function formatINR(amount: number) {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   }
@@ -83,7 +93,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <div className="flex items-center text-amber-500">{Array.from({ length: 5 }).map((_, i) => (
               <svg key={i} className="h-4 w-4" viewBox="0 0 24 24" fill={i < Math.round(product.rating ?? 0) ? 'currentColor' : 'none'} stroke="currentColor"><path d="M12 .587l3.668 7.431L23.4 9.75l-5.7 5.566L19.335 24 12 19.897 4.665 24l1.635-8.684L.6 9.75l7.732-1.732z"/></svg>
             ))}</div>
-            <div className="text-sm text-slate-600">{product.rating ?? '—'} · {Math.floor(Math.random() * 200) + 20} reviews</div>
+            <div className="text-sm text-slate-600">{product.rating ?? '—'} · {seededReviewsCount(product.id)} reviews</div>
           </div>
 
           <div className="mt-4 flex items-end gap-4">
