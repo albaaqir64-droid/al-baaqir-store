@@ -3,8 +3,9 @@ import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import Link from "next/link";
 import { fetchProductsByCategory } from "../lib/products";
+import type { ProductRecord } from "../lib/productTypes";
 
-function toCard(product: any) {
+function toCard(product: ProductRecord) {
   return {
     id: product.id,
     name: product.name,
@@ -26,7 +27,7 @@ export default async function Page() {
         <div className="mb-8 flex items-center justify-between gap-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Women</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">Women's collection</h1>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-950">Women&apos;s collection</h1>
             <p className="mt-3 text-sm text-slate-600">Elegant bags and belts designed for her.</p>
           </div>
           <div className="flex items-center gap-3">

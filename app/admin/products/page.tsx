@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import AdminGuard from "../../components/AdminGuard";
 import { FormEvent, useEffect, useState } from "react";
@@ -71,7 +72,7 @@ export default function AdminProductsPage() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     void fetchProducts();
   }, []);

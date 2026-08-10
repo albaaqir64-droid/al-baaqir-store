@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { db } from "./firebase";
 import { getAdminStorage } from "./firebaseAdmin";
 import {

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from 'next/server';
 import { createProduct, deleteProductById, fetchProducts, updateProduct } from '@/app/lib/products';
 

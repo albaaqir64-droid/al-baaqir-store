@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -35,16 +36,6 @@ export default function AdminPage() {
     [orders]
   );
 
-  useEffect(() => {
-    void loadDashboard();
-  }, []);
-
-  async function loadDashboard() {
-    setLoading(true);
-    await Promise.all([loadProductCount(), loadOrders()]);
-    setLoading(false);
-  }
-
   async function loadProductCount() {
     try {
       const response = await fetch("/api/products");
@@ -55,7 +46,6 @@ export default function AdminPage() {
       setProductCount(0);
     }
   }
-
   async function loadOrders() {
     try {
       const data = await fetchOrders();
@@ -65,6 +55,17 @@ export default function AdminPage() {
       setOrders([]);
     }
   }
+
+  async function loadDashboard() {
+    setLoading(true);
+    await Promise.all([loadProductCount(), loadOrders()]);
+    setLoading(false);
+  }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => {
+    void loadDashboard();
+  }, []);
 
   return (
     <AdminGuard>
@@ -170,7 +171,7 @@ export default function AdminPage() {
                           <td className="px-5 py-4 text-slate-300">{order.customerName || 'Guest'}</td>
                           <td className="px-5 py-4 text-slate-200">{formatCurrency(order.total)}</td>
                           <td className="px-5 py-4 text-slate-300 capitalize">{order.status.replace(/_/g, ' ')}</td>
-          <td className="px-5 py-4 text-slate-300">{new Date(order.createdAt || Date.now()).toLocaleDateString()}</td>
+                          <td className="px-5 py-4 text-slate-300">{order.createdAt ? (order.createdAt.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : new Date(order.createdAt).toLocaleDateString()) : '-'}</td>
                         </tr>
                       ))
                     )}

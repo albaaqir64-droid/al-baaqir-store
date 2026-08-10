@@ -229,7 +229,7 @@ export default function InventoryAdminPage() {
                 <select
                   value={filter}
                   onChange={(e) => {
-                    setFilter(e.target.value as any);
+                    setFilter(e.target.value as "all" | "low" | "out_of_stock");
                     setPage(1);
                   }}
                   className="rounded-full border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/20"
@@ -378,7 +378,7 @@ export default function InventoryAdminPage() {
           {/* Info Box */}
           <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6">
             <p className="text-sm text-slate-400">
-              💡 <strong>Tip:</strong> Click "Edit" to adjust stock quantities. Low stock items are automatically flagged when stock falls below 5 units.
+              💡 <strong>Tip:</strong> Click &quot;Edit&quot; to adjust stock quantities. Low stock items are automatically flagged when stock falls below 5 units.
             </p>
           </div>
         </div>

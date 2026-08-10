@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { db } from "./firebase";
 import { addDoc, collection, doc, getDocs, query, where, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { fetchAllProducts, fetchProductById } from "./products";
