@@ -6,59 +6,123 @@ import path from "path";
 
 let adminApp: ReturnType<typeof initializeApp> | null = null;
 
-function tryLoadServiceAccountFromFile() {
-  const configuredPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  const defaultPath = path.join(process.cwd(), "service-account.json");
-  const candidate = configuredPath || defaultPath;
+type ServiceAccountJson = Partial<ServiceAccount> & {
+  project_id?: string;
+  private_key?: string;
+  client_email?: string;
+  storageBucket?: string;
+};
+
+function resolveServiceAccountPath() {
+  const configuredPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
+  if (!configuredPath) return null;
+  return path.resolve(process.cwd(), configuredPath);
+}
+
+function loadServiceAccountFromFile(): ServiceAccountJson | null {
+  const serviceAccountPath = resolveServiceAccountPath();
+  if (!serviceAccountPath) return null;
+
+  if (!fs.existsSync(serviceAccountPath)) {
+    console.error(`Firebase service account file not found: ${serviceAccountPath}`);
+    return null;
+  }
+
   try {
-    if (!fs.existsSync(candidate)) return false;
-    const raw = fs.readFileSync(candidate, { encoding: "utf8" });
-    const parsed = JSON.parse(raw);
-    // Only set env vars if they are not already provided
-    const projectId = parsed.project_id || parsed.projectId;
-    process.env.FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || projectId;
-    process.env.FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY || parsed.private_key;
-    process.env.FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL || parsed.client_email || parsed.clientEmail;
-    // storage bucket may not be present in the service account; leave existing or infer from the project id
-    process.env.FIREBASE_STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || parsed.storageBucket || parsed.bucket || (projectId ? `${projectId}.firebasestorage.app` : undefined);
-    return true;
+    const raw = fs.readFileSync(serviceAccountPath, "utf8");
+    return JSON.parse(raw) as ServiceAccountJson;
   } catch (err) {
-    // do not expose private key or file contents in logs
-    console.error("Could not load service account JSON:", (err && (err as Error).message) || String(err));
-    return false;
+    console.error("Could not parse Firebase service account JSON:", (err && (err as Error).message) || String(err));
+    return null;
   }
 }
 
-function createAdminApp() {
-  // attempt to load a local service-account JSON file if present
-  tryLoadServiceAccountFromFile();
+function applyServiceAccountToEnv(parsed: ServiceAccountJson | null) {
+  if (!parsed) return;
+  try {
+    const projectId = parsed.project_id || parsed.projectId;
+    if (projectId && !process.env.FIREBASE_PROJECT_ID) {
+      process.env.FIREBASE_PROJECT_ID = String(projectId);
+    }
+    if (parsed.private_key && !process.env.FIREBASE_PRIVATE_KEY) {
+      process.env.FIREBASE_PRIVATE_KEY = String(parsed.private_key);
+    }
+    if (parsed.client_email && !process.env.FIREBASE_CLIENT_EMAIL) {
+      process.env.FIREBASE_CLIENT_EMAIL = String(parsed.client_email);
+    }
+    const bucket = parsed.storageBucket || parsed.storageBucket || (projectId ? `${projectId}.firebasestorage.app` : undefined);
+    if (bucket && !process.env.FIREBASE_STORAGE_BUCKET) {
+      process.env.FIREBASE_STORAGE_BUCKET = String(bucket);
+    }
+  } catch (e) {
+    // don't crash here; best-effort only
+  }
+}
 
-  const requiredEnv = [
-    "FIREBASE_PROJECT_ID",
-    "FIREBASE_PRIVATE_KEY",
-    "FIREBASE_CLIENT_EMAIL",
-    "FIREBASE_STORAGE_BUCKET",
-  ];
+function createServiceAccountFromEnv(): ServiceAccount | null {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-  const missing = requiredEnv.filter((key) => !process.env[key]);
-  if (missing.length) {
-    throw new Error(`Missing Firebase admin env vars: ${missing.join(", ")}`);
+  if (!projectId || !privateKey || !clientEmail) {
+    return null;
   }
 
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  return {
+    projectId,
+    privateKey: privateKey.replace(/\\n/g, "\n"),
+    clientEmail,
     clientId: process.env.FIREBASE_CLIENT_ID,
     authUri: "https://accounts.google.com/o/oauth2/auth",
     tokenUri: "https://oauth2.googleapis.com/token",
     authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
     clientX509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-  };
+  } as ServiceAccount;
+}
+
+function getStorageBucket(serviceAccount: ServiceAccountJson | null): string {
+  const explicitBucket = process.env.FIREBASE_STORAGE_BUCKET?.trim();
+  if (explicitBucket) {
+    return explicitBucket;
+  }
+
+  const bucketFromServiceAccount = serviceAccount?.storageBucket;
+  if (bucketFromServiceAccount) {
+    return bucketFromServiceAccount;
+  }
+
+  const projectId = serviceAccount?.project_id || serviceAccount?.projectId;
+  if (projectId) {
+    return `${projectId}.firebasestorage.app`;
+  }
+
+  throw new Error("Missing Firebase storage bucket. Set FIREBASE_STORAGE_BUCKET or include storageBucket / project_id in the service account JSON.");
+}
+
+function createAdminApp() {
+  const serviceAccountFromFile = loadServiceAccountFromFile();
+  // If a service account JSON is present, populate server-side env vars so
+  // other server modules that expect env vars will see them (keeps creds server-side).
+  if (serviceAccountFromFile) {
+    applyServiceAccountToEnv(serviceAccountFromFile);
+  }
+  const serviceAccount = serviceAccountFromFile || createServiceAccountFromEnv();
+
+  if (!serviceAccount) {
+    const filePath = resolveServiceAccountPath();
+    if (filePath) {
+      throw new Error(`Missing Firebase admin credentials. Service account path is set to ${filePath}, but the file could not be loaded.`);
+    }
+    throw new Error(
+      "Missing Firebase admin credentials. Set FIREBASE_SERVICE_ACCOUNT_PATH to a valid service account JSON file, or provide FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL as server-side environment variables."
+    );
+  }
+
+  const storageBucket = getStorageBucket(serviceAccountFromFile || serviceAccount);
+
   return initializeApp({
-    credential: cert(serviceAccount as unknown as ServiceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    credential: cert(serviceAccount as ServiceAccount),
+    storageBucket,
   });
 }
 

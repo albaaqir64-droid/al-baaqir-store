@@ -5,10 +5,13 @@ import ProductDetailClient from "./ProductDetailClient";
 import { fetchProductById } from "../../lib/products";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Props = any;
+type Props = {
+  params: Promise<{ id?: string | string[] }>;
+};
 
 export default async function Page({ params }: Props) {
-  const idValue = params?.id;
+  const resolvedParams = await params;
+  const idValue = resolvedParams?.id;
   const id = Array.isArray(idValue) ? idValue[0] : idValue;
   const product = id ? await fetchProductById(id) : null;
 

@@ -131,11 +131,21 @@ export default function CheckoutPage() {
     // Ensure pincode maps to city/state and matches user input (or autofill if blank)
     try {
       const location = await fetchPincodeLocation(form.pincode.trim());
-      // If user has manually entered city/state, ensure they match the pincode lookup
+      // If user has manually entered city/state, ensure they match the pincode lookup.
+      // Allow flexible matching: accept 'Delhi' or 'New Delhi' when API returns
+      // district/division that include 'Delhi'.
       if (form.city.trim() && form.state.trim()) {
-        const cityMatch = String(location.city || "").trim().toLowerCase();
-        const stateMatch = String(location.state || "").trim().toLowerCase();
-        if (cityMatch !== form.city.trim().toLowerCase() || stateMatch !== form.state.trim().toLowerCase()) {
+        const expectedCity = String(location.city || "").trim().toLowerCase();
+        const expectedDistrict = String(location.district || "").trim().toLowerCase();
+        const expectedDivision = String((location as any).division || "").trim().toLowerCase();
+        const enteredCity = form.city.trim().toLowerCase();
+        const enteredState = form.state.trim().toLowerCase();
+        const expectedState = String(location.state || "").trim().toLowerCase();
+
+        const cityMatches = enteredCity === expectedCity || enteredCity === expectedDistrict || enteredCity === expectedDivision || (enteredCity.includes('delhi') && (expectedCity.includes('delhi') || expectedDistrict.includes('delhi') || expectedDivision.includes('delhi')));
+        const stateMatches = enteredState === expectedState || (enteredState.includes('delhi') && expectedState.includes('delhi'));
+
+        if (!cityMatches || !stateMatches) {
           setErrors((current) => ({ ...current, pincode: "Pincode does not match entered city/state. Use Auto-fill or correct the fields." }));
           setSubmitting(false);
           return;

@@ -2,36 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateInvoicePDF } from "@/app/lib/invoice";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/app/lib/email";
 import { fetchOrderById } from "@/app/lib/orders";
-import { initializeApp, cert } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
+import { getAdminApp, getAdminStorage } from "@/app/lib/firebaseAdmin";
 import { getFirestore } from "firebase-admin/firestore";
-import type { ServiceAccount } from "firebase-admin";
-
-// Initialize Firebase Admin if not already initialized
-let adminApp: ReturnType<typeof initializeApp> | null = null;
-
-function getAdminApp() {
-  if (adminApp) return adminApp;
-
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    clientId: process.env.FIREBASE_CLIENT_ID,
-    authUri: "https://accounts.google.com/o/oauth2/auth",
-    tokenUri: "https://oauth2.googleapis.com/token",
-    authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
-    clientX509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-  };
-
-  adminApp = initializeApp({
-    credential: cert(serviceAccount as unknown as ServiceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  });
-
-  return adminApp;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,9 +33,8 @@ export async function POST(request: NextRequest) {
       storeGST: "18AAPFU5055K1Z0",
     });
 
-    // Upload to Firebase Storage
-    const adminApp = getAdminApp();
-    const bucket = getStorage(adminApp).bucket();
+    // Upload to Firebase Storage using shared admin helpers
+    const bucket = getAdminStorage().bucket();
     const filename = `invoices/${orderId}/${invoiceNumber}.pdf`;
     const file = bucket.file(filename);
 
@@ -81,7 +52,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update order with invoice number and URL in Firestore
-    const db = getFirestore(adminApp);
+    const db = getFirestore(getAdminApp());
     await db.collection("orders").doc(orderId).update({
       invoiceNumber,
       invoiceUrl: downloadUrl,

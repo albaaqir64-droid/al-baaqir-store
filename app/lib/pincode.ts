@@ -26,10 +26,31 @@ export async function fetchPincodeLocation(pincode: string): Promise<PincodeLoca
     throw new Error("Unable to parse pincode details.");
   }
 
-  const location = data as PincodeLocation;
-  if (!location.state || !location.district) {
+  // The Postal API returns an array with PostOffice entries. Normalize into a
+  // single PincodeLocation that best represents the area. Prefer the first
+  // delivery-enabled PostOffice when available.
+  const result = data[0];
+  const postOffices = Array.isArray(result.PostOffice) ? result.PostOffice : [];
+  if (!postOffices.length) {
     throw new Error("Pincode not found or unsupported for delivery.");
   }
 
-  return location;
+  // Prefer a Delivery post office if present
+  const deliveryOffice = postOffices.find((o: any) => String(o.DeliveryStatus || '').toLowerCase() === 'delivery');
+  const office = deliveryOffice || postOffices[0];
+
+  const normalizedLocation: PincodeLocation = {
+    pincode: normalized,
+    district: String(office.District || '').trim(),
+    // city: prefer PostOffice.Name (locality), fall back to District or Division
+    city: String(office.Name || office.District || office.Division || '').trim(),
+    state: String(office.State || '').trim(),
+    officeName: String(office.Name || '').trim(),
+  };
+
+  if (!normalizedLocation.state || !normalizedLocation.district) {
+    throw new Error("Pincode not found or unsupported for delivery.");
+  }
+
+  return normalizedLocation;
 }
