@@ -9,8 +9,6 @@ import {
   query,
   where,
   orderBy,
-  updateDoc,
-  serverTimestamp,
   DocumentData,
 } from "firebase/firestore";
 
@@ -37,6 +35,8 @@ export interface OrderItem {
   quantity: number;
   image: string;
   slug: string;
+  hsnSac?: string;
+  gstRate?: number;
 }
 
 export interface ShippingInfo {
@@ -53,6 +53,7 @@ export interface OrderRecord {
   customerName: string;
   phone: string;
   email?: string;
+  customerGSTIN?: string;
   paymentMethod: string;
   subtotal: number;
   shippingCharge: number;
@@ -77,6 +78,8 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
         quantity: Number(item.quantity ?? 0),
         image: String(item.image ?? ""),
         slug: String(item.slug ?? ""),
+        hsnSac: String(item.hsnSac ?? item.hsn ?? item.sac ?? "") || undefined,
+        gstRate: Number(item.gstRate ?? item.taxRate ?? 0) || 0,
       }))
     : [];
 
@@ -85,6 +88,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
     customerName: String(data.customerName ?? ""),
     phone: String(data.phone ?? ""),
     email: String(data.email ?? ""),
+    customerGSTIN: String(data.customerGSTIN ?? data.gstin ?? ""),
     paymentMethod: String(data.paymentMethod ?? "cod"),
     subtotal: Number(data.subtotal ?? 0),
     shippingCharge: Number(data.shippingCharge ?? 0),
@@ -157,28 +161,14 @@ export async function updateOrderStatus(
   status: OrderStatus,
   updates: Partial<Pick<OrderRecord, "internalNotes" | "shipping">> = {}
 ): Promise<void> {
-  const orderRef = doc(db, "orders", orderId);
-  const payload: Record<string, unknown> = {
-    status,
-    lastUpdated: serverTimestamp(),
-  };
-
-  if (updates.internalNotes !== undefined) {
-    payload.internalNotes = updates.internalNotes;
+  const response = await fetch("/api/orders/status", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId, status, internalNotes: updates.internalNotes }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || "Unable to update order status.");
   }
-
-  if (updates.shipping) {
-    payload.shipping = {
-      name: String(updates.shipping.name ?? ""),
-      phone: String(updates.shipping.phone ?? ""),
-      address: String(updates.shipping.address ?? ""),
-      city: String(updates.shipping.city ?? ""),
-      state: String(updates.shipping.state ?? ""),
-      pincode: String(updates.shipping.pincode ?? ""),
-    };
-  }
-
-  await updateDoc(orderRef, payload);
 }
 
 export function generateInvoiceNumber(): string {

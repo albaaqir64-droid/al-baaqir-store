@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
@@ -12,7 +12,14 @@ const firebaseConfig = {
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-export const db = getFirestore(app);
+// Firestore's default WebChannel stream is blocked by some browser proxies and
+// security software, which leaves the browser SDK permanently "offline" even
+// though HTTPS access to the Firebase project is available. Long polling uses
+// the same authenticated Firestore endpoint without relying on that stream.
+// Keep the Node/server path on getFirestore: this transport option is browser-only.
+export const db = typeof window === "undefined"
+  ? getFirestore(app)
+  : initializeFirestore(app, { experimentalForceLongPolling: true });
 
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
   connectFirestoreEmulator(db, "localhost", 8080);

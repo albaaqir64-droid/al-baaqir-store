@@ -1,21 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { db } from "./firebase";
-import { getAdminStorage } from "./firebaseAdmin";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
   where,
   DocumentData,
 } from "firebase/firestore";
-import type { ProductRecord, ProductSavePayload } from "./productTypes";
+import type { ProductRecord } from "./productTypes";
 
 function createSlug(value: string) {
   return String(value)
@@ -26,61 +21,20 @@ function createSlug(value: string) {
     .slice(0, 200);
 }
 
-function isDataUrl(value: unknown): value is string {
-  return typeof value === "string" && /^data:[^;]+;base64,/.test(value);
-}
+function normalizeProductImageUrl(value: unknown): string {
+  const imageUrl = String(value ?? "").trim();
+  if (!imageUrl.startsWith("gs://")) return imageUrl;
 
-function parseDataUrl(value: string) {
-  const match = /^data:([^;]+);base64,(.*)$/.exec(value);
-  if (!match) {
-    throw new Error("Invalid data URL");
-  }
-  return {
-    mimeType: match[1],
-    buffer: Buffer.from(match[2], "base64"),
-  };
-}
+  const [, bucketAndPath = ""] = imageUrl.split("gs://");
+  const slashIndex = bucketAndPath.indexOf("/");
+  if (slashIndex < 1) return imageUrl;
 
-function getExtensionFromMimeType(mimeType: string) {
-  const normalized = mimeType.toLowerCase();
-  if (normalized === "image/jpeg" || normalized === "image/jpg") return ".jpg";
-  if (normalized === "image/png") return ".png";
-  if (normalized === "image/gif") return ".gif";
-  if (normalized === "image/webp") return ".webp";
-  if (normalized === "image/svg+xml") return ".svg";
-  return "";
-}
-
-async function uploadImageDataUrl(destinationPath: string, data: Buffer, mimeType: string) {
-  const bucket = getAdminStorage().bucket();
-  const file = bucket.file(destinationPath);
-  await file.save(data, {
-    metadata: {
-      contentType: mimeType,
-    },
-  });
-
-  try {
-    await file.makePublic();
-    return `https://storage.googleapis.com/${bucket.name}/${destinationPath}`;
-  } catch {
-    const [signedUrl] = await file.getSignedUrl({
-      action: "read",
-      expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
-    });
-    return signedUrl;
-  }
-}
-
-async function uploadProductImage(productId: string, imageValue: string, index: number, type: "mainImage" | "galleryImages") {
-  if (!isDataUrl(imageValue)) return imageValue;
-  const { mimeType, buffer } = parseDataUrl(imageValue);
-  const extension = getExtensionFromMimeType(mimeType) || "";
-  const filename =
-    type === "mainImage"
-      ? `products/${productId}/main${extension}`
-      : `products/${productId}/gallery-${index}${extension}`;
-  return await uploadImageDataUrl(filename, buffer, mimeType);
+  const bucket = bucketAndPath.slice(0, slashIndex);
+  const objectPath = bucketAndPath.slice(slashIndex + 1)
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  return `https://storage.googleapis.com/${bucket}/${objectPath}`;
 }
 
 function normalizeProduct(docSnap: DocumentData): ProductRecord {
@@ -96,9 +50,9 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
   };
 
   const galleryImages = Array.isArray(data.galleryImages)
-    ? data.galleryImages.map((item: any) => String(item ?? ""))
+    ? data.galleryImages.map(normalizeProductImageUrl)
     : Array.isArray(data.images)
-      ? data.images.map((item: any) => String(item ?? ""))
+      ? data.images.map(normalizeProductImageUrl)
       : [];
   const discountValue = Number(data.discount ?? data.discountPercent ?? 0) || 0;
 
@@ -113,7 +67,9 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     active: data.active !== false,
     featured: data.featured === true,
     description: String(data.description ?? ""),
-    mainImage: String(data.mainImage ?? ""),
+    // Older products may use `coverImage`; prefer the current mainImage field
+    // but retain that existing catalog data as the display image fallback.
+    mainImage: normalizeProductImageUrl(data.mainImage ?? data.coverImage ?? data.image),
     images: galleryImages,
     galleryImages,
     slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
@@ -122,6 +78,8 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     sizes: Array.isArray(data.sizes) ? data.sizes.map((item: any) => String(item ?? "")) : undefined,
     colors: Array.isArray(data.colors) ? data.colors.map((item: any) => String(item ?? "")) : undefined,
     rating: data.rating != null ? Number(data.rating) : undefined,
+    hsnSac: String(data.hsnSac ?? data.hsn ?? data.sac ?? "") || undefined,
+    gstRate: data.gstRate != null || data.taxRate != null ? Number(data.gstRate ?? data.taxRate) || 0 : undefined,
   };
 }
 
@@ -136,6 +94,7 @@ function sortByCreatedAtDesc(a: ProductRecord, b: ProductRecord) {
   return productTimestampMs(b) - productTimestampMs(a);
 }
 
+/** Firestore rejects undefined values, including optional blank form fields. */
 export async function fetchAllProducts(): Promise<ProductRecord[]> {
   const productsRef = collection(db, "products");
   const snapshot = await getDocs(productsRef);
@@ -187,99 +146,4 @@ export async function searchProducts(term: string): Promise<ProductRecord[]> {
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(queryTerm))
   );
-}
-
-export async function createProduct(payload: ProductSavePayload) {
-  const docRef = doc(collection(db, "products"));
-  const productId = docRef.id;
-  const galleryImages = Array.isArray(payload.galleryImages)
-    ? payload.galleryImages
-    : Array.isArray(payload.images)
-      ? payload.images
-      : [];
-  const uploadedMainImage = payload.mainImage
-    ? await uploadProductImage(productId, String(payload.mainImage), 0, "mainImage")
-    : "";
-  const uploadedGalleryImages = await Promise.all(
-    galleryImages.map((image, index) => uploadProductImage(productId, String(image), index, "galleryImages"))
-  );
-  const discountValue = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
-  const data = {
-    ...payload,
-    id: productId,
-    slug: createSlug(payload.name),
-    createdAt: serverTimestamp(),
-    lastUpdated: serverTimestamp(),
-    mainImage: uploadedMainImage,
-    galleryImages: uploadedGalleryImages,
-    images: uploadedGalleryImages,
-    discount: discountValue,
-    discountPercent: discountValue,
-    featured: payload.featured === true,
-  };
-  await setDoc(docRef, data);
-  return {
-    id: productId,
-    ...payload,
-    slug: data.slug,
-    mainImage: uploadedMainImage,
-    galleryImages: uploadedGalleryImages,
-    images: uploadedGalleryImages,
-    discount: discountValue,
-    discountPercent: discountValue,
-  };
-}
-
-export async function updateProduct(
-  id: string,
-  payload: Partial<ProductSavePayload>
-) {
-  const productRef = doc(db, "products", id);
-  const galleryImages = Array.isArray(payload.galleryImages)
-    ? payload.galleryImages
-    : Array.isArray(payload.images)
-      ? payload.images
-      : undefined;
-  const discountValue = payload.discount ?? payload.discountPercent;
-
-  const updatePayload: Record<string, unknown> = {
-    ...payload,
-    lastUpdated: serverTimestamp(),
-  };
-
-  if (payload.mainImage !== undefined) {
-    if (typeof payload.mainImage === "string" && isDataUrl(payload.mainImage)) {
-      updatePayload.mainImage = await uploadProductImage(id, payload.mainImage, 0, "mainImage");
-    } else {
-      updatePayload.mainImage = payload.mainImage;
-    }
-  }
-
-  if (galleryImages !== undefined) {
-    const uploadedGalleryImages = await Promise.all(
-      galleryImages.map((image, index) => uploadProductImage(id, String(image), index, "galleryImages"))
-    );
-    updatePayload.galleryImages = uploadedGalleryImages;
-    updatePayload.images = uploadedGalleryImages;
-  }
-
-  if (discountValue !== undefined) {
-    const discountNumber = Number(discountValue) || 0;
-    updatePayload.discount = discountNumber;
-    updatePayload.discountPercent = discountNumber;
-  }
-
-  if (payload.featured !== undefined) {
-    updatePayload.featured = payload.featured;
-  }
-
-  if (payload.name) {
-    updatePayload.slug = createSlug(payload.name);
-  }
-  await updateDoc(productRef, updatePayload);
-}
-
-export async function deleteProductById(id: string) {
-  const productRef = doc(db, "products", id);
-  await deleteDoc(productRef);
 }

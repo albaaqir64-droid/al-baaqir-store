@@ -121,7 +121,7 @@ function OrderSuccessPageContent() {
         <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200 bg-slate-50 p-12 shadow-lg text-center">
           <h1 className="text-2xl font-semibold">Unable to load order</h1>
           <p className="mt-4 text-slate-600">{error || "Please check your order link and try again."}</p>
-          <Link href="/" className="mt-8 inline-flex rounded-full bg-emerald px-6 py-3 text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
+          <Link href="/" className="mt-8 inline-flex rounded-full bg-emerald px-6 py-3 text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
             Continue Shopping
           </Link>
         </div>
@@ -234,7 +234,7 @@ function OrderSuccessPageContent() {
                 {invoiceUrl ? (
                   <button
                     onClick={downloadInvoice}
-                    className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    className="w-full rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
                   >
                     📄 Download Invoice
                   </button>
@@ -242,7 +242,7 @@ function OrderSuccessPageContent() {
                   <button
                     onClick={generateInvoice}
                     disabled={generatingInvoice}
-                    className="w-full rounded-full bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600 disabled:opacity-50"
+                    className="w-full rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
                   >
                     {generatingInvoice ? "Generating..." : "Generate Invoice"}
                   </button>
@@ -254,7 +254,7 @@ function OrderSuccessPageContent() {
               <Link href="/my-orders" className="inline-flex w-full items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
                 My Orders
               </Link>
-              <Link href="/" className="inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-[#d4b229]">
+              <Link href="/" className="inline-flex w-full items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-200">
                 Continue Shopping
               </Link>
             </div>

@@ -11,6 +11,9 @@ export type CartItem = {
   qty: number;
   image: string;
   productUrl: string;
+  hsnSac?: string;
+  gstRate?: number;
+  stock?: number;
 };
 
 const CART_KEY = 'albaaqir_cart';
@@ -34,6 +37,9 @@ export function sanitizeCartItem(item: any): CartItem {
     qty: !isNaN(qty) ? qty : 0,
     image: String(item?.image ?? ""),
     productUrl: String(item?.productUrl ?? ""),
+    hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
+    gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
+    stock: Number.isFinite(Number(item?.stock)) ? Math.max(0, Math.floor(Number(item.stock))) : undefined,
   };
 }
 
@@ -116,6 +122,7 @@ function serializeCartItem(item: CartItem): Record<string, any> {
   const productUrl = String(item.productUrl || "").trim().substring(0, 2000);
   const price = Number(item.price) || 0;
   const qty = Number(item.qty) || 0;
+  const gstRate = Number(item.gstRate ?? 0) || 0;
 
   // Validate numbers are finite
   if (!isFinite(price) || !isFinite(qty)) {
@@ -136,6 +143,8 @@ function serializeCartItem(item: CartItem): Record<string, any> {
     qty,
     image,
     productUrl,
+    hsnSac: item.hsnSac || "",
+    gstRate,
   };
 }
 
@@ -178,11 +187,13 @@ export function saveCartItems(items: CartItem[]) {
 export function addCartItem(item: Omit<CartItem, 'qty'>, quantity: number) {
   const current = getCartItems();
   const existing = current.find((entry) => entry.id === item.id);
+  const stockLimit = Number.isFinite(Number(item.stock)) ? Math.max(0, Math.floor(Number(item.stock))) : Number.POSITIVE_INFINITY;
+  if (stockLimit < 1) return current;
   if (existing) {
-    existing.qty += quantity;
+    existing.qty = Math.min(stockLimit, existing.qty + quantity);
     if (existing.qty < 1) existing.qty = 1;
   } else {
-    current.push({ ...item, qty: Math.max(1, quantity) });
+    current.push({ ...item, qty: Math.min(stockLimit, Math.max(1, quantity)) });
   }
   saveCartItems(current);
   return current;

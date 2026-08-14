@@ -17,6 +17,8 @@ type ProductForm = {
   discountPercent: string;
   active: boolean;
   featured: boolean;
+  hsnSac: string;
+  gstRate: string;
 };
 
 const CATEGORIES = [
@@ -42,6 +44,8 @@ const initialForm: ProductForm = {
   discountPercent: "0",
   active: true,
   featured: false,
+  hsnSac: "",
+  gstRate: "",
 };
 
 export default function AdminProductsPage() {
@@ -147,6 +151,8 @@ export default function AdminProductsPage() {
       discountPercent: Number(form.discountPercent || 0),
       active: form.active,
       featured: form.featured,
+      hsnSac: form.hsnSac.trim(),
+      gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
     };
 
     if (!payload.name) {
@@ -201,6 +207,8 @@ export default function AdminProductsPage() {
       discountPercent: String(p.discountPercent || 0),
       active: p.active !== false,
       featured: p.featured === true,
+      hsnSac: p.hsnSac || '',
+      gstRate: p.gstRate === undefined ? '' : String(p.gstRate),
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -230,7 +238,7 @@ export default function AdminProductsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="admin-theme mx-auto max-w-7xl bg-[#E8F5E9] px-6 py-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Admin — Products</h1>
@@ -266,6 +274,16 @@ export default function AdminProductsPage() {
           <div>
             <label className="block text-sm font-medium">Stock</label>
             <input type="number" className="mt-1 w-full rounded border px-3 py-2" value={form.stock} onChange={(e) => updateField('stock', e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">HSN / SAC (optional)</label>
+            <input className="mt-1 w-full rounded border px-3 py-2" value={form.hsnSac} onChange={(e) => updateField('hsnSac', e.target.value)} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">GST rate % (optional, price inclusive)</label>
+            <input type="number" min="0" step="0.01" className="mt-1 w-full rounded border px-3 py-2" value={form.gstRate} onChange={(e) => updateField('gstRate', e.target.value)} />
           </div>
 
           <div className="md:col-span-2">

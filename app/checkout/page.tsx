@@ -5,17 +5,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CartItem, clearCart, getCartItems, loadCartItems } from "../lib/cart";
-import { db } from "../lib/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { generateInvoiceNumber } from "../lib/orders";
-import { saveCustomerContact } from "../lib/auth";
+import { getCurrentUserId, saveCustomerContact } from "../lib/auth";
 import { fetchPincodeLocation } from "../lib/pincode";
-import { sanitizeCartItems, sanitizeShipping } from "../lib/firestore";
+import { sanitizeCartItems, sanitizeFirestoreData, sanitizeShipping } from "../lib/firestore";
+import { requestOrderStatusNotifications } from "../lib/pushNotifications";
 
 const defaultForm = {
   fullName: "",
   mobile: "",
   email: "",
+  customerGSTIN: "",
   house: "",
   street: "",
   landmark: "",
@@ -81,6 +81,7 @@ export default function CheckoutPage() {
     if (!form.fullName.trim()) nextErrors.fullName = "Full name is required.";
     if (!/^[6-9][0-9]{9}$/.test(form.mobile)) nextErrors.mobile = "Enter a valid 10-digit mobile number.";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = "Enter a valid email address.";
+    if (form.customerGSTIN && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/i.test(form.customerGSTIN.trim())) nextErrors.customerGSTIN = "Enter a valid 15-character GSTIN.";
     if (!form.house.trim()) nextErrors.house = "House / flat number is required.";
     if (!form.street.trim()) nextErrors.street = "Street / area is required.";
     if (!/^[1-9][0-9]{5}$/.test(form.pincode)) nextErrors.pincode = "Enter a valid 6-digit pincode.";
@@ -112,8 +113,9 @@ export default function CheckoutPage() {
         city: location.city,
         state: location.state,
       }));
-    } catch (error) {
-      setErrors((current) => ({ ...current, pincode: error instanceof Error ? error.message : "Unable to check pincode." }));
+    } catch {
+      // Lookup is only a convenience. A correctly formatted pincode remains
+      // valid for checkout and the customer can enter city/state themselves.
     } finally {
       setPincodeLoading(false);
     }
@@ -127,38 +129,6 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     setSaveError("");
-
-    // Ensure pincode maps to city/state and matches user input (or autofill if blank)
-    try {
-      const location = await fetchPincodeLocation(form.pincode.trim());
-      // If user has manually entered city/state, ensure they match the pincode lookup.
-      // Allow flexible matching: accept 'Delhi' or 'New Delhi' when API returns
-      // district/division that include 'Delhi'.
-      if (form.city.trim() && form.state.trim()) {
-        const expectedCity = String(location.city || "").trim().toLowerCase();
-        const expectedDistrict = String(location.district || "").trim().toLowerCase();
-        const expectedDivision = String((location as any).division || "").trim().toLowerCase();
-        const enteredCity = form.city.trim().toLowerCase();
-        const enteredState = form.state.trim().toLowerCase();
-        const expectedState = String(location.state || "").trim().toLowerCase();
-
-        const cityMatches = enteredCity === expectedCity || enteredCity === expectedDistrict || enteredCity === expectedDivision || (enteredCity.includes('delhi') && (expectedCity.includes('delhi') || expectedDistrict.includes('delhi') || expectedDivision.includes('delhi')));
-        const stateMatches = enteredState === expectedState || (enteredState.includes('delhi') && expectedState.includes('delhi'));
-
-        if (!cityMatches || !stateMatches) {
-          setErrors((current) => ({ ...current, pincode: "Pincode does not match entered city/state. Use Auto-fill or correct the fields." }));
-          setSubmitting(false);
-          return;
-        }
-      } else {
-        // Auto-fill city/state when user hasn't provided them
-        setForm((current) => ({ ...current, city: location.city, state: location.state }));
-      }
-    } catch (err) {
-      setErrors((current) => ({ ...current, pincode: err instanceof Error ? err.message : "Unable to verify pincode." }));
-      setSubmitting(false);
-      return;
-    }
 
     const cartItems = sanitizeCartItems(items);
     const shipping = sanitizeShipping({
@@ -178,6 +148,7 @@ export default function CheckoutPage() {
       customerName: String(form.fullName.trim()),
       phone: String(form.mobile.trim()),
       email: String(form.email.trim()),
+      customerGSTIN: String(form.customerGSTIN.trim().toUpperCase()),
       paymentMethod: String(form.paymentMethod),
       subtotal: Number(total) || 0,
       shippingCharge,
@@ -186,6 +157,7 @@ export default function CheckoutPage() {
       status: "pending",
       shipping,
       cartItems,
+      customerId: getCurrentUserId() || "",
     };
 
     if (!validateOrderPayload(orderMeta)) {
@@ -276,6 +248,8 @@ export default function CheckoutPage() {
       customerName: String(orderMeta.customerName ?? ""),
       phone: String(orderMeta.phone ?? ""),
       email: String(orderMeta.email ?? ""),
+      customerGSTIN: String(orderMeta.customerGSTIN ?? ""),
+      customerId: String(orderMeta.customerId ?? ""),
       shipping: orderMeta.shipping,
       cartItems: cartItems,
       subtotal: Number(orderMeta.subtotal) || 0,
@@ -285,12 +259,23 @@ export default function CheckoutPage() {
       status: String(orderMeta.status ?? "pending"),
       paymentMethod: String(orderMeta.paymentMethod ?? "cod"),
       paymentStatus: String(orderMeta.status ?? "pending"),
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, 'orders'), payloadForSave);
-    const orderId = docRef.id;
+    // Final guard for the entire document: removes undefined values at every
+    // nested object level and converts undefined array entries to null before
+    // the Firestore SDK sees the order payload.
+    const firestoreOrder = sanitizeFirestoreData(payloadForSave);
+    const orderResponse = await fetch("/api/orders/create", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(firestoreOrder),
+    });
+    const orderResult = await orderResponse.json().catch(() => ({}));
+    if (!orderResponse.ok || !orderResult.orderId) {
+      setSaveError(orderResult.error || "Unable to create your order. Please try again.");
+      setSubmitting(false);
+      return;
+    }
+    const orderId = String(orderResult.orderId);
+    void requestOrderStatusNotifications();
 
     try {
       await fetch('/api/invoices/generate', {
@@ -369,6 +354,17 @@ export default function CheckoutPage() {
                   />
                   {errors.email && <p className="mt-2 text-sm text-rose-600">{errors.email}</p>}
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-900">GSTIN (optional)</label>
+                  <input
+                    value={form.customerGSTIN}
+                    onChange={(event) => handleInput("customerGSTIN", event.target.value.toUpperCase())}
+                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    placeholder="15-character GSTIN"
+                    maxLength={15}
+                  />
+                  {errors.customerGSTIN && <p className="mt-2 text-sm text-rose-600">{errors.customerGSTIN}</p>}
+                </div>
                 <div>
                   <label className="text-sm font-medium text-slate-900">House / Flat No. *</label>
                   <input
@@ -411,7 +407,7 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => void checkPincode()}
-                      className="rounded-2xl bg-emerald px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-2xl bg-emerald px-4 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={pincodeLoading}
                     >
                       {pincodeLoading ? "Checking…" : "Auto-fill"}
@@ -528,7 +524,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={placeOrder}
-                className="mt-4 w-full rounded-full bg-black px-6 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 w-full rounded-full bg-emerald px-6 py-4 text-base font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={submitting || !items.length}
               >
                 {submitting ? "Placing order..." : "Place Order"}

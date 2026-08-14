@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getCartItems, loadCartItems, removeCartItem, updateCartItemQty, clearCart } from "../lib/cart";
+import { fetchProductById } from "../lib/products";
 
 export default function Page() {
   const [items, setItems] = useState<ReturnType<typeof getCartItems>>([]);
+  const [stockMessage, setStockMessage] = useState("");
   useEffect(() => {
     let active = true;
     (async () => {
@@ -20,7 +22,14 @@ export default function Page() {
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
 
-  function updateQty(id: string, qty: number) {
+  async function updateQty(id: string, qty: number) {
+    const product = await fetchProductById(id);
+    const available = Math.max(0, Number(product?.stock ?? 0));
+    if (qty > available) {
+      setStockMessage(`Only ${available} item${available === 1 ? "" : "s"} are available.`);
+      return;
+    }
+    setStockMessage("");
     const next = updateCartItemQty(id, qty);
     setItems(next);
   }
@@ -48,7 +57,7 @@ export default function Page() {
           <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
             <p className="text-lg font-medium">Your cart is empty.</p>
             <p className="mt-3 text-slate-600">Add products from the store to continue.</p>
-            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-white">Shop now</Link>
+            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-emerald-900 transition hover:bg-emerald-600 hover:text-white">Shop now</Link>
           </div>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
@@ -66,9 +75,9 @@ export default function Page() {
                       <Link href={item.productUrl} className="text-lg font-semibold text-slate-950 hover:underline">{item.name}</Link>
                       <p className="mt-2 text-sm text-slate-600">{item.qty} × {item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</p>
                       <div className="mt-4 flex items-center gap-3">
-                        <button onClick={() => updateQty(item.id, item.qty - 1)} className="rounded-full border border-gray-200 px-3 py-1">−</button>
+                        <button onClick={() => void updateQty(item.id, item.qty - 1)} className="rounded-full border border-gray-200 px-3 py-1">−</button>
                         <span className="w-10 text-center">{item.qty}</span>
-                        <button onClick={() => updateQty(item.id, item.qty + 1)} className="rounded-full border border-gray-200 px-3 py-1">+</button>
+                        <button onClick={() => void updateQty(item.id, item.qty + 1)} className="rounded-full border border-gray-200 px-3 py-1">+</button>
                         <button onClick={() => removeItem(item.id)} className="rounded-full border border-gray-200 px-3 py-1 text-rose-600">Remove</button>
                       </div>
                     </div>
@@ -90,7 +99,8 @@ export default function Page() {
               <div className="mt-6 border-t border-gray-200 pt-4 text-lg font-semibold text-slate-950">
                 Subtotal: {subtotal.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
               </div>
-              <Link href="/checkout" className="mt-6 block w-full rounded-full bg-emerald px-6 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-emerald/20">Proceed to Checkout</Link>
+              <Link href="/checkout" className="mt-6 block w-full rounded-full bg-emerald px-6 py-3 text-center text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">Proceed to Checkout</Link>
+              {stockMessage && <p className="mt-3 text-sm text-rose-600">{stockMessage}</p>}
             </aside>
           </div>
         )}

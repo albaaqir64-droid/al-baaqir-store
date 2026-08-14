@@ -14,6 +14,8 @@ type Product = {
   image: string;
   description?: string;
   discount?: string;
+  hsnSac?: string;
+  gstRate?: number;
 };
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -112,12 +114,14 @@ export default function ProductCard({ product }: { product: Product }) {
                     price: Number.parseFloat(product.price.replace(/[^\d.]/g, "")) || 0,
                     image: product.image,
                     productUrl: `/product/${product.id}`,
+                    hsnSac: product.hsnSac,
+                    gstRate: product.gstRate,
                   },
                   1
                 );
                 router.push('/cart');
               }}
-              className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
             >
               Add
             </button>

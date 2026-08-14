@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
           />
           {error && <p className="text-sm text-rose-500">{error}</p>}
 
-          <button className="w-full rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600" type="submit">
+          <button className="w-full rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white" type="submit">
             Sign in
           </button>
         </form>

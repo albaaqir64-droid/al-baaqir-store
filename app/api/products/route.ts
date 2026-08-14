@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextResponse } from 'next/server';
-import { createProduct, deleteProductById, fetchProducts, updateProduct } from '@/app/lib/products';
+import { fetchProducts } from '@/app/lib/products';
+import { createProduct, deleteProductById, updateProduct } from '@/app/lib/products.server';
 
 function formatError(error: unknown) {
   if (error instanceof Error) {
@@ -83,6 +84,8 @@ export async function POST(req: Request) {
       discountPercent: Number(body.discountPercent) || 0,
       active: body.active !== false,
       featured: body.featured === true,
+      hsnSac: String(body.hsnSac ?? body.hsn ?? body.sac ?? '').trim() || undefined,
+      gstRate: body.gstRate !== undefined && body.gstRate !== '' ? Number(body.gstRate) : undefined,
     };
 
     try {
@@ -130,6 +133,8 @@ export async function PUT(req: Request) {
       discount: body.discount !== undefined ? Number(body.discount) || 0 : undefined,
       active: body.active !== undefined ? body.active !== false : undefined,
       featured: body.featured !== undefined ? body.featured === true : undefined,
+      hsnSac: body.hsnSac !== undefined ? String(body.hsnSac ?? '').trim() : undefined,
+      gstRate: body.gstRate !== undefined && body.gstRate !== '' ? Number(body.gstRate) : undefined,
     };
 
     try {

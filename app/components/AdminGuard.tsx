@@ -19,10 +19,10 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
   if (!authorized) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white grid place-items-center px-6">
-        <div className="max-w-md rounded-3xl border border-slate-700 bg-slate-900/95 p-8 shadow-2xl">
+      <div className="min-h-screen bg-[#E8F5E9] text-[#1B5E20] grid place-items-center px-6">
+        <div className="max-w-md rounded-3xl border border-[#A5D6A7] bg-white p-8 shadow-2xl">
           <h1 className="text-2xl font-semibold">Admin access required</h1>
-          <p className="mt-3 text-slate-300">Redirecting you to the login page...</p>
+          <p className="mt-3 text-[#1B5E20]">Redirecting you to the login page...</p>
         </div>
       </div>
     );

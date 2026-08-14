@@ -6,6 +6,10 @@ export interface PincodeLocation {
   officeName: string;
 }
 
+type PostalOffice = Record<string, unknown>;
+type PostalApiResult = { PostOffice?: PostalOffice[] };
+type PincodeApiLocation = Partial<PincodeLocation>;
+
 export async function fetchPincodeLocation(pincode: string): Promise<PincodeLocation> {
   const normalized = String(pincode).trim();
   if (!/^[1-9][0-9]{5}$/.test(normalized)) {
@@ -22,21 +26,35 @@ export async function fetchPincodeLocation(pincode: string): Promise<PincodeLoca
   }
 
   const data = await response.json();
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
+  // The local route already normalizes the Postal API result into a location
+  // object, while the direct API returns an array. Support both responses.
+  if (!Array.isArray(data)) {
+    const location = data as PincodeApiLocation;
+    const city = String(location.city ?? "").trim();
+    const state = String(location.state ?? "").trim();
+    if (city && state) {
+      return {
+        pincode: normalized,
+        city,
+        state,
+        district: String(location.district ?? city).trim(),
+        officeName: String(location.officeName ?? city).trim(),
+      };
+    }
     throw new Error("Unable to parse pincode details.");
   }
 
   // The Postal API returns an array with PostOffice entries. Normalize into a
   // single PincodeLocation that best represents the area. Prefer the first
   // delivery-enabled PostOffice when available.
-  const result = data[0];
-  const postOffices = Array.isArray(result.PostOffice) ? result.PostOffice : [];
+  const result = data[0] as PostalApiResult | undefined;
+  const postOffices = Array.isArray(result?.PostOffice) ? result.PostOffice : [];
   if (!postOffices.length) {
     throw new Error("Pincode not found or unsupported for delivery.");
   }
 
   // Prefer a Delivery post office if present
-  const deliveryOffice = postOffices.find((o: any) => String(o.DeliveryStatus || '').toLowerCase() === 'delivery');
+  const deliveryOffice = postOffices.find((office) => String(office.DeliveryStatus || '').toLowerCase() === 'delivery');
   const office = deliveryOffice || postOffices[0];
 
   const normalizedLocation: PincodeLocation = {

@@ -123,27 +123,29 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <div className="flex items-center gap-2">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-10 w-10 rounded-md border border-gray-200">−</button>
               <div className="w-12 text-center">{qty}</div>
-              <button onClick={() => setQty((q) => q + 1)} className="h-10 w-10 rounded-md border border-gray-200">+</button>
+              <button onClick={() => setQty((q) => Math.min(Math.max(0, product.stock), q + 1))} disabled={product.stock < 1} className="h-10 w-10 rounded-md border border-gray-200 disabled:opacity-50">+</button>
             </div>
 
             <div className="flex flex-1 flex-wrap items-center gap-3">
               <button
                 onClick={() => {
-                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}` }, qty);
+                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}`, hsnSac: product.hsnSac, gstRate: product.gstRate, stock: product.stock }, qty);
                   setToastVariant("success");
                   setToastMessage("Added to cart successfully.");
                   window.setTimeout(() => setToastMessage(null), 2200);
                 }}
-                className="rounded-full bg-emerald px-5 py-3 text-sm font-semibold text-black"
+                disabled={product.stock < 1}
+                className="rounded-full bg-emerald px-5 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
               >
                 Add to Cart
               </button>
               <button
                 onClick={() => {
-                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}` }, qty);
+                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}`, hsnSac: product.hsnSac, gstRate: product.gstRate, stock: product.stock }, qty);
                   router.push('/checkout');
                 }}
-                className="rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                disabled={product.stock < 1}
+                className="rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200 disabled:opacity-50"
               >
                 Buy Now
               </button>
@@ -194,7 +196,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                 <button
                   type="button"
                   onClick={() => void checkPincode()}
-                  className="rounded-md bg-emerald px-4 py-2 text-white"
+                  className="rounded-md bg-emerald px-4 py-2 text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
                   disabled={pincodeLoading}
                 >
                   {pincodeLoading ? "Checking…" : "Check"}
@@ -223,7 +225,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           <div className="mt-6 space-y-3">
             <div>
               <h4 className="text-sm font-medium">Return Policy</h4>
-              <p className="mt-1 text-sm text-slate-600">30-day returns on unused items with tags. See our full policy for exclusions.</p>
+              <p className="mt-1 text-sm text-slate-600">7-day returns on unused items with tags. See our full policy for exclusions.</p>
             </div>
 
             <div>

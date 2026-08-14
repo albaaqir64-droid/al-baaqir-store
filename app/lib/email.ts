@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { OrderRecord } from "./orders";
 import { format } from "date-fns";
+import { BUSINESS } from "./business";
 
 // Email configuration - Update these with your actual email settings
 const emailConfig = {
@@ -13,9 +14,9 @@ const emailConfig = {
   },
 };
 
-const STORE_EMAIL = process.env.STORE_EMAIL || "noreply@albaaqir.com";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@albaaqir.com";
-const STORE_NAME = "Al Baaqir";
+const STORE_EMAIL = process.env.STORE_EMAIL || BUSINESS.email;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || BUSINESS.email;
+const STORE_NAME = BUSINESS.name;
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -32,6 +33,10 @@ export async function sendCustomerOrderEmail(
   invoiceNumber: string
 ): Promise<boolean> {
   try {
+    if (!order.email?.trim()) {
+      console.warn("Customer email is missing. Invoice email was not sent.");
+      return false;
+    }
     if (!emailConfig.auth.user || !emailConfig.auth.pass) {
       console.warn("Email credentials not configured. Skipping email send.");
       return false;
@@ -141,7 +146,7 @@ export async function sendCustomerOrderEmail(
 
             <div class="footer">
               <p><strong>${STORE_NAME}</strong></p>
-              <p>📞 Phone: +91-XXXXXXXXXX | 📧 Email: ${STORE_EMAIL}</p>
+              <p>Phone/WhatsApp: +91-${BUSINESS.whatsapp} | Email: ${BUSINESS.email}</p>
               <p>&copy; 2024 ${STORE_NAME}. All rights reserved.</p>
             </div>
           </div>
@@ -151,7 +156,7 @@ export async function sendCustomerOrderEmail(
 
     const mailOptions = {
       from: `"${STORE_NAME}" <${STORE_EMAIL}>`,
-      to: order.email || order.phone,
+      to: order.email.trim(),
       subject: `Order Confirmation - Order #${order.id}`,
       html: htmlContent,
       attachments: invoiceUrl ? [

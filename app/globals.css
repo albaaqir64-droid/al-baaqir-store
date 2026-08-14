@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-emerald-50: #E8F5E9;
+  --color-emerald-100: #C8E6C9;
+  --color-emerald-200: #A5D6A7;
+  --color-emerald-300: #81C784;
+  --color-emerald-400: #66BB6A;
+  --color-emerald-500: #66BB6A;
+  --color-emerald-600: #1B5E20;
+  --color-emerald-700: #1B5E20;
+  --color-emerald-800: #1B5E20;
+  --color-emerald-900: #1B5E20;
+  --color-emerald-950: #1B5E20;
+}
+
 :root {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -43,26 +57,68 @@ button:disabled {
 }
 
 button:focus-visible {
-  outline: 2px solid rgba(232, 184, 200, 0.5);
+  outline: 2px solid #A5D6A7;
   outline-offset: 3px;
 }
 
 .btn-primary {
-  background-image: linear-gradient(135deg, #E8B8C8 0%, #B1647C 100%);
-  color: #ffffff;
-  box-shadow: 0 14px 28px rgba(232, 184, 200, 0.18);
+  background: #66BB6A;
+  color: #1B5E20;
+  box-shadow: 0 14px 28px rgba(102, 187, 106, 0.18);
 }
 
 .btn-primary:hover {
-  background-image: linear-gradient(135deg, #DFA3B7 0%, #E0849A 100%);
+  background: #1B5E20;
+  color: #ffffff;
 }
 
 .btn-primary:active {
-  background-image: linear-gradient(135deg, #B1647C 0%, #8E4E62 100%);
+  background: #1B5E20;
 }
 
 .btn-primary:disabled {
   opacity: 0.6;
+}
+
+.admin-theme {
+  background: #E8F5E9;
+  color: #1B5E20;
+}
+
+.admin-theme [class*="bg-slate-900"],
+.admin-theme [class*="bg-white"] {
+  background-color: #FFFFFF !important;
+}
+
+.admin-theme [class*="bg-slate-950"],
+.admin-theme [class*="bg-slate-800"] {
+  background-color: #E8F5E9 !important;
+}
+
+.admin-theme [class*="border-slate"],
+.admin-theme [class*="divide-slate"] {
+  border-color: #A5D6A7 !important;
+}
+
+.admin-theme [class*="text-white"],
+.admin-theme [class*="text-slate"] {
+  color: #1B5E20 !important;
+}
+
+.admin-theme [class*="bg-blue"],
+.admin-theme [class*="bg-purple"],
+.admin-theme [class*="bg-gold"],
+.admin-theme .bg-emerald {
+  background-color: #66BB6A !important;
+  color: #1B5E20 !important;
+}
+
+.admin-theme [class*="hover:bg-blue"]:hover,
+.admin-theme [class*="hover:bg-purple"]:hover,
+.admin-theme [class*="hover:bg-gold"]:hover,
+.admin-theme .hover\\:bg-emerald-600:hover {
+  background-color: #1B5E20 !important;
+  color: #FFFFFF !important;
 }
 
 .img-cover {

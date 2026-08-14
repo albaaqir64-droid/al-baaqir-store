@@ -20,6 +20,8 @@ export interface ProductRecord {
   colors?: string[];
   featured: boolean;
   rating?: number;
+  hsnSac?: string;
+  gstRate?: number;
 }
 
 export type ProductSavePayload = Omit<

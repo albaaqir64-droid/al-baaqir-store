@@ -27,7 +27,7 @@ export default function Newsletter() {
             placeholder="Email address"
             className="flex-1 border border-gray-200 rounded-md px-4 py-2"
           />
-          <button className="bg-emerald text-white px-5 py-2 rounded-md">Subscribe</button>
+          <button className="rounded-md bg-emerald px-5 py-2 text-emerald-900 transition hover:bg-emerald-600 hover:text-white">Subscribe</button>
         </form>
       )}
     </section>

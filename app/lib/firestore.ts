@@ -7,17 +7,49 @@ export type SanitizedOrderItem = {
   quantity: number;
   image: string;
   productUrl: string;
+  hsnSac?: string;
+  gstRate?: number;
 };
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+/**
+ * Firestore does not accept undefined, including inside nested objects or
+ * arrays. Plain-object fields with undefined values are omitted; array slots
+ * are represented as null so the array keeps its intended shape. Firestore
+ * values such as serverTimestamp() are deliberately left unchanged.
+ */
+export function sanitizeFirestoreData<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => item === undefined ? null : sanitizeFirestoreData(item)) as T;
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, item]) => item !== undefined)
+        .map(([key, item]) => [key, sanitizeFirestoreData(item)])
+    ) as T;
+  }
+
+  return value;
+}
+
 export function sanitizeCartItem(item: any): SanitizedOrderItem {
-  return {
+  return sanitizeFirestoreData({
     id: String(item?.id ?? ""),
     name: String(item?.name ?? ""),
     price: Number(item?.price ?? item?.qty ?? 0) || 0,
     quantity: Number(item?.quantity ?? item?.qty ?? 0) || 0,
     image: String(item?.image ?? ""),
     productUrl: String(item?.productUrl ?? ""),
-  };
+    hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
+    gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
+  });
 }
 
 export function sanitizeCartItems(items: unknown): SanitizedOrderItem[] {

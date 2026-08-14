@@ -1,6 +1,8 @@
 import { PDFDocument, rgb, PDFPage, StandardFonts } from "pdf-lib";
 import { OrderRecord } from "./orders";
 import { format } from "date-fns";
+import { BUSINESS, GSTIN_PATTERN } from "./business";
+import { calculateInvoiceTax } from "./invoiceTax";
 
 export interface InvoiceData {
   order: OrderRecord;
@@ -11,11 +13,15 @@ export interface InvoiceData {
 
 const STORE_DETAILS = {
   name: "Al Baaqir",
-  gst: "18AAPFU5055K1Z0",
-  phone: "+91-XXXXXXXXXX",
-  email: "contact@albaaqir.com",
-  address: "Your Store Address",
+  gst: BUSINESS.gstin,
+  phone: BUSINESS.phone,
+  email: BUSINESS.email,
 };
+
+function getValidGstin(value: string | undefined): string | null {
+  const gstin = value?.trim().toUpperCase();
+  return gstin && GSTIN_PATTERN.test(gstin) ? gstin : null;
+}
 
 async function fetchImage(url: string): Promise<Buffer | null> {
   try {
@@ -30,7 +36,8 @@ async function fetchImage(url: string): Promise<Buffer | null> {
 }
 
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buffer> {
-  const { order, storeName } = invoiceData;
+  const { order, storeName, storeGST } = invoiceData;
+  const tax = calculateInvoiceTax(order);
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4 size
@@ -98,8 +105,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   drawText("FROM:", margin, yPosition, 10, primaryColor, "Helvetica-Bold");
   yPosition -= 12;
   drawText(storeName, margin, yPosition, 10);
-  drawText(`GST: ${STORE_DETAILS.gst}`, margin, yPosition - 12, 9, secondaryColor);
-  drawText(`Phone: ${STORE_DETAILS.phone}`, margin, yPosition - 22, 9, secondaryColor);
+  drawText(`GSTIN: ${storeGST || STORE_DETAILS.gst}`, margin, yPosition - 12, 9, secondaryColor);
+  drawText(`WhatsApp/Phone: ${BUSINESS.whatsapp}`, margin, yPosition - 22, 9, secondaryColor);
   drawText(`Email: ${STORE_DETAILS.email}`, margin, yPosition - 32, 9, secondaryColor);
 
   // Customer Details - Right Column
@@ -109,6 +116,10 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   drawText(order.customerName, rightColumnX, yPosition, 10);
   drawText(`Phone: ${order.phone}`, rightColumnX, yPosition - 12, 9, secondaryColor);
   drawText(`Email: ${order.email || "N/A"}`, rightColumnX, yPosition - 22, 9, secondaryColor);
+  const customerGSTIN = getValidGstin(order.customerGSTIN);
+  if (customerGSTIN) {
+    drawText(`GSTIN: ${customerGSTIN}`, rightColumnX, yPosition - 32, 9, secondaryColor);
+  }
 
   yPosition -= 50;
   drawText("SHIPPING ADDRESS:", margin, yPosition, 10, primaryColor, "Helvetica-Bold");
@@ -123,8 +134,9 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   yPosition -= 15;
 
   // Items Table Header
-  const colX = [margin, margin + 250, margin + 320, margin + 380, margin + 450];
+  const colX = [margin, margin + 210, margin + 280, margin + 340, margin + 415, margin + 485];
   drawText("Description", colX[0], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
+  drawText("HSN/GST", colX[1], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Qty", colX[2], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Price", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Total", colX[4], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
@@ -139,6 +151,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   // Redraw header text in white
   drawText("Description", colX[0], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
+  drawText("HSN/GST", colX[1], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Qty", colX[2], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Price", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Total", colX[4], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
@@ -146,13 +159,15 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   yPosition -= 25;
 
   // Items
-  order.cartItems.forEach((item) => {
-    const itemTotal = item.price * item.quantity;
+  tax.items.forEach((item) => {
 
     drawText(item.name.substring(0, 30), colX[0], yPosition, 9);
+    drawText(item.hsnSac ? `${item.hsnSac}/${item.gstRate}%` : item.gstRate ? `${item.gstRate}%` : "-", colX[1], yPosition, 8);
     drawText(String(item.quantity), colX[2], yPosition, 9);
-    drawText(`₹${item.price.toFixed(2)}`, colX[3], yPosition, 9);
-    drawText(`₹${itemTotal.toFixed(2)}`, colX[4], yPosition, 9);
+    // Standard PDF fonts used here do not contain the Unicode rupee glyph.
+    // Keep every amount intact while using an ASCII currency label that renders reliably.
+    drawText(`INR ${item.price.toFixed(2)}`, colX[3], yPosition, 9);
+    drawText(`INR ${item.grossAmount.toFixed(2)}`, colX[4], yPosition, 9);
 
     yPosition -= 15;
   });
@@ -165,15 +180,24 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   const totalX = margin + contentWidth - 180;
 
   drawText("Subtotal:", totalX, yPosition, 10);
-  drawText(`₹${order.subtotal.toFixed(2)}`, totalX + 120, yPosition, 10, rgb(0, 0, 0), "Helvetica-Bold");
+  drawText(`INR ${order.subtotal.toFixed(2)}`, totalX + 120, yPosition, 10, rgb(0, 0, 0), "Helvetica-Bold");
 
   yPosition -= 15;
   drawText("Shipping:", totalX, yPosition, 10);
-  drawText(`₹${order.shippingCharge.toFixed(2)}`, totalX + 120, yPosition, 10);
+  drawText(`INR ${order.shippingCharge.toFixed(2)}`, totalX + 120, yPosition, 10);
+
+  yPosition -= 15;
+  drawText(tax.intraState ? "CGST:" : "IGST:", totalX, yPosition, 10);
+  drawText(`INR ${(tax.intraState ? tax.cgst : tax.igst).toFixed(2)}`, totalX + 120, yPosition, 10);
+  if (tax.intraState) {
+    yPosition -= 15;
+    drawText("SGST:", totalX, yPosition, 10);
+    drawText(`INR ${tax.sgst.toFixed(2)}`, totalX + 120, yPosition, 10);
+  }
 
   yPosition -= 20;
   drawText("TOTAL:", totalX, yPosition, 11, accentColor, "Helvetica-Bold");
-  drawText(`₹${order.total.toFixed(2)}`, totalX + 120, yPosition, 11, accentColor, "Helvetica-Bold");
+  drawText(`INR ${order.total.toFixed(2)}`, totalX + 120, yPosition, 11, accentColor, "Helvetica-Bold");
 
   yPosition -= 30;
   drawDivider(yPosition);

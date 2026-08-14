@@ -50,7 +50,7 @@ export default function MyOrdersPage() {
           <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-slate-300">
             <p className="text-lg">No customer contact saved yet.</p>
             <p className="mt-2">Place an order first, then visit this page to see your orders.</p>
-            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
+            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
               Start shopping
             </Link>
           </div>
@@ -62,7 +62,7 @@ export default function MyOrdersPage() {
         ) : orders.length === 0 ? (
           <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-slate-300">
             <p className="text-lg">No orders found for {contact.phone}.</p>
-            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
+            <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
               Continue shopping
             </Link>
           </div>

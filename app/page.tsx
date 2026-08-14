@@ -9,48 +9,57 @@ const categories = [
   {
     title: "Belts",
     subtitle: "Mirror-polished buckles, rich leather finishes.",
-    image: "/images/categories/belts.svg",
+    category: "Belts",
+    href: "/belts",
   },
   {
     title: "Bags",
     subtitle: "Luxury silhouettes made for every occasion.",
-    image: "/images/categories/bags.svg",
+    category: "Bags",
+    href: "/bags",
   },
   {
     title: "Kurti",
     subtitle: "Easy elegance with refined everyday tailoring.",
-    image: "/images/categories/kurti.svg",
+    category: "Kurti",
+    href: "/kurti",
   },
   {
     title: "Karachi Suit",
     subtitle: "Classic silhouettes with polished festive energy.",
-    image: "/images/categories/karachi-suit.svg",
+    category: "Karachi Suit",
+    href: "/karachi-suit",
   },
   {
     title: "Earrings",
     subtitle: "Subtle shine and expressive details.",
-    image: "/images/categories/earrings.svg",
+    category: "Earrings",
+    href: "/earrings",
   },
   {
     title: "Jhumka",
     subtitle: "Traditional charm with contemporary flair.",
-    image: "/images/categories/jhumka.svg",
-  },
-  {
-    title: "New Arrivals",
-    subtitle: "Fresh designs for the modern wardrobe.",
-    image: "/images/categories/new-arrivals.svg",
-  },
-  {
-    title: "Sale",
-    subtitle: "Exclusive pieces at elegant prices.",
-    image: "/images/categories/sale.svg",
+    category: "Jhumka",
+    href: "/jhumka",
   },
 ];
 
+function getProductImage(product: { mainImage?: string; images?: string[]; galleryImages?: string[] }) {
+  return product.mainImage || product.images?.[0] || product.galleryImages?.[0] || "";
+}
+
 export default async function Home() {
   const newArrivals = await fetchNewArrivals(4);
-  const featuredProducts = (await fetchProducts()).slice(0, 4);
+  const activeProducts = await fetchProducts();
+  const featuredProducts = activeProducts.slice(0, 4);
+  const categoryProducts = new Map(
+    categories.map((category) => {
+      const products = activeProducts
+        .filter((product) => product.category.trim().toLocaleLowerCase() === category.category.toLocaleLowerCase())
+        .sort((a, b) => Number(b.featured) - Number(a.featured) || (b.rating ?? 0) - (a.rating ?? 0));
+      return [category.category, products[0]];
+    })
+  );
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -66,7 +75,7 @@ export default async function Home() {
                 <p className="text-4xl sm:text-5xl font-semibold leading-tight tracking-tight text-slate-950">Premium belts and bags for refined style.</p>
                 <p className="max-w-xl text-base leading-8 text-slate-700">Discover leather essentials crafted with precision and rich finishes, designed to elevate every outfit with subtle luxury.</p>
                 <div className="flex flex-wrap gap-4">
-                  <Link href="/belts" className="inline-flex items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-emerald-200 transition hover:bg-emerald-600">Shop Belts</Link>
+                  <Link href="/belts" className="inline-flex items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:text-white">Shop Belts</Link>
                   <Link href="/bags" className="inline-flex items-center justify-center rounded-full border border-emerald px-6 py-3 text-sm font-semibold text-emerald transition hover:bg-emerald-50">Shop Bags</Link>
                 </div>
               </div>
@@ -88,29 +97,28 @@ export default async function Home() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {categories.map((category) => {
-              const href = category.title === 'Belts'
-                ? '/belts'
-                : category.title === 'Bags'
-                  ? '/bags'
-                  : category.title === 'Kurti'
-                    ? '/kurti'
-                    : category.title === 'Karachi Suit'
-                      ? '/karachi-suit'
-                      : category.title === 'Earrings'
-                        ? '/earrings'
-                        : category.title === 'Jhumka'
-                          ? '/jhumka'
-                          : category.title === 'New Arrivals'
-                            ? '/new-arrivals'
-                            : '/sale';
+              const product = categoryProducts.get(category.category);
               return (
-                <Link key={category.title} href={href} className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-xl">
+                <Link key={category.title} href={product ? `/product/${product.id}` : category.href} className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-xl">
                   <div className="h-56 overflow-hidden bg-gray-100">
-                    <img src={category.image} alt={category.title} className="h-full w-full img-cover transition duration-500 group-hover:scale-105" />
+                    {product && getProductImage(product) ? (
+                      <img src={getProductImage(product)} alt={product.name} className="h-full w-full img-cover transition duration-500 group-hover:scale-105" />
+                    ) : product ? (
+                      <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">Product image unavailable</div>
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">No products available</div>
+                    )}
                   </div>
                   <div className="p-6">
                     <h3 className="text-xl font-semibold text-slate-950">{category.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{category.subtitle}</p>
+                    {product ? (
+                      <>
+                        <p className="mt-2 text-sm font-medium text-slate-900">{product.name}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">â‚¹{product.price.toLocaleString("en-IN")}</p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm leading-6 text-slate-600">No products available.</p>
+                    )}
                   </div>
                 </Link>
               );
@@ -138,7 +146,7 @@ export default async function Home() {
                     id: product.id,
                     name: product.name,
                     price: `₹${product.price.toLocaleString("en-IN")}`,
-                    image: product.mainImage ?? product.images?.[0] ?? "",
+                    image: getProductImage(product),
                     description: product.description,
                     discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
                   }}
@@ -164,7 +172,7 @@ export default async function Home() {
                     id: product.id,
                     name: product.name,
                     price: `₹${product.price.toLocaleString("en-IN")}`,
-                    image: product.mainImage ?? product.images?.[0] ?? "",
+                    image: getProductImage(product),
                     description: product.description,
                     discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
                   }}

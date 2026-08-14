@@ -8,6 +8,19 @@ import Link from "next/link";
 
 const PAGE_SIZE = 10;
 
+async function readApiResponse(response: Response): Promise<{ error?: string; invoiceNumber?: string; invoiceUrl?: string }> {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return { error: response.ok ? "The invoice service returned an invalid response." : "The invoice service is temporarily unavailable. Please try again." };
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return { error: "The invoice service returned an invalid response." };
+  }
+}
+
 function statusLabel(status: OrderStatus) {
   const labels: Record<OrderStatus, string> = {
     pending: "Pending",
@@ -70,7 +83,7 @@ export default function OrdersAdminPage() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
       if (!response.ok) {
         setInvoiceError(data.error || "Failed to generate invoice");
@@ -78,7 +91,7 @@ export default function OrdersAdminPage() {
       }
 
       setInvoiceSuccess("Invoice generated and email sent successfully!");
-      setSelectedOrder({ ...order, invoiceNumber: data.invoiceNumber, invoiceUrl: data.invoiceUrl });
+      setSelectedOrder({ ...order, invoiceNumber: data.invoiceNumber ?? "", invoiceUrl: data.invoiceUrl });
       loadOrders();
     } catch (err) {
       setInvoiceError("Failed to generate invoice. Please try again.");
@@ -105,7 +118,7 @@ export default function OrdersAdminPage() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response);
 
       if (!response.ok) {
         setInvoiceError(data.error || "Failed to resend invoice email");
@@ -132,9 +145,18 @@ export default function OrdersAdminPage() {
     }
   };
 
+  const downloadShippingLabel = (order: OrderRecord) => {
+    const link = document.createElement("a");
+    link.href = `/api/shipping-label?orderId=${encodeURIComponent(order.id)}`;
+    link.download = `shipping-label-${order.invoiceNumber || order.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AdminGuard>
-      <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-10">
+      <main className="admin-theme min-h-screen bg-[#E8F5E9] text-[#1B5E20] px-6 py-10">
         <div className="mx-auto max-w-7xl space-y-8">
           <header className="rounded-[32px] border border-emerald/20 bg-slate-900/90 p-8 shadow-2xl shadow-emerald/10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -143,7 +165,7 @@ export default function OrdersAdminPage() {
                 <h1 className="mt-3 text-4xl font-semibold text-white">Order management</h1>
               </div>
               <div className="flex gap-3">
-                <Link href="/admin/inventory" className="inline-flex rounded-full bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-600/20 transition hover:bg-purple-700">
+                <Link href="/admin/inventory" className="inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
                   📦 Inventory
                 </Link>
                 <Link href="/" className="inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-[#d4b229]">
@@ -298,18 +320,24 @@ export default function OrdersAdminPage() {
                 )}
 
                 <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => downloadShippingLabel(selectedOrder)}
+                    className="rounded-full bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
+                  >
+                    Download Shipping Label
+                  </button>
                   {selectedOrder.invoiceUrl ? (
                     <>
                       <button
                         onClick={() => downloadInvoice(selectedOrder)}
-                        className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
                       >
                         📄 Download Invoice
                       </button>
                       <button
                         onClick={() => resendInvoiceEmail(selectedOrder)}
                         disabled={invoiceLoading}
-                        className="rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-50"
+                        className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
                       >
                         {invoiceLoading ? "Sending..." : "📧 Resend Email"}
                       </button>

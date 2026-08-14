@@ -38,6 +38,7 @@ export async function POST(req: Request) {
       customerName: String(safeOrderMeta.customerName ?? ""),
       phone: String(safeOrderMeta.phone ?? ""),
       email: String(safeOrderMeta.email ?? ""),
+      customerGSTIN: String(safeOrderMeta.customerGSTIN ?? "").trim().toUpperCase(),
       paymentMethod: String(safeOrderMeta.paymentMethod ?? "razorpay"),
       subtotal: Number(safeOrderMeta.subtotal ?? 0) || 0,
       shippingCharge: Number(safeOrderMeta.shippingCharge ?? 0) || 0,
