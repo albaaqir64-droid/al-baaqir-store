@@ -44,9 +44,9 @@ export default function ProductCard({ product }: { product: Product }) {
         // Enter or Space navigates
         if (e.key === 'Enter' || e.key === ' ') goToProduct();
       }}
-      className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+      className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/10 focus:outline-none focus:ring-2 focus:ring-emerald-300"
     >
-      <div className="relative h-64 overflow-hidden bg-gray-100 sm:h-72">
+      <div className="relative h-64 overflow-hidden bg-emerald-50 sm:h-72">
         <Image
           src={product.image || '/images/products/placeholder.svg'}
           alt={product.name}
@@ -59,7 +59,7 @@ export default function ProductCard({ product }: { product: Product }) {
           loading="lazy"
         />
         {product.discount && (
-          <div className="absolute left-4 top-4 rounded-full bg-gold px-3 py-1 text-xs font-semibold text-white">{product.discount}</div>
+          <div className="absolute left-4 top-4 rounded-full bg-gold-500 px-3 py-1 text-xs font-semibold text-emerald-950">{product.discount}</div>
         )}
       </div>
 
@@ -86,7 +86,7 @@ export default function ProductCard({ product }: { product: Product }) {
               setWish(nextWishlist.some((item) => item.id === product.id));
             }}
             aria-pressed={wish}
-            className="rounded-full border border-gray-200 bg-white p-2 text-slate-700 hover:bg-gray-50"
+            className="rounded-full border border-emerald-200 bg-white p-2 text-emerald-900 hover:bg-emerald-50"
             title="Add to wishlist"
           >
             {wish ? '♥' : '♡'}
@@ -98,7 +98,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <div className="flex items-center gap-3">
             <Link
               href={`/product/${product.id}`}
-              className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-gray-50"
+              className="rounded-full border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
               onClick={(e) => e.stopPropagation()}
             >
               View

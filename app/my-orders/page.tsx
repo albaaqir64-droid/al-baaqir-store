@@ -39,7 +39,7 @@ export default function MyOrdersPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-20 text-white">
+    <main className="min-h-screen store-surface px-6 py-20">
       <div className="mx-auto max-w-6xl space-y-8">
         <header className="rounded-[32px] border border-emerald/20 bg-slate-900/95 p-8 shadow-2xl shadow-emerald/10">
           <h1 className="text-4xl font-semibold">My Orders</h1>

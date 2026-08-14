@@ -18,7 +18,7 @@ type ServiceAccountJson = Partial<ServiceAccount> & {
 function resolveServiceAccountPath() {
   const configuredPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
   if (!configuredPath) return null;
-  return path.resolve(process.cwd(), configuredPath);
+  return path.resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
 }
 
 function loadServiceAccountFromFile(): ServiceAccountJson | null {
@@ -52,11 +52,11 @@ function applyServiceAccountToEnv(parsed: ServiceAccountJson | null) {
     if (parsed.client_email && !process.env.FIREBASE_CLIENT_EMAIL) {
       process.env.FIREBASE_CLIENT_EMAIL = String(parsed.client_email);
     }
-    const bucket = parsed.storageBucket || parsed.storageBucket || (projectId ? `${projectId}.firebasestorage.app` : undefined);
+    const bucket = parsed.storageBucket || (projectId ? `${projectId}.firebasestorage.app` : undefined);
     if (bucket && !process.env.FIREBASE_STORAGE_BUCKET) {
       process.env.FIREBASE_STORAGE_BUCKET = String(bucket);
     }
-  } catch (e) {
+  } catch {
     // don't crash here; best-effort only
   }
 }

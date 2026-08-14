@@ -29,13 +29,13 @@ export default function Page() {
       <p className="mt-4 text-slate-600">Saved products you want to revisit later.</p>
 
       {items.length === 0 ? (
-        <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-8 text-slate-600 shadow-sm">
+        <div className="mt-8 rounded-3xl border border-emerald-200 bg-white p-8 text-slate-600 shadow-sm">
           Your wishlist is empty.
         </div>
       ) : (
         <div className="mt-8 space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div key={item.id} className="flex items-center justify-between rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-4">
                 <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover" />
                 <div>

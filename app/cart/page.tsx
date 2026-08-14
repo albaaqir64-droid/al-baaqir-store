@@ -40,7 +40,7 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 px-6 py-12">
+    <main className="min-h-screen brand-page px-6 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -48,13 +48,13 @@ export default function Page() {
             <p className="mt-2 text-slate-600">Review your order and proceed to checkout.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/" className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold">Continue shopping</Link>
+            <Link href="/" className="rounded-full border border-emerald-200 px-5 py-3 text-sm font-semibold">Continue shopping</Link>
             <button onClick={() => { clearCart(); setItems([]); }} className="rounded-full border border-rose-500 px-5 py-3 text-sm font-semibold text-rose-600">Clear cart</button>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+          <div className="rounded-3xl border border-emerald-200 bg-white p-10 text-center shadow-sm">
             <p className="text-lg font-medium">Your cart is empty.</p>
             <p className="mt-3 text-slate-600">Add products from the store to continue.</p>
             <Link href="/" className="mt-6 inline-flex rounded-full bg-emerald px-6 py-3 text-emerald-900 transition hover:bg-emerald-600 hover:text-white">Shop now</Link>
@@ -63,7 +63,7 @@ export default function Page() {
           <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
             <section className="space-y-4">
               {items.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-gray-200 p-4 shadow-sm">
+                <div key={item.id} className="rounded-3xl border border-emerald-200 p-4 shadow-sm">
                   <div className="flex gap-4">
                     <img
                     src={item.image || '/images/products/placeholder.svg'}
@@ -75,10 +75,10 @@ export default function Page() {
                       <Link href={item.productUrl} className="text-lg font-semibold text-slate-950 hover:underline">{item.name}</Link>
                       <p className="mt-2 text-sm text-slate-600">{item.qty} × {item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</p>
                       <div className="mt-4 flex items-center gap-3">
-                        <button onClick={() => void updateQty(item.id, item.qty - 1)} className="rounded-full border border-gray-200 px-3 py-1">−</button>
+                        <button onClick={() => void updateQty(item.id, item.qty - 1)} className="rounded-full border border-emerald-200 px-3 py-1">−</button>
                         <span className="w-10 text-center">{item.qty}</span>
-                        <button onClick={() => void updateQty(item.id, item.qty + 1)} className="rounded-full border border-gray-200 px-3 py-1">+</button>
-                        <button onClick={() => removeItem(item.id)} className="rounded-full border border-gray-200 px-3 py-1 text-rose-600">Remove</button>
+                        <button onClick={() => void updateQty(item.id, item.qty + 1)} className="rounded-full border border-emerald-200 px-3 py-1">+</button>
+                        <button onClick={() => removeItem(item.id)} className="rounded-full border border-emerald-200 px-3 py-1 text-rose-600">Remove</button>
                       </div>
                     </div>
                   </div>
@@ -86,7 +86,7 @@ export default function Page() {
               ))}
             </section>
 
-            <aside className="rounded-3xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+            <aside className="rounded-3xl border border-emerald-200 bg-gold-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold">Order Summary</h2>
               <div className="mt-6 space-y-3">
                 {items.map((item) => (
@@ -96,7 +96,7 @@ export default function Page() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 border-t border-gray-200 pt-4 text-lg font-semibold text-slate-950">
+              <div className="mt-6 border-t border-emerald-200 pt-4 text-lg font-semibold text-slate-950">
                 Subtotal: {subtotal.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
               </div>
               <Link href="/checkout" className="mt-6 block w-full rounded-full bg-emerald px-6 py-3 text-center text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">Proceed to Checkout</Link>

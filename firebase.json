@@ -1,4 +1,25 @@
 {
+  "hosting": {
+    "site": "al-baaqir-store",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "https://www.albaaqir.com/",
+        "type": 301
+      },
+      {
+        "source": "/:path*",
+        "destination": "https://www.albaaqir.com/:path",
+        "type": 301
+      }
+    ]
+  },
   "apphosting": {
     "backendId": "al-baaqir-store",
     "rootDir": "/",

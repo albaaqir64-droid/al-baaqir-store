@@ -274,6 +274,7 @@ export async function sendAdminOrderEmail(order: OrderRecord, invoiceUrl: string
                    style="background-color: #1a3a52; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
                   View Order Details
                 </a>
+                ${invoiceUrl ? `<a href="${invoiceUrl}" style="background-color: #15b36a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 8px;">Download Invoice</a>` : ""}
               </p>
             </div>
 

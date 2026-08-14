@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { db } from "./firebase";
-import { getCurrentUserId, getOrCreateCurrentUserId } from "./auth";
+import { getOrCreateCurrentUserId } from "./auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export type WishlistItem = {

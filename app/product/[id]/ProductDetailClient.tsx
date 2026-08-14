@@ -64,7 +64,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
     <div>
       <div className="grid gap-8 lg:grid-cols-2">
         <div>
-            <div className="rounded-3xl border border-gray-200 overflow-hidden bg-gray-100">
+            <div className="rounded-3xl border border-emerald-200 overflow-hidden bg-emerald-50">
             <img
               src={allImages[mainIndex] || '/images/products/placeholder.svg'}
               alt={product.name}
@@ -75,7 +75,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
           <div className="mt-4 flex gap-3">
             {allImages.map((img, i) => (
-              <button key={String(i)} onClick={() => setMainIndex(i)} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-gray-200'}`}>
+              <button key={String(i)} onClick={() => setMainIndex(i)} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-emerald-200'}`}>
                 <img
                   src={img || '/images/products/placeholder.svg'}
                   alt={`${product.name} ${i + 1}`}
@@ -114,16 +114,16 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <h4 className="text-sm font-medium text-slate-900">Size</h4>
             <div className="mt-3 flex flex-wrap gap-3">
               {product.sizes?.map((s) => (
-                <button key={s} onClick={() => setSize(s)} className={`rounded-md border px-3 py-2 text-sm ${size === s ? 'border-emerald bg-emerald text-white' : 'border-gray-200 text-slate-700'}`}>{s}</button>
+                <button key={s} onClick={() => setSize(s)} className={`rounded-md border px-3 py-2 text-sm ${size === s ? 'border-emerald bg-emerald text-white' : 'border-emerald-200 text-slate-700'}`}>{s}</button>
               ))}
             </div>
           </div>
 
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-10 w-10 rounded-md border border-gray-200">−</button>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-10 w-10 rounded-md border border-emerald-200">−</button>
               <div className="w-12 text-center">{qty}</div>
-              <button onClick={() => setQty((q) => Math.min(Math.max(0, product.stock), q + 1))} disabled={product.stock < 1} className="h-10 w-10 rounded-md border border-gray-200 disabled:opacity-50">+</button>
+              <button onClick={() => setQty((q) => Math.min(Math.max(0, product.stock), q + 1))} disabled={product.stock < 1} className="h-10 w-10 rounded-md border border-emerald-200 disabled:opacity-50">+</button>
             </div>
 
             <div className="flex flex-1 flex-wrap items-center gap-3">
@@ -164,7 +164,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                   setToastMessage(nowWishlisted ? "Added to wishlist." : "Removed from wishlist.");
                   window.setTimeout(() => setToastMessage(null), 2200);
                 }}
-                className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                className="rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-50"
               >
                 {wishlisted ? '♥' : '♡'} Wishlist
               </button>
@@ -190,7 +190,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                     }
                   }}
                   placeholder="Enter pincode"
-                  className="flex-1 rounded-md border border-gray-200 px-3 py-2"
+                  className="flex-1 rounded-md border border-emerald-200 px-3 py-2"
                   inputMode="numeric"
                 />
                 <button

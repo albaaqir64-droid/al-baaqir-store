@@ -231,14 +231,14 @@ export default function AdminProductsPage() {
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-white text-slate-900">
+      <div className="min-h-screen brand-page text-slate-900">
         <header className="border-b bg-emerald/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">Admin — Products</h1>
         </div>
       </header>
 
-      <main className="admin-theme mx-auto max-w-7xl bg-[#E8F5E9] px-6 py-8">
+      <main className="admin-theme mx-auto max-w-7xl bg-emerald-50 px-6 py-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Admin — Products</h1>

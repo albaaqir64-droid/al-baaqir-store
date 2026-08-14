@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, PDFPage, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { OrderRecord } from "./orders";
 import { format } from "date-fns";
 import { BUSINESS, GSTIN_PATTERN } from "./business";
@@ -21,18 +21,6 @@ const STORE_DETAILS = {
 function getValidGstin(value: string | undefined): string | null {
   const gstin = value?.trim().toUpperCase();
   return gstin && GSTIN_PATTERN.test(gstin) ? gstin : null;
-}
-
-async function fetchImage(url: string): Promise<Buffer | null> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    console.error("Error fetching image:", error);
-    return null;
-  }
 }
 
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buffer> {

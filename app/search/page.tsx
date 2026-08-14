@@ -53,7 +53,7 @@ export default function Page() {
     }
 
     return results.map((product) => (
-      <Link key={product.id} href={`/product/${product.id}`} className="block rounded-2xl border border-gray-200 bg-white px-4 py-3 text-slate-900 shadow-sm hover:bg-slate-50">
+      <Link key={product.id} href={`/product/${product.id}`} className="block rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-slate-900 shadow-sm hover:bg-slate-50">
         {product.name}
       </Link>
     ));
@@ -64,12 +64,12 @@ export default function Page() {
       <h1 className="text-3xl font-semibold">Search</h1>
       <p className="mt-4 text-slate-600">Find products by name, category, or description.</p>
 
-      <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search belts, bags, new arrivals..."
-          className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+          className="w-full rounded-2xl border border-emerald-200 px-4 py-3 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
         />
       </div>
 

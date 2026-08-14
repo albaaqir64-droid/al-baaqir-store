@@ -156,7 +156,7 @@ export default function OrdersAdminPage() {
 
   return (
     <AdminGuard>
-      <main className="admin-theme min-h-screen bg-[#E8F5E9] text-[#1B5E20] px-6 py-10">
+      <main className="admin-theme min-h-screen bg-emerald-50 text-emerald-900 px-6 py-10">
         <div className="mx-auto max-w-7xl space-y-8">
           <header className="rounded-[32px] border border-emerald/20 bg-slate-900/90 p-8 shadow-2xl shadow-emerald/10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -168,14 +168,14 @@ export default function OrdersAdminPage() {
                 <Link href="/admin/inventory" className="inline-flex rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
                   📦 Inventory
                 </Link>
-                <Link href="/" className="inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-[#d4b229]">
+                <Link href="/" className="inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-gold-600">
                   View store
                 </Link>
               </div>
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-4">
-              {['Total orders', 'Revenue', 'Pending', 'Delivered', 'Cancelled'].map((label, index) => (
+              {['Total orders', 'Revenue', 'Pending', 'Delivered', 'Cancelled'].map((label) => (
                 <div key={label} className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
                   <p className="text-sm text-slate-400">{label}</p>
                   <p className="mt-3 text-3xl font-semibold text-white">

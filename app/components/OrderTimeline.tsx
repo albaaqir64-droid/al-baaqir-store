@@ -15,7 +15,7 @@ export function OrderTimeline({ current }: { current: OrderStatus }) {
   const currentIndex = statusSteps.findIndex((step) => step.key === current);
 
   return (
-    <div className="space-y-5 rounded-3xl border border-gray-200 bg-slate-50 p-5 shadow-sm">
+    <div className="space-y-5 rounded-3xl border border-emerald-200 bg-slate-50 p-5 shadow-sm">
       <h3 className="text-lg font-semibold text-slate-950">Order progress</h3>
       <div className="space-y-4">
         {statusSteps.map((step, index) => {

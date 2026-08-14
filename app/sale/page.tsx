@@ -21,7 +21,7 @@ export default async function Page() {
   const data = await fetchProductsByCategory('Sale');
   const products = data.map(toCard);
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen brand-page text-slate-900">
       <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
@@ -33,7 +33,7 @@ export default async function Page() {
           </div>
           <div className="flex items-center gap-3">
             <label className="text-sm text-slate-600">Sort:</label>
-            <select className="rounded-full border border-gray-200 px-4 py-2">
+            <select className="rounded-full border border-emerald-200 px-4 py-2">
               <option>Featured</option>
               <option>Discount: High to Low</option>
             </select>
@@ -42,7 +42,7 @@ export default async function Page() {
 
         <div className="grid gap-8 lg:grid-cols-4">
           <aside className="hidden lg:block">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="rounded-2xl border border-emerald-200 bg-white p-5">
               <h3 className="text-sm font-semibold text-slate-900">Filters</h3>
               <div className="mt-4 space-y-3 text-sm text-slate-600">
                 <div>

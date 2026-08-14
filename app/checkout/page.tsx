@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CartItem, clearCart, getCartItems, loadCartItems } from "../lib/cart";
+import { CartItem, clearCart, loadCartItems } from "../lib/cart";
 import { generateInvoiceNumber } from "../lib/orders";
 import { getCurrentUserId, saveCustomerContact } from "../lib/auth";
 import { fetchPincodeLocation } from "../lib/pincode";
@@ -230,7 +230,7 @@ export default function CheckoutPage() {
             setErrors({});
 
             window.location.href = `/order-success?orderId=${encodeURIComponent(verifyJson.orderId)}`;
-          } catch (err) {
+          } catch {
             setSaveError('Payment verification failed. Please contact support.');
           } finally {
             setSubmitting(false);
@@ -298,14 +298,14 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 px-6 py-12">
+    <main className="min-h-screen brand-page text-slate-900 px-6 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold">Checkout</h1>
             <p className="mt-2 text-slate-600">Complete your shipping details and confirm your order.</p>
           </div>
-          <Link href="/cart" className="rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+          <Link href="/cart" className="rounded-full border border-emerald-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
             Back to cart
           </Link>
         </div>
@@ -319,7 +319,7 @@ export default function CheckoutPage() {
 
         <div className="grid gap-8 xl:grid-cols-[1.75fr_1fr]">
           <section className="space-y-8">
-            <div className="rounded-3xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-950">Shipping information</h2>
               <div className="mt-6 grid gap-6 sm:grid-cols-2">
                 <div>
@@ -327,7 +327,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.fullName}
                     onChange={(event) => handleInput("fullName", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="Enter your full name"
                   />
                   {errors.fullName && <p className="mt-2 text-sm text-rose-600">{errors.fullName}</p>}
@@ -337,7 +337,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.mobile}
                     onChange={(event) => handleInput("mobile", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="10-digit mobile number"
                     inputMode="numeric"
                   />
@@ -348,7 +348,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.email}
                     onChange={(event) => handleInput("email", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="you@example.com"
                     type="email"
                   />
@@ -359,7 +359,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.customerGSTIN}
                     onChange={(event) => handleInput("customerGSTIN", event.target.value.toUpperCase())}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="15-character GSTIN"
                     maxLength={15}
                   />
@@ -370,7 +370,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.house}
                     onChange={(event) => handleInput("house", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="e.g. 402B"
                   />
                   {errors.house && <p className="mt-2 text-sm text-rose-600">{errors.house}</p>}
@@ -380,7 +380,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.street}
                     onChange={(event) => handleInput("street", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="e.g. Jubilee Hills"
                   />
                   {errors.street && <p className="mt-2 text-sm text-rose-600">{errors.street}</p>}
@@ -390,7 +390,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.landmark}
                     onChange={(event) => handleInput("landmark", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="e.g. Near the temple"
                   />
                 </div>
@@ -400,7 +400,7 @@ export default function CheckoutPage() {
                     <input
                       value={form.pincode}
                       onChange={(event) => handleInput("pincode", event.target.value)}
-                      className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                      className="flex-1 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                       placeholder="e.g. 500081"
                       inputMode="numeric"
                     />
@@ -420,7 +420,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.city}
                     onChange={(event) => handleInput("city", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="e.g. Hyderabad"
                   />
                   {errors.city && <p className="mt-2 text-sm text-rose-600">{errors.city}</p>}
@@ -430,7 +430,7 @@ export default function CheckoutPage() {
                   <input
                     value={form.state}
                     onChange={(event) => handleInput("state", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
                     placeholder="e.g. Telangana"
                   />
                   {errors.state && <p className="mt-2 text-sm text-rose-600">{errors.state}</p>}
@@ -438,7 +438,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-950">Payment method</h2>
               <div className="mt-6 space-y-4">
                 <label className="flex items-center gap-3 rounded-3xl border border-emerald/20 bg-white p-4 text-sm transition hover:border-emerald/40">
@@ -455,7 +455,7 @@ export default function CheckoutPage() {
                     <div className="mt-1 text-slate-600">Pay when your order arrives.</div>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 rounded-3xl border border-gray-200 bg-slate-100 p-4 text-sm text-slate-500">
+                <label className="flex items-center gap-3 rounded-3xl border border-emerald-200 bg-slate-100 p-4 text-sm text-slate-500">
                   <input
                     type="radio"
                     name="payment"
@@ -475,7 +475,7 @@ export default function CheckoutPage() {
           </section>
 
           <aside className="space-y-6">
-            <div className="rounded-3xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-950">Order summary</h2>
@@ -486,12 +486,12 @@ export default function CheckoutPage() {
 
               <div className="mt-6 space-y-4">
                 {items.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-slate-600">
+                  <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-sm text-slate-600">
                     Your cart is empty. Add items from the store to continue.
                   </div>
                 ) : (
                   items.map((item) => (
-                    <div key={item.id} className="flex gap-4 rounded-3xl border border-gray-200 bg-white p-4">
+                    <div key={item.id} className="flex gap-4 rounded-3xl border border-emerald-200 bg-white p-4">
                       <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover" />
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-slate-950">{item.name}</div>

@@ -62,11 +62,11 @@ export default async function Home() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen brand-page text-slate-900">
       <Header />
 
       <main>
-        <section className="relative bg-emerald-950/5">
+        <section className="relative brand-hero">
           <div className="mx-auto max-w-[1200px] px-6 py-12 lg:py-16">
             <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
               <div className="space-y-6">
@@ -80,7 +80,7 @@ export default async function Home() {
                 </div>
               </div>
               <div className="flex justify-center lg:justify-end">
-                <div className="relative overflow-hidden rounded-[32px] border border-gray-200 bg-gray-100" style={{ minWidth: '320px', maxWidth: '500px' }}>
+                <div className="relative overflow-hidden rounded-[32px] border border-emerald-200 bg-emerald-50" style={{ minWidth: '320px', maxWidth: '500px' }}>
                   <div className="relative h-[300px] sm:h-[380px] lg:h-[420px]">
                     <img src="/images/categories/hero.svg" alt="Premium leather belt" className="absolute inset-0 h-full w-full img-cover" />
                   </div>
@@ -99,8 +99,8 @@ export default async function Home() {
             {categories.map((category) => {
               const product = categoryProducts.get(category.category);
               return (
-                <Link key={category.title} href={product ? `/product/${product.id}` : category.href} className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-xl">
-                  <div className="h-56 overflow-hidden bg-gray-100">
+                <Link key={category.title} href={product ? `/product/${product.id}` : category.href} className="group overflow-hidden rounded-3xl border border-emerald-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/10">
+                  <div className="h-56 overflow-hidden bg-gold-50">
                     {product && getProductImage(product) ? (
                       <img src={getProductImage(product)} alt={product.name} className="h-full w-full img-cover transition duration-500 group-hover:scale-105" />
                     ) : product ? (
@@ -137,7 +137,7 @@ export default async function Home() {
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {newArrivals.length === 0 ? (
-              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-slate-600">No products available.</div>
+              <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center text-slate-600">No products available.</div>
             ) : (
               newArrivals.map((product) => (
                 <ProductCard
@@ -163,7 +163,7 @@ export default async function Home() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {featuredProducts.length === 0 ? (
-              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-slate-600">No products available.</div>
+              <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center text-slate-600">No products available.</div>
             ) : (
               featuredProducts.map((product) => (
                 <ProductCard
@@ -182,23 +182,23 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-16 bg-slate-950 text-white rounded-[32px] border border-white/10">
+        <section className="max-w-7xl mx-auto px-6 py-16 brand-section-warm rounded-[32px] border border-gold-300/40">
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300">Why Choose Al Baaqir</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-900/80">Why Choose Al Baaqir</p>
               <h2 className="text-3xl font-semibold">Exclusive leather goods built to last.</h2>
-              <p className="text-sm leading-7 text-slate-300">From premium leather sourcing to careful handcraftsmanship, every piece is designed for enduring style and everyday luxury.</p>
+              <p className="text-sm leading-7 text-emerald-950/80">From premium leather sourcing to careful handcraftsmanship, every piece is designed for enduring style and everyday luxury.</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300">Handmade</p>
+              <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-800">Handmade</p>
                 <p className="mt-3 text-lg font-semibold">Artisan finish</p>
-                <p className="mt-2 text-sm text-slate-300">Skilled artisans create thoughtful details across every piece.</p>
+                <p className="mt-2 text-sm text-emerald-950/75">Skilled artisans create thoughtful details across every piece.</p>
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-300">Materials</p>
+              <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-800">Materials</p>
                 <p className="mt-3 text-lg font-semibold">Premium leather</p>
-                <p className="mt-2 text-sm text-slate-300">Only the finest leather and hardware meet our standards.</p>
+                <p className="mt-2 text-sm text-emerald-950/75">Only the finest leather and hardware meet our standards.</p>
               </div>
             </div>
           </div>

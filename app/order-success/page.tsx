@@ -108,7 +108,7 @@ function OrderSuccessPageContent() {
   if (loading) {
     return (
       <main className="min-h-screen bg-white px-6 py-24 text-slate-900">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200 bg-slate-50 p-12 shadow-lg">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-200 bg-slate-50 p-12 shadow-lg">
           <div className="h-72 animate-pulse rounded-3xl bg-slate-200" />
         </div>
       </main>
@@ -118,7 +118,7 @@ function OrderSuccessPageContent() {
   if (error || !order) {
     return (
       <main className="min-h-screen bg-white px-6 py-24 text-slate-900">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200 bg-slate-50 p-12 shadow-lg text-center">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-200 bg-slate-50 p-12 shadow-lg text-center">
           <h1 className="text-2xl font-semibold">Unable to load order</h1>
           <p className="mt-4 text-slate-600">{error || "Please check your order link and try again."}</p>
           <Link href="/" className="mt-8 inline-flex rounded-full bg-emerald px-6 py-3 text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
@@ -130,7 +130,7 @@ function OrderSuccessPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-20 text-white">
+    <main className="min-h-screen store-surface px-6 py-20">
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="rounded-[32px] border border-emerald/20 bg-emerald-950/90 p-10 shadow-2xl shadow-emerald/20">
           <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Order Placed Successfully</p>
@@ -270,7 +270,7 @@ export default function OrderSuccessPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-white px-6 py-24 text-slate-900">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-gray-200 bg-slate-50 p-12 shadow-lg">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-200 bg-slate-50 p-12 shadow-lg">
             <div className="h-72 animate-pulse rounded-3xl bg-slate-200" />
           </div>
         </main>

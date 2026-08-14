@@ -69,7 +69,7 @@ export default function AdminPage() {
 
   return (
     <AdminGuard>
-      <main className="admin-theme min-h-screen bg-[#E8F5E9] text-[#1B5E20]">
+      <main className="admin-theme min-h-screen bg-emerald-50 text-emerald-900">
         <div className="mx-auto grid min-h-screen max-w-[1900px] grid-cols-1 gap-6 px-4 py-6 xl:grid-cols-[280px_1fr]">
           <aside className="rounded-[32px] border border-slate-800 bg-slate-950/95 p-6 shadow-2xl shadow-emerald/10 backdrop-blur-md">
             <div className="flex items-center gap-3">

@@ -168,7 +168,7 @@ export default function InventoryAdminPage() {
 
   return (
     <AdminGuard>
-      <main className="admin-theme min-h-screen bg-[#E8F5E9] text-[#1B5E20] px-6 py-10">
+      <main className="admin-theme min-h-screen bg-emerald-50 text-emerald-900 px-6 py-10">
         <div className="mx-auto max-w-7xl space-y-8">
           {/* Header */}
           <header className="rounded-[32px] border border-emerald/20 bg-slate-900/90 p-8 shadow-2xl shadow-emerald/10">
@@ -179,7 +179,7 @@ export default function InventoryAdminPage() {
               </div>
               <Link
                 href="/admin/orders"
-                className="inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-[#d4b229]"
+                className="inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-gold/20 transition hover:bg-gold-600"
               >
                 View Orders
               </Link>
