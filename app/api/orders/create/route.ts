@@ -28,6 +28,8 @@ export async function POST(request: Request) {
           id: text(value.id),
           name: text(value.name),
           price: amount(value.price),
+          originalPrice: value.originalPrice !== undefined ? amount(value.originalPrice) : null,
+          discountPercent: value.discountPercent !== undefined ? amount(value.discountPercent) : null,
           quantity: Math.floor(amount(value.quantity)),
           image: text(value.image),
           productUrl: text(value.productUrl),

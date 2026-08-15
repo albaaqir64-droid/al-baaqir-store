@@ -7,13 +7,19 @@ import Link from "next/link";
 import { fetchProductsByCategory } from "../lib/products";
 
 function toCard(product: any) {
+  const price = Number(product.price) || 0;
+  const discountPercent = Number(product.discountPercent) || 0;
+  const finalPrice = discountPercent > 0 ? Math.round(price * (1 - discountPercent / 100)) : price;
+
   return {
     id: product.id,
     name: product.name,
-    price: `₹${product.price.toLocaleString('en-IN')}`,
+    price: `₹${finalPrice.toLocaleString('en-IN')}`,
+    originalPriceNum: price,
+    discountPercent: discountPercent > 0 ? discountPercent : undefined,
     image: product.mainImage ?? product.images?.[0] ?? '',
     description: product.description,
-    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+    discount: discountPercent > 0 ? `${discountPercent}%` : undefined,
   };
 }
 
@@ -54,15 +60,6 @@ export default async function Page() {
                     <label className="flex items-center gap-2"><input type="checkbox" /> Large</label>
                   </div>
                 </div>
-
-                <div>
-                  <p className="font-medium text-slate-800">Color</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-black" aria-label="Black" />
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-amber-700" aria-label="Brown" />
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-slate-200" aria-label="Tan" />
-                  </div>
-                </div>
               </div>
             </div>
           </aside>
@@ -77,7 +74,7 @@ export default async function Page() {
         </div>
 
         <div className="mt-12 text-center">
-          <Link href="/">← Back to Home</Link>
+          <Link href="/" className="text-sm text-slate-600">← Back to Home</Link>
         </div>
       </main>
 

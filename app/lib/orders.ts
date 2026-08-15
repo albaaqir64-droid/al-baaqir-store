@@ -33,6 +33,8 @@ export interface OrderItem {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   quantity: number;
   image: string;
   slug: string;
@@ -76,6 +78,8 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
         id: String(item.id ?? ""),
         name: String(item.name ?? ""),
         price: Number(item.price ?? 0),
+        originalPrice: item.originalPrice !== undefined ? Number(item.originalPrice) : undefined,
+        discountPercent: item.discountPercent !== undefined ? Number(item.discountPercent) : undefined,
         quantity: Number(item.quantity ?? 0),
         image: String(item.image ?? ""),
         slug: String(item.slug ?? ""),
@@ -123,7 +127,7 @@ export async function fetchOrders(options: {
   }
 
   const ordersRef = collection(db, "orders");
-  let ordersQuery = query(ordersRef, orderBy("createdAt", "desc"));
+  let ordersQuery = query(ordersRef);
 
   if (options.status) {
     ordersQuery = query(ordersQuery, where("status", "==", options.status));
@@ -135,6 +139,13 @@ export async function fetchOrders(options: {
 
   const snapshot = await getDocs(ordersQuery);
   const list = snapshot.docs.map((docSnap) => normalizeOrder(docSnap.id, docSnap.data()));
+
+  // Sort in memory to avoid needing a composite index
+  list.sort((a, b) => {
+    const timeA = a.createdAt?.toMillis?.() || 0;
+    const timeB = b.createdAt?.toMillis?.() || 0;
+    return timeB - timeA;
+  });
 
   if (options.search) {
     const queryText = options.search.toLowerCase();

@@ -141,7 +141,7 @@ export default function CheckoutPage() {
       pincode: form.pincode.trim(),
     });
 
-    const shippingCharge = total >= 10000 ? 0 : 240;
+    const shippingCharge = 0;
     const orderTotal = Number(total) + shippingCharge;
     const invoiceNumber = generateInvoiceNumber();
 
@@ -496,14 +496,26 @@ export default function CheckoutPage() {
                 ) : (
                   items.map((item) => (
                     <div key={item.id} className="flex gap-4 rounded-3xl border border-emerald-200 bg-white p-4">
-                      <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover" />
+                      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400 italic">No image</div>
+                        )}
+                      </div>
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-slate-950">{item.name}</div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                          <span>Qty {item.qty}</span>
-                          <span>•</span>
-                          <span>{formatINR(item.price)}</span>
+                        <div className="mt-2 text-xs">
+                          {item.originalPrice && item.originalPrice > item.price ? (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-900">{formatINR(item.price)}</span>
+                              <span className="text-slate-500 line-through">{formatINR(item.originalPrice)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-600">{formatINR(item.price)}</span>
+                          )}
                         </div>
+                        <div className="mt-1 text-xs text-slate-600">Qty {item.qty}</div>
                       </div>
                       <div className="text-right text-sm font-semibold text-slate-900">{formatINR(item.price * item.qty)}</div>
                     </div>
@@ -518,11 +530,11 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Shipping</span>
-                  <span>{total >= 10000 ? "Free" : "₹240"}</span>
+                  <span className="font-medium text-emerald-600 uppercase">Free</span>
                 </div>
                 <div className="flex items-center justify-between font-semibold text-slate-950">
                   <span>Total</span>
-                  <span>{formatINR(total >= 10000 ? total : total + 240)}</span>
+                  <span>{formatINR(total)}</span>
                 </div>
               </div>
 

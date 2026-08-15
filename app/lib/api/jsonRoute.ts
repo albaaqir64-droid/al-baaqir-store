@@ -3,14 +3,17 @@ import { NextResponse } from "next/server";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 export function apiJson(data: unknown, status = 200) {
-  return NextResponse.json(data, { status, headers: JSON_HEADERS });
+  // Ensure we always return a valid JSON object even if data is null/undefined
+  const body = data === null || data === undefined ? { success: status < 400 } : data;
+  return NextResponse.json(body, { status, headers: JSON_HEADERS });
 }
 
 export function apiError(error: string, status = 500, extra?: Record<string, unknown>) {
+  console.error(`[API Error] ${status}: ${error}`, extra || "");
   return apiJson({ success: false, error, ...extra }, status);
 }
 
-const MAX_JSON_BODY_BYTES = 4 * 1024 * 1024;
+const MAX_JSON_BODY_BYTES = 50 * 1024 * 1024; // Increased to 50MB for very high-quality images
 
 export async function readRequestJson(request: Request): Promise<
   { ok: true; data: unknown } | { ok: false; response: NextResponse }

@@ -11,6 +11,8 @@ type Product = {
   id: string;
   name: string;
   price: string;
+  originalPriceNum?: number;
+  discountPercent?: number;
   image: string;
   description?: string;
   discount?: string;
@@ -94,7 +96,12 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <span className="text-lg font-semibold text-slate-950">{product.price}</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-slate-950">{product.price}</span>
+            {product.originalPriceNum && product.discountPercent && (
+              <span className="text-xs text-slate-500 line-through">₹{product.originalPriceNum.toLocaleString("en-IN")}</span>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <Link
               href={`/product/${product.id}`}
@@ -107,11 +114,14 @@ export default function ProductCard({ product }: { product: Product }) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                const priceNum = Number.parseFloat(product.price.replace(/[^\d.]/g, "")) || 0;
                 addCartItem(
                   {
                     id: product.id,
                     name: product.name,
-                    price: Number.parseFloat(product.price.replace(/[^\d.]/g, "")) || 0,
+                    price: priceNum,
+                    originalPrice: product.originalPriceNum,
+                    discountPercent: product.discountPercent,
                     image: product.image,
                     productUrl: `/product/${product.id}`,
                     hsnSac: product.hsnSac,

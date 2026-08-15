@@ -8,6 +8,8 @@ export type CartItem = {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   qty: number;
   image: string;
   productUrl: string;
@@ -29,11 +31,15 @@ function isBrowserOnline() {
 
 export function sanitizeCartItem(item: any): CartItem {
   const price = Number(item?.price ?? 0);
+  const originalPrice = item?.originalPrice !== undefined ? Number(item.originalPrice) : undefined;
+  const discountPercent = item?.discountPercent !== undefined ? Number(item.discountPercent) : undefined;
   const qty = Number(item?.qty ?? item?.quantity ?? 0);
   return {
     id: String(item?.id ?? ""),
     name: String(item?.name ?? ""),
     price: !isNaN(price) ? price : 0,
+    originalPrice: originalPrice && !isNaN(originalPrice) ? originalPrice : undefined,
+    discountPercent: discountPercent && !isNaN(discountPercent) ? discountPercent : undefined,
     qty: !isNaN(qty) ? qty : 0,
     image: String(item?.image ?? ""),
     productUrl: String(item?.productUrl ?? ""),
@@ -123,6 +129,8 @@ function serializeCartItem(item: CartItem): Record<string, any> {
   const price = Number(item.price) || 0;
   const qty = Number(item.qty) || 0;
   const gstRate = Number(item.gstRate ?? 0) || 0;
+  const originalPrice = item.originalPrice !== undefined ? Number(item.originalPrice) : null;
+  const discountPercent = item.discountPercent !== undefined ? Number(item.discountPercent) : null;
 
   // Validate numbers are finite
   if (!isFinite(price) || !isFinite(qty)) {
@@ -145,6 +153,8 @@ function serializeCartItem(item: CartItem): Record<string, any> {
     productUrl,
     hsnSac: item.hsnSac || "",
     gstRate,
+    originalPrice,
+    discountPercent,
   };
 }
 

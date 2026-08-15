@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Project Setup Requirements
+
+### Firebase Configuration
+1. **Service Account**: Place `service-account.json` in the root directory.
+2. **Firestore Indexes**: This project requires composite indexes for order lookups.
+   - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)
+   - **Order Management**: `status` (Ascending) + `createdAt` (Descending)
+
+You can create these by clicking the links generated in the console logs/terminal when the app encounters a `FirebaseError`.

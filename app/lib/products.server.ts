@@ -1,8 +1,7 @@
 import "server-only";
 
-import { db } from "./firebase";
-import { collection, deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { getAdminStorage, getAdminApp } from "./firebaseAdmin";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import type { ProductSavePayload, ProductRecord } from "./productTypes";
 
 function createSlug(value: string) {
@@ -20,23 +19,49 @@ function parseDataUrl(value: string) {
 }
 
 function getExtensionFromMimeType(mimeType: string) {
-  const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/webp": ".webp", "image/svg+xml": ".svg" };
+  const extensions: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg"
+  };
   return extensions[mimeType.toLowerCase()] ?? "";
 }
 
 async function uploadProductImage(productId: string, imageValue: string, index: number, type: "mainImage" | "galleryImages") {
   if (!isDataUrl(imageValue)) return imageValue;
+
   const { mimeType, buffer } = parseDataUrl(imageValue);
-  const destinationPath = type === "mainImage" ? `products/${productId}/main${getExtensionFromMimeType(mimeType)}` : `products/${productId}/gallery-${index}${getExtensionFromMimeType(mimeType)}`;
-  const bucket = getAdminStorage().bucket();
-  const file = bucket.file(destinationPath);
-  await file.save(buffer, { metadata: { contentType: mimeType } });
+  const extension = getExtensionFromMimeType(mimeType);
+  const destinationPath = type === "mainImage"
+    ? `products/${productId}/main${extension}`
+    : `products/${productId}/gallery-${index}${extension}`;
+
   try {
-    await file.makePublic();
-    return `https://storage.googleapis.com/${bucket.name}/${destinationPath}`;
-  } catch {
-    const [signedUrl] = await file.getSignedUrl({ action: "read", expires: Date.now() + 365 * 24 * 60 * 60 * 1000 });
-    return signedUrl;
+    const bucket = getAdminStorage().bucket();
+    const file = bucket.file(destinationPath);
+
+    // Save with public access if possible, or fallback to signed URL
+    await file.save(buffer, {
+      metadata: { contentType: mimeType }
+    });
+
+    try {
+      await file.makePublic();
+      return `https://storage.googleapis.com/${bucket.name}/${destinationPath}`;
+    } catch (e) {
+      console.warn("Could not make file public, getting signed URL instead", e);
+      const [signedUrl] = await file.getSignedUrl({
+        action: "read",
+        expires: Date.now() + 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
+      });
+      return signedUrl;
+    }
+  } catch (error) {
+    console.error("Image upload failed:", error);
+    throw new Error(`Failed to upload high-quality image: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -55,35 +80,99 @@ function optionalFiniteNumber(value: unknown): number | undefined {
 }
 
 export async function createProduct(payload: ProductSavePayload) {
-  const docRef = doc(collection(db, "products"));
-  const productId = docRef.id;
-  const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : [];
-  const mainImage = payload.mainImage ? await uploadProductImage(productId, String(payload.mainImage), 0, "mainImage") : "";
-  const images = await Promise.all(galleryImages.map((image, index) => uploadProductImage(productId, String(image), index, "galleryImages")));
-  const discount = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
-  const data = withoutUndefined({ id: productId, name: String(payload.name ?? "").trim(), category: String(payload.category ?? "").trim(), price: Number(payload.price) || 0, stock: Number(payload.stock) || 0, active: payload.active !== false, slug: createSlug(payload.name), createdAt: serverTimestamp(), lastUpdated: serverTimestamp(), mainImage, galleryImages: images, images, description: optionalText(payload.description), discount, discountPercent: discount, featured: payload.featured === true, hsnSac: optionalText(payload.hsnSac), gstRate: optionalFiniteNumber(payload.gstRate) });
-  await setDoc(docRef, data);
-  return { id: productId, ...payload, slug: data.slug, mainImage, galleryImages: images, images, discount, discountPercent: discount };
+  try {
+    const firestore = getFirestore(getAdminApp());
+    const docRef = firestore.collection("products").doc();
+    const productId = docRef.id;
+
+    const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : [];
+
+    // Process high-quality images and get URLs
+    const mainImageUrl = payload.mainImage ? await uploadProductImage(productId, String(payload.mainImage), 0, "mainImage") : "";
+    const imageUrls = await Promise.all(
+      galleryImages.map((image, index) => uploadProductImage(productId, String(image), index, "galleryImages"))
+    );
+
+    const discount = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
+
+    const data = withoutUndefined({
+      id: productId,
+      name: String(payload.name ?? "").trim(),
+      category: String(payload.category ?? "").trim(),
+      price: Number(payload.price) || 0,
+      stock: Number(payload.stock) || 0,
+      active: payload.active !== false,
+      slug: createSlug(payload.name),
+      createdAt: FieldValue.serverTimestamp(),
+      lastUpdated: FieldValue.serverTimestamp(),
+      mainImage: mainImageUrl,
+      galleryImages: imageUrls,
+      images: imageUrls,
+      description: optionalText(payload.description),
+      discount,
+      discountPercent: discount,
+      featured: payload.featured === true,
+      hsnSac: optionalText(payload.hsnSac),
+      gstRate: optionalFiniteNumber(payload.gstRate)
+    });
+
+    await docRef.set(data);
+
+    // Return a lightweight object to the client (avoiding sending back large base64 strings)
+    return {
+      success: true,
+      id: productId,
+      name: data.name,
+      slug: data.slug,
+      mainImage: mainImageUrl,
+      images: imageUrls
+    };
+  } catch (error) {
+    console.error("Error in createProduct:", error);
+    throw error;
+  }
 }
 
 export async function updateProduct(id: string, payload: Partial<ProductSavePayload>) {
+  const firestore = getFirestore(getAdminApp());
+  const docRef = firestore.collection("products").doc(id);
+
   const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : undefined;
-  const updatePayload: Record<string, unknown> = withoutUndefined({ name: payload.name !== undefined ? String(payload.name).trim() : undefined, category: payload.category !== undefined ? String(payload.category).trim() : undefined, price: payload.price !== undefined ? Number(payload.price) || 0 : undefined, stock: payload.stock !== undefined ? Number(payload.stock) || 0 : undefined, active: payload.active, description: payload.description !== undefined ? optionalText(payload.description) ?? null : undefined, hsnSac: payload.hsnSac !== undefined ? optionalText(payload.hsnSac) ?? null : undefined, gstRate: payload.gstRate !== undefined ? optionalFiniteNumber(payload.gstRate) ?? null : undefined, lastUpdated: serverTimestamp() });
-  if (payload.mainImage !== undefined) updatePayload.mainImage = isDataUrl(payload.mainImage) ? await uploadProductImage(id, payload.mainImage, 0, "mainImage") : payload.mainImage;
+
+  const updatePayload: Record<string, unknown> = withoutUndefined({
+    name: payload.name !== undefined ? String(payload.name).trim() : undefined,
+    category: payload.category !== undefined ? String(payload.category).trim() : undefined,
+    price: payload.price !== undefined ? Number(payload.price) || 0 : undefined,
+    stock: payload.stock !== undefined ? Number(payload.stock) || 0 : undefined,
+    active: payload.active,
+    description: payload.description !== undefined ? optionalText(payload.description) ?? null : undefined,
+    hsnSac: payload.hsnSac !== undefined ? optionalText(payload.hsnSac) ?? null : undefined,
+    gstRate: payload.gstRate !== undefined ? optionalFiniteNumber(payload.gstRate) ?? null : undefined,
+    lastUpdated: FieldValue.serverTimestamp()
+  });
+
+  if (payload.mainImage !== undefined) {
+    updatePayload.mainImage = isDataUrl(payload.mainImage) ? await uploadProductImage(id, payload.mainImage, 0, "mainImage") : payload.mainImage;
+  }
+
   if (galleryImages !== undefined) {
     const images = await Promise.all(galleryImages.map((image, index) => uploadProductImage(id, String(image), index, "galleryImages")));
     updatePayload.galleryImages = images;
     updatePayload.images = images;
   }
+
   const discount = payload.discount ?? payload.discountPercent;
   if (discount !== undefined) updatePayload.discount = updatePayload.discountPercent = Number(discount) || 0;
+
   if (payload.featured !== undefined) updatePayload.featured = payload.featured;
   if (payload.name) updatePayload.slug = createSlug(payload.name);
-  await updateDoc(doc(db, "products", id), updatePayload);
+
+  await docRef.update(updatePayload);
 }
 
 export async function deleteProductById(id: string) {
-  await deleteDoc(doc(db, "products", id));
+  const firestore = getFirestore(getAdminApp());
+  await firestore.collection("products").doc(id).delete();
 }
 
 function normalizeProductImageUrl(value: unknown): string {
@@ -152,8 +241,8 @@ export async function fetchProductsForApi(options?: {
   activeOnly?: boolean;
   sort?: string;
 }): Promise<ProductRecord[]> {
-  const { getFirestore } = await import("firebase-admin/firestore");
-  const snapshot = await getFirestore(getAdminApp()).collection("products").get();
+  const firestore = getFirestore(getAdminApp());
+  const snapshot = await firestore.collection("products").get();
   let products = snapshot.docs.map((docSnap) => normalizeProductFromAdmin(docSnap.id, docSnap.data() as Record<string, unknown>));
 
   if (options?.activeOnly) {
@@ -188,4 +277,3 @@ export async function fetchProductsForApi(options?: {
 
   return products;
 }
-

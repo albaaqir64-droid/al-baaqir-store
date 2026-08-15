@@ -73,7 +73,18 @@ export default function Page() {
                   />
                     <div className="flex-1">
                       <Link href={item.productUrl} className="text-lg font-semibold text-slate-950 hover:underline">{item.name}</Link>
-                      <p className="mt-2 text-sm text-slate-600">{item.qty} × {item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</p>
+                      <div className="mt-2 text-sm">
+                        {item.originalPrice && item.originalPrice > item.price ? (
+                          <div className="space-x-2">
+                            <span className="font-semibold text-slate-950">{item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</span>
+                            <span className="text-slate-500 line-through">{item.originalPrice.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</span>
+                            {item.discountPercent && <span className="text-emerald-600 font-medium">{item.discountPercent}% off</span>}
+                          </div>
+                        ) : (
+                          <span className="text-slate-600">{item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</span>
+                        )}
+                        <p className="mt-1 text-slate-600">Quantity: {item.qty}</p>
+                      </div>
                       <div className="mt-4 flex items-center gap-3">
                         <button onClick={() => void updateQty(item.id, item.qty - 1)} className="rounded-full border border-emerald-200 px-3 py-1">−</button>
                         <span className="w-10 text-center">{item.qty}</span>

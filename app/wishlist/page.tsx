@@ -37,7 +37,13 @@ export default function Page() {
           {items.map((item) => (
             <div key={item.id} className="flex items-center justify-between rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-4">
-                <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover" />
+                <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="h-20 w-20 object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400 italic text-center">No image</div>
+                  )}
+                </div>
                 <div>
                   <Link href={item.productUrl} className="text-lg font-semibold text-slate-950 hover:underline">{item.name}</Link>
                   <p className="mt-1 text-sm text-slate-600">{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(item.price)}</p>

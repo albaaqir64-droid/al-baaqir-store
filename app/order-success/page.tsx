@@ -25,11 +25,11 @@ function OrderSuccessPageContent() {
 
     const safeOrderId = orderId.trim();
 
-    async function loadOrder() {
+    async function loadOrder(id: string) {
       setLoading(true);
       setError("");
       try {
-        const fetched = await fetchOrderById(safeOrderId);
+        const fetched = await fetchOrderById(id);
         if (!fetched) {
           setError("Order not found.");
         } else {
@@ -46,7 +46,7 @@ function OrderSuccessPageContent() {
       }
     }
 
-    loadOrder();
+    loadOrder(safeOrderId);
   }, [router, searchParams]);
 
   const generateInvoice = async () => {

@@ -6,13 +6,19 @@ import { fetchProductsByCategory } from "../lib/products";
 import type { ProductRecord } from "../lib/productTypes";
 
 function toCard(product: ProductRecord) {
+  const price = Number(product.price) || 0;
+  const discountPercent = Number(product.discountPercent) || 0;
+  const finalPrice = discountPercent > 0 ? Math.round(price * (1 - discountPercent / 100)) : price;
+
   return {
     id: product.id,
     name: product.name,
-    price: `₹${product.price.toLocaleString('en-IN')}`,
+    price: `₹${finalPrice.toLocaleString('en-IN')}`,
+    originalPriceNum: price,
+    discountPercent: discountPercent > 0 ? discountPercent : undefined,
     image: product.mainImage ?? product.images?.[0] ?? '',
     description: product.description,
-    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+    discount: discountPercent > 0 ? `${discountPercent}%` : undefined,
   };
 }
 

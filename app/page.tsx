@@ -145,7 +145,11 @@ export default async function Home() {
                   product={{
                     id: product.id,
                     name: product.name,
-                    price: `₹${product.price.toLocaleString("en-IN")}`,
+                    price: product.discountPercent
+                      ? `₹${Math.round(product.price * (1 - product.discountPercent / 100)).toLocaleString("en-IN")}`
+                      : `₹${product.price.toLocaleString("en-IN")}`,
+                    originalPriceNum: product.price,
+                    discountPercent: product.discountPercent,
                     image: getProductImage(product),
                     description: product.description,
                     discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
@@ -171,7 +175,11 @@ export default async function Home() {
                   product={{
                     id: product.id,
                     name: product.name,
-                    price: `₹${product.price.toLocaleString("en-IN")}`,
+                    price: product.discountPercent
+                      ? `₹${Math.round(product.price * (1 - product.discountPercent / 100)).toLocaleString("en-IN")}`
+                      : `₹${product.price.toLocaleString("en-IN")}`,
+                    originalPriceNum: product.price,
+                    discountPercent: product.discountPercent,
                     image: getProductImage(product),
                     description: product.description,
                     discount: product.discountPercent ? `${product.discountPercent}%` : undefined,

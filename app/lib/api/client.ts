@@ -17,12 +17,11 @@ export async function readApiJson<T = Record<string, unknown>>(response: Respons
   const rawBody = await response.text();
 
   if (process.env.NODE_ENV === "development") {
-    console.error("[API response]", {
-      url: response.url,
-      status: response.status,
-      contentType,
-      body: rawBody.slice(0, 500),
-    });
+    console.group(`[API response] ${response.status} ${response.url}`);
+    console.log("Status:", response.status, response.statusText);
+    console.log("Content-Type:", contentType);
+    console.log("Body:", rawBody.length > 1000 ? rawBody.slice(0, 1000) + "..." : rawBody || "(empty)");
+    console.groupEnd();
   }
 
   if (!looksLikeJson(contentType, rawBody)) {

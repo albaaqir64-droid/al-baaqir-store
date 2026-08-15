@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { addCartItem } from "../../lib/cart";
 import { fetchPincodeLocation, PincodeLocation } from "../../lib/pincode";
@@ -10,6 +10,11 @@ import { Toast } from "../../components/Toast";
 
 export default function ProductDetailClient({ product }: { product: ProductRecord }) {
   const router = useRouter();
+
+  // 1. All Base Data and State
+  const allImages = Array.from(new Set([product.mainImage ?? product.images?.[0], ...(product.images ?? [])].filter(Boolean)));
+  const discountedPrice = product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price;
+
   const [mainIndex, setMainIndex] = useState(0);
   const [size, setSize] = useState<string | null>(product.sizes?.[0] ?? null);
   const [qty, setQty] = useState(1);
@@ -22,10 +27,46 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
   const [toastVariant, setToastVariant] = useState<"success" | "error" | "info">("success");
   const [wishlisted, setWishlisted] = useState(isWishlisted(product.id));
 
-  const discountedPrice = product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price;
+  // 2. Lightbox State and Handlers
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const allImages = Array.from(new Set([product.mainImage ?? product.images?.[0], ...(product.images ?? [])].filter(Boolean)));
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
+  };
 
+  const showNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLightboxIndex((prev) => (prev + 1) % allImages.length);
+  };
+
+  const showPrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsLightboxOpen(false);
+      if (e.key === "ArrowRight") setLightboxIndex((prev) => (prev + 1) % allImages.length);
+      if (e.key === "ArrowLeft") setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLightboxOpen, allImages.length]);
+
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isLightboxOpen]);
+
+  // 3. Helper Functions
   function seededReviewsCount(id: string | undefined) {
     if (!id) return 20;
     let h = 2166136261;
@@ -63,8 +104,9 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
   return (
     <div>
       <div className="grid gap-8 lg:grid-cols-2">
+        {/* Left Side: Images */}
         <div>
-            <div className="rounded-3xl border border-emerald-200 overflow-hidden bg-emerald-50">
+          <div className="rounded-3xl border border-emerald-200 overflow-hidden bg-emerald-50 cursor-zoom-in" onClick={() => openLightbox(mainIndex)}>
             <img
               src={allImages[mainIndex] || '/images/products/placeholder.svg'}
               alt={product.name}
@@ -75,7 +117,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
           <div className="mt-4 flex gap-3">
             {allImages.map((img, i) => (
-              <button key={String(i)} onClick={() => setMainIndex(i)} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-emerald-200'}`}>
+              <button key={String(i)} onClick={() => { setMainIndex(i); openLightbox(i); }} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-emerald-200'}`}>
                 <img
                   src={img || '/images/products/placeholder.svg'}
                   alt={`${product.name} ${i + 1}`}
@@ -87,6 +129,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           </div>
         </div>
 
+        {/* Right Side: Product Details */}
         <div>
           <h1 className="text-2xl font-semibold text-slate-950">{product.name}</h1>
           <div className="mt-2 flex items-center gap-3">
@@ -108,8 +151,6 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <div className="ml-auto text-sm text-slate-600">Inclusive of all taxes</div>
           </div>
 
-          <p className="mt-6 text-sm text-slate-700">{product.description}</p>
-
           <div className="mt-6">
             <h4 className="text-sm font-medium text-slate-900">Size</h4>
             <div className="mt-3 flex flex-wrap gap-3">
@@ -129,7 +170,18 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <div className="flex flex-1 flex-wrap items-center gap-3">
               <button
                 onClick={() => {
-                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}`, hsnSac: product.hsnSac, gstRate: product.gstRate, stock: product.stock }, qty);
+                  addCartItem({
+                    id: product.id,
+                    name: product.name,
+                    price: product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price,
+                    originalPrice: product.price,
+                    discountPercent: product.discountPercent,
+                    image: product.mainImage ?? product.images?.[0] ?? '',
+                    productUrl: `/product/${product.id}`,
+                    hsnSac: product.hsnSac,
+                    gstRate: product.gstRate,
+                    stock: product.stock
+                  }, qty);
                   setToastVariant("success");
                   setToastMessage("Added to cart successfully.");
                   window.setTimeout(() => setToastMessage(null), 2200);
@@ -141,7 +193,18 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
               </button>
               <button
                 onClick={() => {
-                  addCartItem({ id: product.id, name: product.name, price: product.price, image: product.mainImage ?? product.images?.[0] ?? '', productUrl: `/product/${product.id}`, hsnSac: product.hsnSac, gstRate: product.gstRate, stock: product.stock }, qty);
+                  addCartItem({
+                    id: product.id,
+                    name: product.name,
+                    price: product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price,
+                    originalPrice: product.price,
+                    discountPercent: product.discountPercent,
+                    image: product.mainImage ?? product.images?.[0] ?? '',
+                    productUrl: `/product/${product.id}`,
+                    hsnSac: product.hsnSac,
+                    gstRate: product.gstRate,
+                    stock: product.stock
+                  }, qty);
                   router.push('/checkout');
                 }}
                 disabled={product.stock < 1}
@@ -239,6 +302,65 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           </div>
         </div>
       </div>
+
+      {/* Product Description Section - Now Below the Top Section */}
+      <div className="mt-16 border-t border-slate-100 pt-10">
+        <h3 className="text-xl font-semibold text-slate-950">Description</h3>
+        <p className="mt-6 text-slate-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+      </div>
+
+      {/* Full-Screen Image Lightbox */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 md:p-10"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-6 right-6 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition shadow-lg"
+            onClick={() => setIsLightboxOpen(false)}
+            aria-label="Close"
+          >
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {allImages.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition md:left-10 shadow-lg"
+                onClick={showPrev}
+                aria-label="Previous image"
+              >
+                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                className="absolute right-4 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition md:right-10 shadow-lg"
+                onClick={showNext}
+                aria-label="Next image"
+              >
+                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          <div className="relative h-full w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={allImages[lightboxIndex]}
+              alt={`${product.name} - image ${lightboxIndex + 1}`}
+              className="max-h-full max-w-full object-contain shadow-2xl select-none"
+            />
+
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-white/70 text-sm py-4">
+              {lightboxIndex + 1} / {allImages.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
