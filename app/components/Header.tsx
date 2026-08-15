@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useAuth } from "../hooks/useAuth";
+
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Men", href: "/men" },
@@ -23,6 +25,7 @@ const navItems = [
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const { user, profile } = useAuth();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -46,6 +49,8 @@ export default function Header() {
     };
   }, []);
 
+  const isLoggedIn = user && !user.isAnonymous;
+
   return (
     <header className="w-full border-b border-emerald-200 bg-white/90 backdrop-blur">
       <div className="bg-gradient-to-r from-gold-400 via-gold-500 to-emerald-500 text-emerald-950 text-center text-sm py-2 font-medium">Free shipping on orders over ₹10,000</div>
@@ -67,9 +72,18 @@ export default function Header() {
             <span className="sr-only">Search</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </Link>
-          <Link href="/account" className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200 transition hover:bg-emerald-50">
-            <span className="sr-only">Account</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <Link href="/account" className="flex h-11 items-center justify-center rounded-full border border-emerald-200 px-4 transition hover:bg-emerald-50">
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium max-w-[80px] truncate">{profile?.displayName || profile?.email?.split('@')[0]}</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium">Login</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+            )}
           </Link>
           <Link href="/wishlist" className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200 transition hover:bg-emerald-50">
             <span className="sr-only">Wishlist</span>
@@ -101,7 +115,7 @@ export default function Header() {
           </div>
           <div className="flex flex-col gap-3 border-t border-emerald-200 pt-4 text-emerald-900">
             <Link href="/search" className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-emerald-50"><span className="w-6 text-center">🔍</span> Search</Link>
-            <Link href="/account/login" className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-emerald-50"><span className="w-6 text-center">👤</span> Account</Link>
+            <Link href="/account" className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-emerald-50"><span className="w-6 text-center">👤</span> {isLoggedIn ? 'Account' : 'Login'}</Link>
             <Link href="/wishlist" className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-emerald-50"><span className="w-6 text-center">♡</span> Wishlist</Link>
             <Link href="/cart" className="flex items-center gap-3 rounded-xl px-4 py-3 transition hover:bg-emerald-50"><span className="w-6 text-center">🛒</span> Cart{cartCount > 0 ? ` ${cartCount}` : ''}</Link>
           </div>

@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
@@ -23,6 +24,8 @@ export const db = typeof window === "undefined"
   : initializeFirestore(app, { experimentalForceLongPolling: true });
 
 export const storage = getStorage(app);
+export const auth = getAuth(app);
+export { GoogleAuthProvider };
 
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
   connectFirestoreEmulator(db, "localhost", 8080);

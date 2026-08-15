@@ -247,7 +247,7 @@ function OrderSuccessPageContent() {
             </div>
 
             <div className="space-y-3">
-              <Link href="/my-orders" className="inline-flex w-full items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
+              <Link href="/account/orders" className="inline-flex w-full items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
                 My Orders
               </Link>
               <Link href="/" className="inline-flex w-full items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-200">

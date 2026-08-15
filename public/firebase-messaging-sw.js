@@ -16,11 +16,11 @@ messaging.onBackgroundMessage((payload) => {
   const notification = payload.notification || {};
   self.registration.showNotification(notification.title || "Al Baaqir order update", {
     body: notification.body || "Your order status has been updated.",
-    data: { link: payload.fcmOptions?.link || "/my-orders" },
+    data: { link: payload.fcmOptions?.link || "/account/orders" },
   });
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data?.link || "/my-orders"));
+  event.waitUntil(clients.openWindow(event.notification.data?.link || "/account/orders"));
 });

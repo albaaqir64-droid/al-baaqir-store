@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CartItem, clearCart, loadCartItems } from "../lib/cart";
 import { generateInvoiceNumber } from "../lib/orders";
 import { getCurrentUserId, saveCustomerContact } from "../lib/auth";
+import { useAuth } from "../hooks/useAuth";
 import { fetchPincodeLocation } from "../lib/pincode";
 import { sanitizeCartItems, sanitizeFirestoreData, sanitizeShipping } from "../lib/firestore";
 import { requestOrderStatusNotifications } from "../lib/pushNotifications";
@@ -27,6 +28,7 @@ const defaultForm = {
 };
 
 export default function CheckoutPage() {
+  const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -3,19 +3,49 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAdminAuthenticated } from "../lib/auth";
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      router.replace("/account/login");
+    // Check local session first for immediate access
+    if (isAdminAuthenticated()) {
+      setAuthorized(true);
+      setCheckingAuth(false);
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAuthorized(true);
-  }, [router]);
+
+    // Fallback/Sync with Firebase Auth
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (isAdminAuthenticated()) {
+        setAuthorized(true);
+      } else if (user) {
+        // If Firebase is authenticated but local storage isn't (e.g. after refresh)
+        // we can potentially trust it, but for now we follow the existing local-first logic
+        setAuthorized(false);
+      } else {
+        setAuthorized(false);
+        if (!checkingAuth) {
+          router.replace("/admin/login");
+        }
+      }
+      setCheckingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, [router, checkingAuth]);
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-emerald-50 text-emerald-900 grid place-items-center px-6">
+        <div className="animate-pulse text-xl font-semibold">Verifying session...</div>
+      </div>
+    );
+  }
 
   if (!authorized) {
     return (

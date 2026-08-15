@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { loginCustomer, loginWithGoogle } from "../../lib/auth";
+import { registerCustomer, loginWithGoogle } from "../../lib/auth";
 
-export default function CustomerLoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,12 +28,18 @@ export default function CustomerLoginPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await loginCustomer(email, password);
+      await registerCustomer(email, password, name);
       router.push("/account");
     } catch (err: any) {
-      setError(err.message || "Failed to login. Please check your credentials.");
+      setError(err.message || "Failed to create account.");
     } finally {
       setLoading(false);
     }
@@ -43,17 +51,28 @@ export default function CustomerLoginPage() {
       await loginWithGoogle();
       router.push("/account");
     } catch (err: any) {
-      setError(err.message || "Google login failed.");
+      setError(err.message || "Google registration failed.");
     }
   }
 
   return (
     <main className="min-h-screen brand-page px-6 py-24">
       <div className="mx-auto max-w-md rounded-[32px] border border-emerald-200 bg-white p-10 shadow-2xl shadow-gold/10">
-        <h1 className="text-3xl font-semibold text-emerald-900">Sign in</h1>
-        <p className="mt-3 text-emerald-900/70">Welcome back! Sign in to manage your orders and profile.</p>
+        <h1 className="text-3xl font-semibold text-emerald-900">Create account</h1>
+        <p className="mt-3 text-emerald-900/70">Join Al-Baaqir today for a better shopping experience.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-emerald-900">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-2 w-full rounded-3xl border border-emerald-200 bg-gold-50 px-4 py-3 text-sm text-emerald-900 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/20"
+              placeholder="John Doe"
+              required
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-emerald-900">Email address</label>
             <input
@@ -76,6 +95,17 @@ export default function CustomerLoginPage() {
               required
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-emerald-900">Confirm Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-2 w-full rounded-3xl border border-emerald-200 bg-gold-50 px-4 py-3 text-sm text-emerald-900 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/20"
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
           {error && <p className="text-sm text-rose-500">{error}</p>}
 
@@ -84,7 +114,7 @@ export default function CustomerLoginPage() {
             className="w-full rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
             type="submit"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
@@ -123,9 +153,9 @@ export default function CustomerLoginPage() {
         </button>
 
         <p className="mt-8 text-center text-sm text-emerald-900/70">
-          Don't have an account?{" "}
-          <Link href="/account/register" className="font-semibold text-emerald-700 hover:underline">
-            Sign up
+          Already have an account?{" "}
+          <Link href="/account/login" className="font-semibold text-emerald-700 hover:underline">
+            Sign in
           </Link>
         </p>
 

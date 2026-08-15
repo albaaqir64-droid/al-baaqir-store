@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
           tokens,
           notification: { title: `Order ${result.invoiceNumber}`, body: messages[status] },
           data: { orderId, status },
-          webpush: { fcmOptions: { link: `/my-orders?orderId=${encodeURIComponent(orderId)}` } },
+          webpush: { fcmOptions: { link: `/account/orders?orderId=${encodeURIComponent(orderId)}` } },
         });
       }
     }

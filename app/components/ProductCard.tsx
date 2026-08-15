@@ -71,7 +71,11 @@ export default function ProductCard({ product }: { product: Product }) {
             <h3 className="text-base font-semibold text-slate-950">
               <span className="underline-offset-2 hover:underline">{product.name}</span>
             </h3>
-            {product.description && <p className="mt-2 text-sm text-slate-600">{product.description}</p>}
+            {product.description && (
+              <p className="mt-2 line-clamp-2 text-sm text-slate-600 md:line-clamp-3">
+                {product.description}
+              </p>
+            )}
           </div>
 
           <button

@@ -53,6 +53,7 @@ export interface ShippingInfo {
 
 export interface OrderRecord {
   id: string;
+  customerId?: string;
   customerName: string;
   phone: string;
   email?: string;
@@ -90,6 +91,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
 
   return {
     id,
+    customerId: data.customerId || undefined,
     customerName: String(data.customerName ?? ""),
     phone: String(data.phone ?? ""),
     email: String(data.email ?? ""),
@@ -121,6 +123,8 @@ export async function fetchOrders(options: {
   status?: OrderStatus;
   search?: string;
   phone?: string;
+  customerId?: string;
+  email?: string;
 } = {}): Promise<OrderRecord[]> {
   if (isClientOffline()) {
     return [];
@@ -133,8 +137,12 @@ export async function fetchOrders(options: {
     ordersQuery = query(ordersQuery, where("status", "==", options.status));
   }
 
-  if (options.phone) {
+  if (options.customerId) {
+    ordersQuery = query(ordersQuery, where("customerId", "==", options.customerId));
+  } else if (options.phone) {
     ordersQuery = query(ordersQuery, where("phone", "==", options.phone));
+  } else if (options.email) {
+    ordersQuery = query(ordersQuery, where("email", "==", options.email));
   }
 
   const snapshot = await getDocs(ordersQuery);
