@@ -1,25 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiError, apiJson, readUpstreamJson, upstreamError } from "@/app/lib/api/jsonRoute";
+
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const pincode = request.nextUrl.searchParams.get("pincode")?.trim();
   if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
-    return NextResponse.json({ error: "Enter a valid 6-digit Indian pincode." }, { status: 400 });
+    return apiError("Enter a valid 6-digit Indian pincode.", 400);
   }
 
   try {
-    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-    if (!response.ok) {
-      return NextResponse.json({ error: "Unable to fetch pincode details." }, { status: 500 });
+    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+
+    const upstream = await readUpstreamJson(response);
+    if (!upstream.ok) {
+      return upstreamError("GET /api/pincode", upstream.status, upstream.body);
     }
 
-    const data = await response.json();
+    const data = upstream.data;
     if (!Array.isArray(data) || data.length === 0) {
-      return NextResponse.json({ error: "Unable to parse pincode details." }, { status: 500 });
+      return apiError("Unable to parse pincode details.", 500);
     }
 
-    const result = data[0];
+    const result = data[0] as { Status?: string; PostOffice?: Array<Record<string, unknown>> };
     if (result.Status !== "Success" || !Array.isArray(result.PostOffice) || result.PostOffice.length === 0) {
-      return NextResponse.json({ error: "Pincode not found or unsupported for delivery." }, { status: 404 });
+      return apiError("Pincode not found or unsupported for delivery.", 404);
     }
 
     const office = result.PostOffice[0];
@@ -31,9 +39,12 @@ export async function GET(request: NextRequest) {
       officeName: String(office.Name || "").trim(),
     };
 
-    return NextResponse.json(location);
+    return apiJson(location);
   } catch (error) {
     console.error("Pincode lookup failed:", error);
-    return NextResponse.json({ error: "Unable to fetch pincode details." }, { status: 500 });
+    return apiError(
+      error instanceof Error ? error.message : "Unable to fetch pincode details.",
+      500
+    );
   }
 }

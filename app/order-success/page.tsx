@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { fetchOrderById, OrderRecord } from "../lib/orders";
+import { readApiJson } from "../lib/api/client";
 import Link from "next/link";
 
 function OrderSuccessPageContent() {
@@ -61,18 +62,13 @@ function OrderSuccessPageContent() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      let data: { error?: string; invoiceUrl?: string; invoiceNumber?: string } | null = null;
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
-      
-      if (!response.ok) {
-        setInvoiceError(data?.error || "Failed to generate invoice");
+      const parsed = await readApiJson<{ error?: string; invoiceUrl?: string; invoiceNumber?: string }>(response);
+      if (!parsed.ok) {
+        setInvoiceError(parsed.error || "Failed to generate invoice");
         return;
       }
 
+      const data = parsed.data;
       if (!data?.invoiceUrl) {
         setInvoiceError("Invoice was generated but no download link was returned.");
         return;

@@ -2,24 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchOrders, OrderRecord, ORDER_STATUSES, OrderStatus, updateOrderStatus } from "../../lib/orders";
+import { readApiJson } from "../../lib/api/client";
 import AdminGuard from "../../components/AdminGuard";
 import { OrderTimeline } from "../../components/OrderTimeline";
 import Link from "next/link";
 
 const PAGE_SIZE = 10;
-
-async function readApiResponse(response: Response): Promise<{ error?: string; invoiceNumber?: string; invoiceUrl?: string }> {
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    return { error: response.ok ? "The invoice service returned an invalid response." : "The invoice service is temporarily unavailable. Please try again." };
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    return { error: "The invoice service returned an invalid response." };
-  }
-}
 
 function statusLabel(status: OrderStatus) {
   const labels: Record<OrderStatus, string> = {
@@ -83,13 +71,14 @@ export default function OrdersAdminPage() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      const data = await readApiResponse(response);
+      const parsed = await readApiJson<{ error?: string; invoiceNumber?: string; invoiceUrl?: string }>(response);
 
-      if (!response.ok) {
-        setInvoiceError(data.error || "Failed to generate invoice");
+      if (!parsed.ok) {
+        setInvoiceError(parsed.error || "Failed to generate invoice");
         return;
       }
 
+      const data = parsed.data ?? {};
       setInvoiceSuccess("Invoice generated and email sent successfully!");
       setSelectedOrder({ ...order, invoiceNumber: data.invoiceNumber ?? "", invoiceUrl: data.invoiceUrl });
       loadOrders();
@@ -118,14 +107,14 @@ export default function OrdersAdminPage() {
         body: JSON.stringify({ orderId: order.id }),
       });
 
-      const data = await readApiResponse(response);
+      const parsed = await readApiJson<{ error?: string; message?: string }>(response);
 
-      if (!response.ok) {
-        setInvoiceError(data.error || "Failed to resend invoice email");
+      if (!parsed.ok) {
+        setInvoiceError(parsed.error || "Failed to resend invoice email");
         return;
       }
 
-      setInvoiceSuccess("Invoice email resent successfully!");
+      setInvoiceSuccess(parsed.data?.message || "Invoice email resent successfully!");
     } catch (err) {
       setInvoiceError("Failed to resend invoice email. Please try again.");
       console.error("Invoice resend error:", err);

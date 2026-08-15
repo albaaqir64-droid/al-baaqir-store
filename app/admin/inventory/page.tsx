@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "../../components/AdminGuard";
+import { readApiJson } from "../../lib/api/client";
 import Link from "next/link";
 
 interface InventoryItem {
@@ -54,9 +55,9 @@ export default function InventoryAdminPage() {
         body: JSON.stringify({ action: "search", data: { query: search || "" } }),
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setInventory(data.results);
+      const parsed = await readApiJson<{ success?: boolean; results?: InventoryItem[] }>(response);
+      if (parsed.ok && parsed.data?.success) {
+        setInventory(parsed.data.results ?? []);
       }
     } catch (error) {
       console.error("Error loading inventory:", error);
@@ -73,9 +74,9 @@ export default function InventoryAdminPage() {
         body: JSON.stringify({ action: "stats", data: {} }),
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setStats(data.stats);
+      const parsed = await readApiJson<{ success?: boolean; stats?: InventoryStats }>(response);
+      if (parsed.ok && parsed.data?.success) {
+        setStats(parsed.data.stats ?? null);
       }
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -119,9 +120,9 @@ export default function InventoryAdminPage() {
         }),
       });
 
-      const data = await response.json();
+      const parsed = await readApiJson<{ success?: boolean }>(response);
 
-      if (data.success) {
+      if (parsed.ok && parsed.data?.success) {
         setUpdateMessage("✅ Stock updated successfully!");
         setEditingId(null);
         setEditQuantity("");

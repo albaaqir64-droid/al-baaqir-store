@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
+import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { generateInvoicePDF } from "@/app/lib/invoice";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/app/lib/email";
 import { getAdminApp, getAdminStorage } from "@/app/lib/firebaseAdmin";
@@ -8,10 +8,6 @@ import { BUSINESS } from "@/app/lib/business";
 import { toOrderRecord } from "@/app/lib/invoiceOrder";
 
 export const runtime = "nodejs";
-
-function jsonError(error: string, status: number) {
-  return NextResponse.json({ success: false, error }, { status });
-}
 
 function asFiniteNumber(value: unknown): number {
   const numberValue = Number(value);
@@ -34,29 +30,24 @@ async function enrichTaxDetails(order: OrderRecord): Promise<OrderRecord> {
   return { ...order, cartItems };
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return jsonError("Request body must be valid JSON", 400);
-    }
+    const parsed = await readRequestJson(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data as { orderId?: string };
 
-    const orderId = typeof (body as { orderId?: unknown })?.orderId === "string"
-      ? (body as { orderId: string }).orderId.trim()
-      : "";
-    if (!orderId) return jsonError("Order ID is required", 400);
+    const orderId = typeof body?.orderId === "string" ? body.orderId.trim() : "";
+    if (!orderId) return apiError("Order ID is required", 400);
 
     // This must use the Admin SDK. The browser SDK cannot access Firestore from
     // a Route Handler and was returning its "client is offline" error.
     const db = getFirestore(getAdminApp());
     const orderSnapshot = await db.collection("orders").doc(orderId).get();
-    if (!orderSnapshot.exists) return jsonError("Order not found", 404);
+    if (!orderSnapshot.exists) return apiError("Order not found", 404);
 
     const rawOrder = orderSnapshot.data() ?? {};
     const order = await enrichTaxDetails(toOrderRecord(orderSnapshot.id, rawOrder));
-    if (!order.cartItems.length) return jsonError("Order has no invoiceable items", 422);
+    if (!order.cartItems.length) return apiError("Order has no invoiceable items", 422);
 
     const invoiceNumber = order.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${orderId.slice(-6).toUpperCase()}`;
     const invoiceOrder = { ...order, invoiceNumber };
@@ -79,7 +70,7 @@ export async function POST(request: NextRequest) {
     const customerEmailSent = await sendCustomerOrderEmail(invoiceOrder, invoiceUrl, invoiceNumber);
     const adminEmailSent = await sendAdminOrderEmail(invoiceOrder, invoiceUrl);
 
-    return NextResponse.json({
+    return apiJson({
       success: true,
       invoiceNumber,
       invoiceUrl,
@@ -89,6 +80,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error generating invoice:", error);
-    return jsonError("Failed to generate invoice", 500);
+    return apiError(error instanceof Error ? error.message : "Failed to generate invoice", 500);
   }
 }

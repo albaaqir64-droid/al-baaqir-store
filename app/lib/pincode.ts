@@ -1,3 +1,5 @@
+import { readApiJson } from "./api/client";
+
 export interface PincodeLocation {
   pincode: string;
   district: string;
@@ -20,12 +22,18 @@ export async function fetchPincodeLocation(pincode: string): Promise<PincodeLoca
     ? `/api/pincode?pincode=${encodeURIComponent(normalized)}`
     : `https://api.postalpincode.in/pincode/${normalized}`;
 
-  const response = await fetch(endpoint);
-  if (!response.ok) {
-    throw new Error("Unable to fetch pincode details.");
+  const response = await fetch(endpoint, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+
+  const parsed = await readApiJson<PincodeApiLocation | PostalApiResult[]>(response);
+  if (!parsed.ok || !parsed.data) {
+    throw new Error(parsed.error || "Unable to fetch pincode details.");
   }
 
-  const data = await response.json();
+  const data = parsed.data;
+
   // The local route already normalizes the Postal API result into a location
   // object, while the direct API returns an array. Support both responses.
   if (!Array.isArray(data)) {
@@ -44,26 +52,21 @@ export async function fetchPincodeLocation(pincode: string): Promise<PincodeLoca
     throw new Error("Unable to parse pincode details.");
   }
 
-  // The Postal API returns an array with PostOffice entries. Normalize into a
-  // single PincodeLocation that best represents the area. Prefer the first
-  // delivery-enabled PostOffice when available.
   const result = data[0] as PostalApiResult | undefined;
   const postOffices = Array.isArray(result?.PostOffice) ? result.PostOffice : [];
   if (!postOffices.length) {
     throw new Error("Pincode not found or unsupported for delivery.");
   }
 
-  // Prefer a Delivery post office if present
-  const deliveryOffice = postOffices.find((office) => String(office.DeliveryStatus || '').toLowerCase() === 'delivery');
+  const deliveryOffice = postOffices.find((office) => String(office.DeliveryStatus || "").toLowerCase() === "delivery");
   const office = deliveryOffice || postOffices[0];
 
   const normalizedLocation: PincodeLocation = {
     pincode: normalized,
-    district: String(office.District || '').trim(),
-    // city: prefer PostOffice.Name (locality), fall back to District or Division
-    city: String(office.Name || office.District || office.Division || '').trim(),
-    state: String(office.State || '').trim(),
-    officeName: String(office.Name || '').trim(),
+    district: String(office.District || "").trim(),
+    city: String(office.Name || office.District || office.Division || "").trim(),
+    state: String(office.State || "").trim(),
+    officeName: String(office.Name || "").trim(),
   };
 
   if (!normalizedLocation.state || !normalizedLocation.district) {

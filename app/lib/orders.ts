@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { db } from "./firebase";
+import { readApiJson } from "./api/client";
 import {
   collection,
   doc,
@@ -165,9 +166,9 @@ export async function updateOrderStatus(
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orderId, status, internalNotes: updates.internalNotes }),
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.error || "Unable to update order status.");
+  const parsed = await readApiJson<{ error?: string }>(response);
+  if (!parsed.ok) {
+    throw new Error(parsed.error || "Unable to update order status.");
   }
 }
 

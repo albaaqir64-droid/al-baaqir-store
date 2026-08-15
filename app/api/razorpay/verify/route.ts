@@ -1,85 +1,103 @@
-import { NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { db } from '../../../../app/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { sanitizeCartItems, sanitizeShipping } from '../../../../app/lib/firestore';
+import crypto from "crypto";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
+import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { sanitizeCartItems, sanitizeShipping } from "@/app/lib/firestore";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, orderMeta } = body;
+    const parsed = await readRequestJson(req);
+    if (!parsed.ok) return parsed.response;
+
+    const body = parsed.data as {
+      razorpay_payment_id?: string;
+      razorpay_order_id?: string;
+      razorpay_signature?: string;
+      orderMeta?: Record<string, unknown>;
+    };
+
+    const razorpay_payment_id = String(body.razorpay_payment_id ?? "");
+    const razorpay_order_id = String(body.razorpay_order_id ?? "");
+    const razorpay_signature = String(body.razorpay_signature ?? "");
+    const orderMeta = body.orderMeta && typeof body.orderMeta === "object" ? body.orderMeta : {};
+
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return apiError("Missing Razorpay payment verification fields", 400);
+    }
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keySecret) return NextResponse.json({ error: 'Razorpay secret not configured' }, { status: 500 });
+    if (!keySecret) return apiError("Razorpay secret not configured", 500);
 
     const expected = crypto
-      .createHmac('sha256', keySecret)
+      .createHmac("sha256", keySecret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
+      .digest("hex");
 
     if (expected !== razorpay_signature) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      return apiError("Invalid signature", 400);
     }
 
-    const safeOrderMeta = typeof orderMeta === 'object' && orderMeta ? orderMeta : {};
-    const orderItems = sanitizeCartItems(safeOrderMeta.cartItems);
-    const shipping = sanitizeShipping(safeOrderMeta.shipping);
+    const orderItems = sanitizeCartItems(orderMeta.cartItems);
+    const shipping = sanitizeShipping(orderMeta.shipping);
 
     if (!orderItems.length) {
-      return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
+      return apiError("Invalid order payload", 400);
     }
 
-    // Generate invoice number
     const datePrefix = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const invoiceNumber = `INV-${datePrefix}-${randomSuffix}`;
 
-    const orderToSave = {
-      customerName: String(safeOrderMeta.customerName ?? ""),
-      phone: String(safeOrderMeta.phone ?? ""),
-      email: String(safeOrderMeta.email ?? ""),
-      customerGSTIN: String(safeOrderMeta.customerGSTIN ?? "").trim().toUpperCase(),
-      paymentMethod: String(safeOrderMeta.paymentMethod ?? "razorpay"),
-      subtotal: Number(safeOrderMeta.subtotal ?? 0) || 0,
-      shippingCharge: Number(safeOrderMeta.shippingCharge ?? 0) || 0,
-      total: Number(safeOrderMeta.total ?? 0) || 0,
+    const db = getFirestore(getAdminApp());
+    const orderRef = db.collection("orders").doc();
+
+    await orderRef.set({
+      customerName: String(orderMeta.customerName ?? ""),
+      phone: String(orderMeta.phone ?? ""),
+      email: String(orderMeta.email ?? ""),
+      customerGSTIN: String(orderMeta.customerGSTIN ?? "").trim().toUpperCase(),
+      paymentMethod: String(orderMeta.paymentMethod ?? "razorpay"),
+      subtotal: Number(orderMeta.subtotal ?? 0) || 0,
+      shippingCharge: Number(orderMeta.shippingCharge ?? 0) || 0,
+      total: Number(orderMeta.total ?? 0) || 0,
       invoiceNumber,
       status: "confirmed",
       shipping,
       cartItems: orderItems,
       payment: {
-        provider: 'razorpay',
-        paymentId: String(razorpay_payment_id ?? ""),
-        orderId: String(razorpay_order_id ?? ""),
-        signature: String(razorpay_signature ?? ""),
+        provider: "razorpay",
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id,
+        signature: razorpay_signature,
       },
-      paymentStatus: 'paid',
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp(),
-    };
+      paymentStatus: "paid",
+      createdAt: FieldValue.serverTimestamp(),
+      lastUpdated: FieldValue.serverTimestamp(),
+    });
 
-    const docRef = await addDoc(collection(db, 'orders'), orderToSave);
-    const orderId = docRef.id;
+    const orderId = orderRef.id;
 
-    // Trigger invoice generation asynchronously
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const invoiceResponse = await fetch(`${baseUrl}/api/invoices/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
       });
 
       if (!invoiceResponse.ok) {
-        console.warn('Failed to generate invoice automatically. Will retry on order page.');
+        const invoiceBody = await invoiceResponse.text();
+        console.warn("Failed to generate invoice automatically:", invoiceResponse.status, invoiceBody.slice(0, 500));
       }
     } catch (invoiceError) {
-      console.error('Error triggering invoice generation:', invoiceError);
-      // Don't fail the payment verification if invoice generation fails
+      console.error("Error triggering invoice generation:", invoiceError);
     }
 
-    return NextResponse.json({ ok: true, orderId });
+    return apiJson({ ok: true, orderId });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message || String(err) }, { status: 500 });
+    console.error("Razorpay verify failed:", err);
+    return apiError(err instanceof Error ? err.message : String(err), 500);
   }
 }

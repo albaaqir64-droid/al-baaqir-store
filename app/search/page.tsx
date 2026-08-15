@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { readApiJson } from "../lib/api/client";
 
 type ProductRecord = {
   id: string;
@@ -26,9 +27,9 @@ export default function Page() {
     setLoading(true);
     const timeout = window.setTimeout(async () => {
       const response = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}`);
-      const products = (await response.json()) as ProductRecord[];
+      const parsed = await readApiJson<ProductRecord[]>(response);
       if (!ignore) {
-        setResults(products);
+        setResults(parsed.ok && Array.isArray(parsed.data) ? parsed.data : []);
         setLoading(false);
       }
     }, 250);

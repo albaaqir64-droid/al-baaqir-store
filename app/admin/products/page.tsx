@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import AdminGuard from "../../components/AdminGuard";
+import { readApiJson } from "../../lib/api/client";
 import { FormEvent, useEffect, useState } from "react";
 import type { ProductRecord } from "../../lib/productTypes";
 
@@ -61,12 +62,11 @@ export default function AdminProductsPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/products');
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || 'Unable to load products.');
+      const parsed = await readApiJson<ProductRecord[]>(res);
+      if (!parsed.ok) {
+        throw new Error(parsed.error || 'Unable to load products.');
       }
-      const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
+      setProducts(Array.isArray(parsed.data) ? parsed.data : []);
     } catch (error) {
       console.error(error);
       setProducts([]);
@@ -179,9 +179,9 @@ export default function AdminProductsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || 'Unable to save product.');
+      const parsed = await readApiJson<{ error?: string }>(response);
+      if (!parsed.ok) {
+        throw new Error(parsed.error || 'Unable to save product.');
       }
 
       setStatusMessage(editingId ? 'Product updated successfully.' : 'Product added successfully.');
@@ -217,9 +217,9 @@ export default function AdminProductsPage() {
     if (!confirm('Delete product?')) return;
     try {
       const response = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Unable to delete product.');
+      const parsed = await readApiJson<{ error?: string }>(response);
+      if (!parsed.ok) {
+        throw new Error(parsed.error || 'Unable to delete product.');
       }
       setStatusMessage('Product deleted successfully.');
     } catch (error) {

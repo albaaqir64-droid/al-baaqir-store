@@ -10,6 +10,7 @@ import { getCurrentUserId, saveCustomerContact } from "../lib/auth";
 import { fetchPincodeLocation } from "../lib/pincode";
 import { sanitizeCartItems, sanitizeFirestoreData, sanitizeShipping } from "../lib/firestore";
 import { requestOrderStatusNotifications } from "../lib/pushNotifications";
+import { readApiJson } from "../lib/api/client";
 
 const defaultForm = {
   fullName: "",
@@ -175,12 +176,14 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amountPaise, currency: 'INR', receipt: invoiceNumber }),
       });
-      const createJson = await createRes.json();
-      if (!createRes.ok) {
-        setSaveError('Unable to initiate payment. Please try again later.');
+      const createParsed = await readApiJson<{ order?: { amount: number; currency: string; id: string }; keyId?: string; error?: string }>(createRes);
+      if (!createParsed.ok || !createParsed.data?.order || !createParsed.data?.keyId) {
+        setSaveError(createParsed.error || 'Unable to initiate payment. Please try again later.');
         setSubmitting(false);
         return;
       }
+      const razorpayOrder = createParsed.data.order;
+      const razorpayKeyId = createParsed.data.keyId;
 
       if (typeof window !== 'undefined' && !(window as any).Razorpay) {
         await new Promise<void>((resolve, reject) => {
@@ -193,12 +196,12 @@ export default function CheckoutPage() {
       }
 
       const rzpOptions: any = {
-        key: createJson.keyId,
-        amount: createJson.order.amount,
-        currency: createJson.order.currency,
+        key: razorpayKeyId,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
         name: 'Al Baaqir',
         description: `Order ${invoiceNumber}`,
-        order_id: createJson.order.id,
+        order_id: razorpayOrder.id,
         prefill: {
           name: form.fullName,
           email: form.email,
@@ -216,12 +219,13 @@ export default function CheckoutPage() {
                 orderMeta,
               }),
             });
-            const verifyJson = await verifyRes.json();
-            if (!verifyRes.ok) {
-              setSaveError('Payment verification failed. Please contact support.');
+            const verifyParsed = await readApiJson<{ orderId?: string; error?: string }>(verifyRes);
+            if (!verifyParsed.ok || !verifyParsed.data?.orderId) {
+              setSaveError(verifyParsed.error || 'Payment verification failed. Please contact support.');
               setSubmitting(false);
               return;
             }
+            const verifiedOrderId = verifyParsed.data.orderId;
 
             clearCart();
             setItems([]);
@@ -229,7 +233,7 @@ export default function CheckoutPage() {
             setForm(defaultForm);
             setErrors({});
 
-            window.location.href = `/order-success?orderId=${encodeURIComponent(verifyJson.orderId)}`;
+            window.location.href = `/order-success?orderId=${encodeURIComponent(verifiedOrderId)}`;
           } catch {
             setSaveError('Payment verification failed. Please contact support.');
           } finally {
@@ -268,13 +272,13 @@ export default function CheckoutPage() {
     const orderResponse = await fetch("/api/orders/create", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(firestoreOrder),
     });
-    const orderResult = await orderResponse.json().catch(() => ({}));
-    if (!orderResponse.ok || !orderResult.orderId) {
-      setSaveError(orderResult.error || "Unable to create your order. Please try again.");
+    const orderParsed = await readApiJson<{ orderId?: string; error?: string }>(orderResponse);
+    if (!orderParsed.ok || !orderParsed.data?.orderId) {
+      setSaveError(orderParsed.error || "Unable to create your order. Please try again.");
       setSubmitting(false);
       return;
     }
-    const orderId = String(orderResult.orderId);
+    const orderId = String(orderParsed.data.orderId);
     void requestOrderStatusNotifications();
 
     try {

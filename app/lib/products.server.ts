@@ -2,8 +2,8 @@ import "server-only";
 
 import { db } from "./firebase";
 import { collection, deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { getAdminStorage } from "./firebaseAdmin";
-import type { ProductSavePayload } from "./productTypes";
+import { getAdminStorage, getAdminApp } from "./firebaseAdmin";
+import type { ProductSavePayload, ProductRecord } from "./productTypes";
 
 function createSlug(value: string) {
   return String(value).trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 200);
@@ -85,3 +85,107 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
 export async function deleteProductById(id: string) {
   await deleteDoc(doc(db, "products", id));
 }
+
+function normalizeProductImageUrl(value: unknown): string {
+  const imageUrl = String(value ?? "").trim();
+  if (!imageUrl.startsWith("gs://")) return imageUrl;
+
+  const [, bucketAndPath = ""] = imageUrl.split("gs://");
+  const slashIndex = bucketAndPath.indexOf("/");
+  if (slashIndex < 1) return imageUrl;
+
+  const bucket = bucketAndPath.slice(0, slashIndex);
+  const objectPath = bucketAndPath
+    .slice(slashIndex + 1)
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  return `https://storage.googleapis.com/${bucket}/${objectPath}`;
+}
+
+function normalizeTimestamp(value: unknown): number | null {
+  if (value && typeof value === "object" && "toMillis" in value && typeof (value as { toMillis: () => number }).toMillis === "function") {
+    return (value as { toMillis: () => number }).toMillis();
+  }
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+  return null;
+}
+
+function normalizeProductFromAdmin(id: string, data: Record<string, unknown>): ProductRecord {
+  const galleryImages = Array.isArray(data.galleryImages)
+    ? data.galleryImages.map(normalizeProductImageUrl)
+    : Array.isArray(data.images)
+      ? data.images.map(normalizeProductImageUrl)
+      : [];
+  const discountValue = Number(data.discount ?? data.discountPercent ?? 0) || 0;
+
+  return {
+    id,
+    name: String(data.name ?? ""),
+    category: String(data.category ?? ""),
+    price: Number(data.price ?? 0),
+    stock: Number(data.stock ?? 0),
+    discountPercent: discountValue,
+    discount: discountValue,
+    active: data.active !== false,
+    featured: data.featured === true,
+    description: String(data.description ?? ""),
+    mainImage: normalizeProductImageUrl(data.mainImage ?? data.coverImage ?? data.image),
+    images: galleryImages,
+    galleryImages,
+    slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
+    createdAt: normalizeTimestamp(data.createdAt),
+    lastUpdated: normalizeTimestamp(data.lastUpdated),
+    sizes: Array.isArray(data.sizes) ? data.sizes.map((item) => String(item ?? "")) : undefined,
+    colors: Array.isArray(data.colors) ? data.colors.map((item) => String(item ?? "")) : undefined,
+    rating: data.rating != null ? Number(data.rating) : undefined,
+    hsnSac: String(data.hsnSac ?? data.hsn ?? data.sac ?? "") || undefined,
+    gstRate: data.gstRate != null || data.taxRate != null ? Number(data.gstRate ?? data.taxRate) || 0 : undefined,
+  };
+}
+
+export async function fetchProductsForApi(options?: {
+  category?: string;
+  search?: string;
+  discount?: boolean;
+  activeOnly?: boolean;
+  sort?: string;
+}): Promise<ProductRecord[]> {
+  const { getFirestore } = await import("firebase-admin/firestore");
+  const snapshot = await getFirestore(getAdminApp()).collection("products").get();
+  let products = snapshot.docs.map((docSnap) => normalizeProductFromAdmin(docSnap.id, docSnap.data() as Record<string, unknown>));
+
+  if (options?.activeOnly) {
+    products = products.filter((product) => product.active);
+  }
+
+  if (options?.category) {
+    products = products.filter((product) => product.category === options.category);
+  }
+
+  if (options?.discount) {
+    products = products.filter((product) => product.discountPercent > 0);
+  }
+
+  if (options?.search) {
+    const searchTerm = options.search.toLowerCase();
+    products = products.filter((product) =>
+      [product.name, product.category, product.description, product.slug]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(searchTerm))
+    );
+  }
+
+  const sort = options?.sort || "newest";
+  if (sort === "price_asc") {
+    products.sort((a, b) => a.price - b.price);
+  } else if (sort === "price_desc") {
+    products.sort((a, b) => b.price - a.price);
+  } else {
+    products.sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0));
+  }
+
+  return products;
+}
+

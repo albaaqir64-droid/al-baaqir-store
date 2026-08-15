@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AdminGuard from "../components/AdminGuard";
 import { fetchOrders, OrderRecord } from "../lib/orders";
+import { readApiJson } from "../lib/api/client";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/admin" },
@@ -39,8 +40,8 @@ export default function AdminPage() {
   async function loadProductCount() {
     try {
       const response = await fetch("/api/products");
-      const data = await response.json();
-      setProductCount(Array.isArray(data) ? data.length : 0);
+      const parsed = await readApiJson<unknown[]>(response);
+      setProductCount(parsed.ok && Array.isArray(parsed.data) ? parsed.data.length : 0);
     } catch (error) {
       console.error("Failed to load product count:", error);
       setProductCount(0);
