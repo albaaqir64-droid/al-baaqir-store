@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
@@ -20,6 +21,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const db = typeof window === "undefined"
   ? getFirestore(app)
   : initializeFirestore(app, { experimentalForceLongPolling: true });
+
+export const storage = getStorage(app);
 
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
   connectFirestoreEmulator(db, "localhost", 8080);

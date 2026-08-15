@@ -42,5 +42,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 2. **Firestore Indexes**: This project requires composite indexes for order lookups.
    - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)
    - **Order Management**: `status` (Ascending) + `createdAt` (Descending)
+3. **Storage Rules**: Ensure Firebase Storage rules allow writes to the `products/` path.
+   - Use `allow read: if true;` and `allow write: if true;` for the `/products/` path in development.
+4. **CORS Configuration**: If you see CORS errors during upload, you must set the CORS policy for your bucket using `gsutil`.
 
-You can create these by clicking the links generated in the console logs/terminal when the app encounters a `FirebaseError`.
+You can create Firestore indexes by clicking the links generated in the console logs/terminal when the app encounters a `FirebaseError`.

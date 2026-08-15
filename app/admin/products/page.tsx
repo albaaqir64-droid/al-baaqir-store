@@ -5,6 +5,8 @@ import AdminGuard from "../../components/AdminGuard";
 import { readApiJson } from "../../lib/api/client";
 import { FormEvent, useEffect, useState } from "react";
 import type { ProductRecord } from "../../lib/productTypes";
+import { storage } from "../../lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type ProductForm = {
   id?: string;
@@ -58,6 +60,10 @@ export default function AdminProductsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Track files to be uploaded with their preview URLs
+  const [mainImageFile, setMainImageFile] = useState<{ file: File; blob: string } | null>(null);
+  const [galleryImageFiles, setGalleryImageFiles] = useState<{ file: File; blob: string }[]>([]);
+
   async function fetchProducts() {
     setLoading(true);
     try {
@@ -97,41 +103,52 @@ export default function AdminProductsPage() {
   function resetForm() {
     setForm(initialForm);
     setEditingId(null);
+    setMainImageFile(null);
+    setGalleryImageFiles([]);
   }
 
   async function handleFilesChange(files: FileList | null) {
     if (!files) return;
-    const imagePromises = Array.from(files).map((file) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') resolve(reader.result);
-          else reject(new Error('Invalid file result'));
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
-    });
-    const images = await Promise.all(imagePromises);
-    setForm((s) => ({ ...s, images }));
+    const newFiles = Array.from(files).map(file => ({
+      file,
+      blob: URL.createObjectURL(file)
+    }));
+
+    setGalleryImageFiles((prev) => [...prev, ...newFiles]);
+    setForm((s) => ({ ...s, images: [...s.images, ...newFiles.map(f => f.blob)] }));
   }
 
   function handleRemoveImage(index: number) {
-    setForm((s) => ({ ...s, images: s.images.filter((_, i) => i !== index) }));
+    const imageUrl = form.images[index];
+
+    if (imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imageUrl);
+      setGalleryImageFiles(prev => prev.filter(f => f.blob !== imageUrl));
+    }
+
+    setForm((s) => ({
+      ...s,
+      images: s.images.filter((_, i) => i !== index)
+    }));
   }
 
   async function handleMainFileChange(file: File | null) {
     if (!file) return;
-    const src = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') resolve(reader.result);
-        else reject(new Error('Invalid file result'));
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-    setForm((s) => ({ ...s, mainImage: src }));
+
+    // Revoke old blob if exists
+    if (mainImageFile) {
+      URL.revokeObjectURL(mainImageFile.blob);
+    }
+
+    const blob = URL.createObjectURL(file);
+    setMainImageFile({ file, blob });
+    setForm((s) => ({ ...s, mainImage: blob }));
+  }
+
+  async function uploadFile(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -140,45 +157,58 @@ export default function AdminProductsPage() {
     setErrorMessage(null);
     setSaving(true);
 
-    const payload = {
-      name: form.name.trim(),
-      category: form.category.trim() || 'Other',
-      price: Number(form.price || 0),
-      mainImage: form.mainImage,
-      images: form.images,
-      description: form.description.trim(),
-      stock: Number(form.stock || 0),
-      discountPercent: Number(form.discountPercent || 0),
-      active: form.active,
-      featured: form.featured,
-      hsnSac: form.hsnSac.trim(),
-      gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
-    };
-
-    if (!payload.name) {
-      setErrorMessage('Product name is required.');
-      setSaving(false);
-      return;
-    }
-
-    if (payload.price <= 0) {
-      setErrorMessage('Product price must be greater than zero.');
-      setSaving(false);
-      return;
-    }
-
-    if (!payload.category) {
-      setErrorMessage('Product category is required.');
-      setSaving(false);
-      return;
-    }
-
     try {
+      let finalMainImage = form.mainImage;
+      let finalImages = [...form.images];
+
+      // 1. Upload Main Image if it's a new file (blob URL)
+      if (mainImageFile && finalMainImage === mainImageFile.blob) {
+        const path = `products/${Date.now()}_main_${mainImageFile.file.name}`;
+        finalMainImage = await uploadFile(mainImageFile.file, path);
+      }
+
+      // 2. Upload Gallery Images
+      const galleryUploadPromises = finalImages.map(async (img) => {
+        if (img.startsWith('blob:')) {
+          const match = galleryImageFiles.find(f => f.blob === img);
+          if (match) {
+            const path = `products/${Date.now()}_gallery_${match.file.name}`;
+            return await uploadFile(match.file, path);
+          }
+        }
+        return img;
+      });
+
+      finalImages = await Promise.all(galleryUploadPromises);
+
+      const payload = {
+        name: form.name.trim(),
+        category: form.category.trim() || 'Other',
+        price: Number(form.price || 0),
+        mainImage: finalMainImage,
+        images: finalImages,
+        description: form.description.trim(),
+        stock: Number(form.stock || 0),
+        discountPercent: Number(form.discountPercent || 0),
+        active: form.active,
+        featured: form.featured,
+        hsnSac: form.hsnSac.trim(),
+        gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
+      };
+
+      if (!payload.name) {
+        throw new Error('Product name is required.');
+      }
+      if (payload.price <= 0) {
+        throw new Error('Product price must be greater than zero.');
+      }
+
       const response = await fetch('/api/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
       });
+
       const parsed = await readApiJson<{ error?: string }>(response);
       if (!parsed.ok) {
         throw new Error(parsed.error || 'Unable to save product.');
@@ -188,6 +218,7 @@ export default function AdminProductsPage() {
       resetForm();
       await fetchProducts();
     } catch (error) {
+      console.error("Save error:", error);
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save product.');
     } finally {
       setSaving(false);
