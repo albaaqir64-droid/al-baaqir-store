@@ -13,7 +13,7 @@ export function apiError(error: string, status = 500, extra?: Record<string, unk
   return apiJson({ success: false, error, ...extra }, status);
 }
 
-const MAX_JSON_BODY_BYTES = 50 * 1024 * 1024; // Increased to 50MB for very high-quality images
+const MAX_JSON_BODY_BYTES = 4 * 1024 * 1024; // 4MB limit to stay within serverless function payload limits (e.g. Vercel)
 
 export async function readRequestJson(request: Request): Promise<
   { ok: true; data: unknown } | { ok: false; response: NextResponse }

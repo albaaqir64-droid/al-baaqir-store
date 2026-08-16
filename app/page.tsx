@@ -51,7 +51,8 @@ function getProductImage(product: { mainImage?: string; images?: string[]; galle
 export default async function Home() {
   const newArrivals = await fetchNewArrivals(4);
   const activeProducts = await fetchProducts();
-  const featuredProducts = activeProducts.slice(0, 4);
+  // Filter only products marked as featured in the admin panel
+  const featuredProducts = activeProducts.filter(p => p.featured).slice(0, 4);
   const categoryProducts = new Map(
     categories.map((category) => {
       const products = activeProducts

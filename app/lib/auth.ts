@@ -38,13 +38,17 @@ export function isAdminAuthenticated() {
 
 export async function loginAdmin(password: string) {
   if (password === ADMIN_PASSWORD) {
-    localStorage.setItem(ADMIN_SESSION_KEY, "1");
     try {
-      await signInAnonymously(auth);
+      // Ensure Firebase Auth is signed in before setting local session
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+      localStorage.setItem(ADMIN_SESSION_KEY, "1");
+      return true;
     } catch (error) {
       console.error("Firebase auth background sign-in failed:", error);
+      throw new Error("Authentication failed. Please check your connection.");
     }
-    return true;
   }
   return false;
 }

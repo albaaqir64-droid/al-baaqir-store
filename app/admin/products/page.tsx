@@ -5,7 +5,7 @@ import AdminGuard from "../../components/AdminGuard";
 import { readApiJson } from "../../lib/api/client";
 import { FormEvent, useEffect, useState } from "react";
 import type { ProductRecord } from "../../lib/productTypes";
-import { storage } from "../../lib/firebase";
+import { storage, auth } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type ProductForm = {
@@ -28,6 +28,9 @@ const CATEGORIES = [
   "Belts",
   "Bags",
   "Kurti",
+  "Karachi Suit",
+  "Earrings",
+  "Jhumka",
   "Shirts",
   "T-Shirts",
   "Jeans",
@@ -174,35 +177,58 @@ export default function AdminProductsPage() {
     setSaving(true);
 
     try {
-      let finalMainImage = form.mainImage;
-      let finalImages = [...form.images];
+      // 0. Ensure Firebase Auth is ready
+      if (!auth.currentUser) {
+        console.log("Firebase Auth not detected, attempting anonymous sign-in...");
+        const { signInAnonymously } = await import("firebase/auth");
+        await signInAnonymously(auth);
 
-      // 1. Upload Main Image if it's a new file (blob URL)
-      if (mainImageFile && finalMainImage === mainImageFile.blob) {
-        const path = `products/main_${Date.now()}_${mainImageFile.file.name.replace(/\s+/g, '_')}`;
-        finalMainImage = await uploadFile(mainImageFile.file, path);
-      } else if (finalMainImage.startsWith('blob:')) {
-        // Fallback case: if mainImage is a blob but not in mainImageFile state
-        // This shouldn't happen with current logic but added for safety
-        throw new Error("Main image source lost. Please re-select the image.");
+        // Wait a small bit for token propagation
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (!auth.currentUser) {
+          throw new Error("Authentication failed. You must be signed in to upload images.");
+        }
       }
 
-      // 2. Upload Gallery Images
-      const galleryUploadPromises = finalImages.map(async (img) => {
-        if (img.startsWith('blob:')) {
-          const match = galleryImageFiles.find(f => f.blob === img);
-          if (match) {
-            const path = `products/gallery_${Date.now()}_${match.file.name.replace(/\s+/g, '_')}`;
-            return await uploadFile(match.file, path);
-          }
-          // If it's a blob but no file found, skip it (or throw error)
-          return null;
-        }
-        return img;
-      });
+      // Helper to ensure we only send clean URLs to the API
+      const processImage = async (src: string, label: string): Promise<string> => {
+        if (!src) return "";
+        if (src.startsWith("http") || src.startsWith("gs://")) return src;
 
-      const uploadedImages = await Promise.all(galleryUploadPromises);
-      finalImages = uploadedImages.filter((img): img is string => img !== null);
+        console.log(`Processing image for ${label}...`);
+
+        // 1. Try to find the File object in our state (most efficient)
+        const match = [mainImageFile, ...galleryImageFiles].find(f => f?.blob === src);
+        if (match) {
+          console.log(`Uploading ${label} from File object...`);
+          const path = `products/${label}_${Date.now()}_${match.file.name.replace(/\s+/g, '_')}`;
+          return await uploadFile(match.file, path);
+        }
+
+        // 2. If it's a blob: or data: URL but no File object, fetch and upload
+        if (src.startsWith("blob:") || src.startsWith("data:")) {
+          console.log(`Uploading ${label} from ${src.startsWith("blob:") ? "Blob" : "Data"} URL...`);
+          const res = await fetch(src);
+          const blob = await res.blob();
+          const ext = blob.type.split("/")[1] || "jpg";
+          const path = `products/${label}_${Date.now()}.${ext}`;
+          const file = new File([blob], `image.${ext}`, { type: blob.type });
+          return await uploadFile(file, path);
+        }
+
+        // 3. Last resort check for base64
+        if (src.length > 2000) {
+          throw new Error(`Field ${label} contains raw image data but failed to upload. Please re-select the image.`);
+        }
+
+        return src;
+      };
+
+      const finalMainImage = await processImage(form.mainImage, "main");
+      const finalImages = await Promise.all(
+        form.images.map((img, idx) => processImage(img, `gallery_${idx}`))
+      );
 
       const payload = {
         name: form.name.trim(),
@@ -210,7 +236,7 @@ export default function AdminProductsPage() {
         price: Number(form.price || 0),
         mainImage: finalMainImage,
         images: finalImages,
-        galleryImages: finalImages, // Sync both fields for compatibility
+        galleryImages: finalImages, // Keep both for backward compatibility
         description: form.description.trim(),
         stock: Number(form.stock || 0),
         discountPercent: Number(form.discountPercent || 0),
@@ -223,15 +249,18 @@ export default function AdminProductsPage() {
       if (!payload.name) throw new Error('Product name is required.');
       if (payload.price <= 0) throw new Error('Product price must be greater than zero.');
 
-      // Final sanity check: Ensure no blob URLs are being sent
-      if (payload.mainImage.startsWith('blob:') || payload.images.some(img => img.startsWith('blob:'))) {
-        throw new Error("Some images failed to upload correctly. Please try again.");
+      // FINAL PROTECTION: Verify no large data escaped into the payload
+      const jsonBody = JSON.stringify(editingId ? { id: editingId, ...payload } : payload);
+      console.log("DEBUG: Final Request Body Size:", jsonBody.length, "bytes");
+
+      if (jsonBody.length > 500000) { // 0.5MB limit for the metadata JSON
+        throw new Error("Payload still too large. One or more images failed to upload to storage and are being sent as raw data.");
       }
 
       const response = await fetch('/api/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
+        body: jsonBody,
       });
 
       const parsed = await readApiJson<{ error?: string }>(response);
