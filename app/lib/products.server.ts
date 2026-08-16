@@ -8,63 +8,6 @@ function createSlug(value: string) {
   return String(value).trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 200);
 }
 
-function isDataUrl(value: unknown): value is string {
-  return typeof value === "string" && /^data:[^;]+;base64,/.test(value);
-}
-
-function parseDataUrl(value: string) {
-  const match = /^data:([^;]+);base64,(.*)$/.exec(value);
-  if (!match) throw new Error("Invalid data URL");
-  return { mimeType: match[1], buffer: Buffer.from(match[2], "base64") };
-}
-
-function getExtensionFromMimeType(mimeType: string) {
-  const extensions: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/jpg": ".jpg",
-    "image/png": ".png",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
-    "image/svg+xml": ".svg"
-  };
-  return extensions[mimeType.toLowerCase()] ?? "";
-}
-
-async function uploadProductImage(productId: string, imageValue: string, index: number, type: "mainImage" | "galleryImages") {
-  if (!isDataUrl(imageValue)) return imageValue;
-
-  const { mimeType, buffer } = parseDataUrl(imageValue);
-  const extension = getExtensionFromMimeType(mimeType);
-  const destinationPath = type === "mainImage"
-    ? `products/${productId}/main${extension}`
-    : `products/${productId}/gallery-${index}${extension}`;
-
-  try {
-    const bucket = getAdminStorage().bucket();
-    const file = bucket.file(destinationPath);
-
-    // Save with public access if possible, or fallback to signed URL
-    await file.save(buffer, {
-      metadata: { contentType: mimeType }
-    });
-
-    try {
-      await file.makePublic();
-      return `https://storage.googleapis.com/${bucket.name}/${destinationPath}`;
-    } catch (e) {
-      console.warn("Could not make file public, getting signed URL instead", e);
-      const [signedUrl] = await file.getSignedUrl({
-        action: "read",
-        expires: Date.now() + 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
-      });
-      return signedUrl;
-    }
-  } catch (error) {
-    console.error("Image upload failed:", error);
-    throw new Error(`Failed to upload high-quality image: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 function withoutUndefined<T extends Record<string, unknown>>(data: T): Record<string, unknown> {
   return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
 }
@@ -87,12 +30,6 @@ export async function createProduct(payload: ProductSavePayload) {
 
     const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : [];
 
-    // Process high-quality images and get URLs
-    const mainImageUrl = payload.mainImage ? await uploadProductImage(productId, String(payload.mainImage), 0, "mainImage") : "";
-    const imageUrls = await Promise.all(
-      galleryImages.map((image, index) => uploadProductImage(productId, String(image), index, "galleryImages"))
-    );
-
     const discount = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
 
     const data = withoutUndefined({
@@ -105,9 +42,9 @@ export async function createProduct(payload: ProductSavePayload) {
       slug: createSlug(payload.name),
       createdAt: FieldValue.serverTimestamp(),
       lastUpdated: FieldValue.serverTimestamp(),
-      mainImage: mainImageUrl,
-      galleryImages: imageUrls,
-      images: imageUrls,
+      mainImage: String(payload.mainImage ?? "").trim(),
+      galleryImages: galleryImages.map(img => String(img ?? "").trim()),
+      images: galleryImages.map(img => String(img ?? "").trim()),
       description: optionalText(payload.description),
       discount,
       discountPercent: discount,
@@ -118,14 +55,13 @@ export async function createProduct(payload: ProductSavePayload) {
 
     await docRef.set(data);
 
-    // Return a lightweight object to the client (avoiding sending back large base64 strings)
     return {
       success: true,
       id: productId,
       name: data.name,
       slug: data.slug,
-      mainImage: mainImageUrl,
-      images: imageUrls
+      mainImage: data.mainImage,
+      images: data.images
     };
   } catch (error) {
     console.error("Error in createProduct:", error);
@@ -152,11 +88,11 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
   });
 
   if (payload.mainImage !== undefined) {
-    updatePayload.mainImage = isDataUrl(payload.mainImage) ? await uploadProductImage(id, payload.mainImage, 0, "mainImage") : payload.mainImage;
+    updatePayload.mainImage = String(payload.mainImage ?? "").trim();
   }
 
   if (galleryImages !== undefined) {
-    const images = await Promise.all(galleryImages.map((image, index) => uploadProductImage(id, String(image), index, "galleryImages")));
+    const images = galleryImages.map(img => String(img ?? "").trim());
     updatePayload.galleryImages = images;
     updatePayload.images = images;
   }

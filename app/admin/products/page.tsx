@@ -109,10 +109,21 @@ export default function AdminProductsPage() {
 
   async function handleFilesChange(files: FileList | null) {
     if (!files) return;
-    const newFiles = Array.from(files).map(file => ({
-      file,
-      blob: URL.createObjectURL(file)
-    }));
+    const newFiles = Array.from(files).map(file => {
+      // Basic validation
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File ${file.name} is too large (max 5MB).`);
+        return null;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert(`File ${file.name} is not an image.`);
+        return null;
+      }
+      return {
+        file,
+        blob: URL.createObjectURL(file)
+      };
+    }).filter((f): f is { file: File; blob: string } => f !== null);
 
     setGalleryImageFiles((prev) => [...prev, ...newFiles]);
     setForm((s) => ({ ...s, images: [...s.images, ...newFiles.map(f => f.blob)] }));
@@ -134,6 +145,11 @@ export default function AdminProductsPage() {
 
   async function handleMainFileChange(file: File | null) {
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Main image is too large (max 5MB).");
+      return;
+    }
 
     // Revoke old blob if exists
     if (mainImageFile) {
@@ -163,8 +179,12 @@ export default function AdminProductsPage() {
 
       // 1. Upload Main Image if it's a new file (blob URL)
       if (mainImageFile && finalMainImage === mainImageFile.blob) {
-        const path = `products/${Date.now()}_main_${mainImageFile.file.name}`;
+        const path = `products/main_${Date.now()}_${mainImageFile.file.name.replace(/\s+/g, '_')}`;
         finalMainImage = await uploadFile(mainImageFile.file, path);
+      } else if (finalMainImage.startsWith('blob:')) {
+        // Fallback case: if mainImage is a blob but not in mainImageFile state
+        // This shouldn't happen with current logic but added for safety
+        throw new Error("Main image source lost. Please re-select the image.");
       }
 
       // 2. Upload Gallery Images
@@ -172,14 +192,17 @@ export default function AdminProductsPage() {
         if (img.startsWith('blob:')) {
           const match = galleryImageFiles.find(f => f.blob === img);
           if (match) {
-            const path = `products/${Date.now()}_gallery_${match.file.name}`;
+            const path = `products/gallery_${Date.now()}_${match.file.name.replace(/\s+/g, '_')}`;
             return await uploadFile(match.file, path);
           }
+          // If it's a blob but no file found, skip it (or throw error)
+          return null;
         }
         return img;
       });
 
-      finalImages = await Promise.all(galleryUploadPromises);
+      const uploadedImages = await Promise.all(galleryUploadPromises);
+      finalImages = uploadedImages.filter((img): img is string => img !== null);
 
       const payload = {
         name: form.name.trim(),
@@ -187,6 +210,7 @@ export default function AdminProductsPage() {
         price: Number(form.price || 0),
         mainImage: finalMainImage,
         images: finalImages,
+        galleryImages: finalImages, // Sync both fields for compatibility
         description: form.description.trim(),
         stock: Number(form.stock || 0),
         discountPercent: Number(form.discountPercent || 0),
@@ -196,11 +220,12 @@ export default function AdminProductsPage() {
         gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
       };
 
-      if (!payload.name) {
-        throw new Error('Product name is required.');
-      }
-      if (payload.price <= 0) {
-        throw new Error('Product price must be greater than zero.');
+      if (!payload.name) throw new Error('Product name is required.');
+      if (payload.price <= 0) throw new Error('Product price must be greater than zero.');
+
+      // Final sanity check: Ensure no blob URLs are being sent
+      if (payload.mainImage.startsWith('blob:') || payload.images.some(img => img.startsWith('blob:'))) {
+        throw new Error("Some images failed to upload correctly. Please try again.");
       }
 
       const response = await fetch('/api/products', {
