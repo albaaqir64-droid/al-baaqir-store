@@ -7,6 +7,8 @@ const firebaseConfig = {
   apiKey: "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
   authDomain: "al-baaqir-store.firebaseapp.com",
   projectId: "al-baaqir-store",
+  // Standard bucket is usually project-id.appspot.com,
+  // though new projects sometimes use .firebasestorage.app
   storageBucket: "al-baaqir-store.firebasestorage.app",
   messagingSenderId: "806944771261",
   appId: "1:806944771261:web:0897e2e02edc3c0417fbd4",

@@ -166,45 +166,52 @@ export default function AdminProductsPage() {
   }
 
   async function uploadFile(file: File, path: string): Promise<string> {
-    console.log(`DEBUG: Starting upload to ${path}...`);
+    console.log(`DEBUG: Starting upload process for: ${path}`);
 
-    // Detailed Runtime Investigation Logs
-    const currentUser = auth.currentUser;
-    console.log("DEBUG: Runtime Auth State:", {
-      uid: currentUser?.uid || "null",
-      isAnonymous: currentUser?.isAnonymous || false,
-      email: currentUser?.email || "null",
-      projectId: storage.app.options.projectId,
-      storageBucket: storage.app.options.storageBucket,
-      appName: storage.app.name
-    });
-
-    // Ensure we are definitely signed in and the token is fresh before this specific upload
-    if (currentUser) {
-      try {
-        const token = await currentUser.getIdToken(true);
-        console.log("DEBUG: ID Token refreshed successfully. Token length:", token.length);
-      } catch (e) {
-        console.error("DEBUG: Token refresh failed:", e);
-      }
-    } else {
-      console.error("DEBUG: CRITICAL - Attempting upload while logged out. Storage rules will reject this.");
-      throw new Error("Authentication required for upload. Please try logging in again.");
-    }
-
-    const storageRef = ref(storage, path);
     try {
+      // 1. Ensure Firebase Auth is fully ready
+      let currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.log("DEBUG: No user found, attempting anonymous sign-in...");
+        const cred = await signInAnonymously(auth);
+        currentUser = cred.user;
+      }
+
+      // 2. CRITICAL: Refresh token and wait for it to be active
+      // This ensures the Storage SDK has the latest authentication context
+      const token = await currentUser.getIdToken(true);
+      console.log("DEBUG: Auth token refreshed successfully. UID:", currentUser.uid);
+
+      // 3. Log Bucket Info
+      const currentBucket = storage.app.options.storageBucket;
+      console.log("DEBUG: Target Storage Bucket:", currentBucket);
+
+      const storageRef = ref(storage, path);
+
+      // 4. Perform the upload
+      console.log("DEBUG: Uploading bytes...");
       const snapshot = await uploadBytes(storageRef, file);
+
+      console.log("DEBUG: uploadBytes success. Fetching download URL...");
       const url = await getDownloadURL(snapshot.ref);
-      console.log(`DEBUG: Upload successful. URL: ${url}`);
+
+      console.log(`DEBUG: Upload completed! URL: ${url}`);
       return url;
-    } catch (uploadError: any) {
-      console.error("DEBUG: uploadBytes failed!", {
-        code: uploadError.code,
-        message: uploadError.message,
-        serverResponse: uploadError.customData?.serverResponse
+    } catch (error: any) {
+      console.error("DEBUG: STORAGE UPLOAD FAILED!", {
+        errorCode: error.code,
+        errorMessage: error.message,
+        bucket: storage.app.options.storageBucket,
+        uid: auth.currentUser?.uid
       });
-      throw uploadError;
+
+      if (error.code === 'storage/unauthorized') {
+        throw new Error(`Permission Denied (storage/unauthorized).
+        1. Please ensure your Anonymous Auth is Enabled in Firebase Console.
+        2. Verify that Storage Rules allow write for authenticated users.
+        3. UID is: ${auth.currentUser?.uid}`);
+      }
+      throw error;
     }
   }
 
