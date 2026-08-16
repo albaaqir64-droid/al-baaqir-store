@@ -12,21 +12,22 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   useEffect(() => {
-    // Check local session first for immediate access
-    if (isAdminAuthenticated()) {
-      setAuthorized(true);
-      setCheckingAuth(false);
-      return;
-    }
+    let mounted = true;
 
-    // Fallback/Sync with Firebase Auth
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (isAdminAuthenticated()) {
+    // Start sync with Firebase Auth immediately
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!mounted) return;
+
+      if (user) {
         setAuthorized(true);
-      } else if (user) {
-        // If Firebase is authenticated but local storage isn't (e.g. after refresh)
-        // we can potentially trust it, but for now we follow the existing local-first logic
-        setAuthorized(false);
+      } else if (isAdminAuthenticated()) {
+        // Local session exists but Firebase doesn't, sync it
+        try {
+          const { signInAnonymously } = await import("firebase/auth");
+          await signInAnonymously(auth);
+        } catch (e) {
+          console.error("AdminGuard: Firebase auto-sync failed", e);
+        }
       } else {
         setAuthorized(false);
         if (!checkingAuth) {
@@ -36,7 +37,17 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       setCheckingAuth(false);
     });
 
-    return () => unsubscribe();
+    // Fallback: If local session is active, show UI but continue auth sync in background
+    if (isAdminAuthenticated()) {
+      setAuthorized(true);
+      // We don't set checkingAuth false here yet to ensure Firebase is ready if possible
+      // but we can if we want "instant" feel. Let's wait a bit for Firebase.
+    }
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [router, checkingAuth]);
 
   if (checkingAuth) {

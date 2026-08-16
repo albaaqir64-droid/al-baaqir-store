@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { ProductRecord } from "../../lib/productTypes";
 import { storage, auth } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 type ProductForm = {
   id?: string;
@@ -165,9 +166,46 @@ export default function AdminProductsPage() {
   }
 
   async function uploadFile(file: File, path: string): Promise<string> {
+    console.log(`DEBUG: Starting upload to ${path}...`);
+
+    // Detailed Runtime Investigation Logs
+    const currentUser = auth.currentUser;
+    console.log("DEBUG: Runtime Auth State:", {
+      uid: currentUser?.uid || "null",
+      isAnonymous: currentUser?.isAnonymous || false,
+      email: currentUser?.email || "null",
+      projectId: storage.app.options.projectId,
+      storageBucket: storage.app.options.storageBucket,
+      appName: storage.app.name
+    });
+
+    // Ensure we are definitely signed in and the token is fresh before this specific upload
+    if (currentUser) {
+      try {
+        const token = await currentUser.getIdToken(true);
+        console.log("DEBUG: ID Token refreshed successfully. Token length:", token.length);
+      } catch (e) {
+        console.error("DEBUG: Token refresh failed:", e);
+      }
+    } else {
+      console.error("DEBUG: CRITICAL - Attempting upload while logged out. Storage rules will reject this.");
+      throw new Error("Authentication required for upload. Please try logging in again.");
+    }
+
     const storageRef = ref(storage, path);
-    const snapshot = await uploadBytes(storageRef, file);
-    return await getDownloadURL(snapshot.ref);
+    try {
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      console.log(`DEBUG: Upload successful. URL: ${url}`);
+      return url;
+    } catch (uploadError: any) {
+      console.error("DEBUG: uploadBytes failed!", {
+        code: uploadError.code,
+        message: uploadError.message,
+        serverResponse: uploadError.customData?.serverResponse
+      });
+      throw uploadError;
+    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -178,18 +216,52 @@ export default function AdminProductsPage() {
 
     try {
       // 0. Ensure Firebase Auth is ready
-      if (!auth.currentUser) {
-        console.log("Firebase Auth not detected, attempting anonymous sign-in...");
-        const { signInAnonymously } = await import("firebase/auth");
-        await signInAnonymously(auth);
+      console.log("DEBUG: Checking Firebase Auth status before submission...");
 
-        // Wait a small bit for token propagation
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for auth to initialize
+      let currentUser = auth.currentUser;
 
-        if (!auth.currentUser) {
-          throw new Error("Authentication failed. You must be signed in to upload images.");
+      if (!currentUser) {
+        console.log("DEBUG: No user found, waiting for auth state to stabilize...");
+        // Wait up to 3 seconds for onAuthStateChanged
+        await new Promise<void>((resolve) => {
+          const unsub = onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            unsub();
+            resolve();
+          });
+          setTimeout(resolve, 3000);
+        });
+      }
+
+      if (!currentUser) {
+        console.log("DEBUG: Still no user, attempting explicit anonymous sign-in...");
+        try {
+          const cred = await signInAnonymously(auth);
+          currentUser = cred.user;
+          console.log("DEBUG: Anonymous sign-in success, UID:", currentUser.uid);
+          // Wait for token to propagate to Storage service
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        } catch (authErr: any) {
+          console.error("DEBUG: Auth error during submission:", authErr);
+          if (authErr.code === 'auth/operation-not-allowed') {
+             throw new Error("Anonymous sign-in is not enabled in Firebase Console.");
+          }
+          throw authErr;
         }
       }
+
+      if (currentUser) {
+        console.log("DEBUG: Proceeding with authenticated user:", currentUser.uid);
+        await currentUser.getIdToken(true);
+      } else {
+        throw new Error("Failed to authenticate with Firebase. Storage upload will not be permitted.");
+      }
+
+      console.log("DEBUG: Firebase Project Config:", {
+        projectId: storage.app.options.projectId,
+        bucket: storage.app.options.storageBucket
+      });
 
       // Helper to ensure we only send clean URLs to the API
       const processImage = async (src: string, label: string): Promise<string> => {
