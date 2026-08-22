@@ -9,6 +9,8 @@ export type SanitizedOrderItem = {
   productUrl: string;
   hsnSac?: string;
   gstRate?: number;
+  selectedSize?: string;
+  selectedColor?: string;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -43,12 +45,14 @@ export function sanitizeCartItem(item: any): SanitizedOrderItem {
   return sanitizeFirestoreData({
     id: String(item?.id ?? ""),
     name: String(item?.name ?? ""),
-    price: Number(item?.price ?? item?.qty ?? 0) || 0,
+    price: Number(item?.price ?? 0) || 0,
     quantity: Number(item?.quantity ?? item?.qty ?? 0) || 0,
     image: String(item?.image ?? ""),
     productUrl: String(item?.productUrl ?? ""),
     hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
     gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
+    selectedSize: item?.selectedSize || undefined,
+    selectedColor: item?.selectedColor || undefined,
   });
 }
 

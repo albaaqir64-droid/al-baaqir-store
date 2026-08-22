@@ -13,7 +13,13 @@ export default async function Page({ params }: Props) {
   const resolvedParams = await params;
   const idValue = resolvedParams?.id;
   const id = Array.isArray(idValue) ? idValue[0] : idValue;
-  const product = id ? await fetchProductById(id) : null;
+  let product = null;
+
+  try {
+    product = id ? await fetchProductById(id) : null;
+  } catch (error) {
+    console.error("Error fetching product:", error);
+  }
 
   if (!product) {
     return (

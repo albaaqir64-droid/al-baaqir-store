@@ -25,16 +25,24 @@ function getReorderStatus(stock: number): "sufficient" | "low" | "out_of_stock" 
 }
 
 function toInventoryItem(product: ProductRecord): InventoryItem {
+  let stock = Number(product.stock ?? 0);
+
+  // If variant stock exists, use the sum of variants as the "current stock" for the inventory view
+  if (product.variantStock && Object.keys(product.variantStock).length > 0) {
+    const variantSum = Object.values(product.variantStock).reduce((a, b) => a + (Number(b) || 0), 0);
+    if (variantSum > 0) stock = variantSum;
+  }
+
   return {
     id: product.id,
     productId: product.id,
     productName: product.name,
     category: product.category,
-    currentStock: Number(product.stock ?? 0),
+    currentStock: stock,
     minStock: 5,
     maxStock: 100,
     sku: `SKU-${product.id}`,
-    reorderStatus: getReorderStatus(Number(product.stock ?? 0)),
+    reorderStatus: getReorderStatus(stock),
     updatedAt: Number(product.lastUpdated ?? product.createdAt ?? Date.now()),
   };
 }

@@ -27,6 +27,10 @@ const defaultForm = {
   paymentMethod: "cod",
 };
 
+import { formatCurrency, sanitizeText } from "../lib/utils";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+
 export default function CheckoutPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
@@ -39,11 +43,15 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      const loaded = await loadCartItems();
-      if (!active) return;
-      setItems(loaded);
-    })();
+    const fetchItems = async () => {
+      try {
+        const loaded = await loadCartItems();
+        if (active) setItems(loaded || []);
+      } catch (err) {
+        console.error("Checkout load error:", err);
+      }
+    };
+    fetchItems();
     return () => {
       active = false;
     };
@@ -54,13 +62,6 @@ export default function CheckoutPage() {
     [items]
   );
 
-  function formatINR(amount: number) {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
 
   function validateOrderPayload(order: any) {
     if (!order || typeof order !== 'object') return false;
@@ -304,256 +305,192 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen brand-page text-slate-900 px-6 py-12">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold">Checkout</h1>
-            <p className="mt-2 text-slate-600">Complete your shipping details and confirm your order.</p>
-          </div>
-          <Link href="/cart" className="rounded-full border border-emerald-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
-            Back to cart
-          </Link>
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-emerald-500 selection:text-slate-900">
+      <Header />
+
+      <main className="mx-auto max-w-7xl px-6 py-20">
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Checkout</h1>
+          <p className="mt-4 text-lg text-slate-600">Securely finalize your curated essentials.</p>
         </div>
 
         {submitted && (
-          <div className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-sm">
-            <h2 className="text-xl font-semibold">Order placed successfully!</h2>
-            <p className="mt-2 text-sm text-emerald-900/90">Your order request has been received. We will contact you shortly to confirm shipping and payment.</p>
+          <div className="mb-8 rounded-[32px] bg-emerald-50 border border-emerald-100 p-8 text-emerald-900">
+            <h2 className="text-xl font-bold">Order placed successfully!</h2>
+            <p className="mt-2 text-sm text-emerald-700">Your order request has been received. We will contact you shortly to confirm shipping and payment.</p>
           </div>
         )}
 
-        <div className="grid gap-8 xl:grid-cols-[1.75fr_1fr]">
-          <section className="space-y-8">
-            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-slate-950">Shipping information</h2>
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium text-slate-900">Full Name *</label>
+        <div className="grid gap-16 lg:grid-cols-[1fr_420px]">
+          <section className="space-y-12">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-8">Shipping Address</h2>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Full Name</label>
                   <input
                     value={form.fullName}
                     onChange={(event) => handleInput("fullName", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="Enter your full name"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    placeholder="Enter your name"
                   />
-                  {errors.fullName && <p className="mt-2 text-sm text-rose-600">{errors.fullName}</p>}
+                  {errors.fullName && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.fullName}</p>}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-900">Mobile Number *</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Mobile</label>
                   <input
                     value={form.mobile}
                     onChange={(event) => handleInput("mobile", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="10-digit mobile number"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    placeholder="10-digit number"
                     inputMode="numeric"
                   />
-                  {errors.mobile && <p className="mt-2 text-sm text-rose-600">{errors.mobile}</p>}
+                  {errors.mobile && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.mobile}</p>}
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-900">Email (optional)</label>
+                <div>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Email</label>
                   <input
                     value={form.email}
                     onChange={(event) => handleInput("email", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     placeholder="you@example.com"
-                    type="email"
                   />
-                  {errors.email && <p className="mt-2 text-sm text-rose-600">{errors.email}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-900">GSTIN (optional)</label>
-                  <input
-                    value={form.customerGSTIN}
-                    onChange={(event) => handleInput("customerGSTIN", event.target.value.toUpperCase())}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="15-character GSTIN"
-                    maxLength={15}
-                  />
-                  {errors.customerGSTIN && <p className="mt-2 text-sm text-rose-600">{errors.customerGSTIN}</p>}
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">House / Street</label>
+                  <div className="space-y-4">
+                    <input
+                      value={form.house}
+                      onChange={(event) => handleInput("house", event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      placeholder="House / Flat No."
+                    />
+                    <input
+                      value={form.street}
+                      onChange={(event) => handleInput("street", event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      placeholder="Street / Area / Colony"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-900">House / Flat No. *</label>
-                  <input
-                    value={form.house}
-                    onChange={(event) => handleInput("house", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="e.g. 402B"
-                  />
-                  {errors.house && <p className="mt-2 text-sm text-rose-600">{errors.house}</p>}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-900">Street / Area *</label>
-                  <input
-                    value={form.street}
-                    onChange={(event) => handleInput("street", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="e.g. Jubilee Hills"
-                  />
-                  {errors.street && <p className="mt-2 text-sm text-rose-600">{errors.street}</p>}
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-900">Landmark (optional)</label>
-                  <input
-                    value={form.landmark}
-                    onChange={(event) => handleInput("landmark", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="e.g. Near the temple"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-900">Pincode *</label>
-                  <div className="mt-2 flex gap-2">
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Pincode</label>
+                  <div className="flex gap-2">
                     <input
                       value={form.pincode}
                       onChange={(event) => handleInput("pincode", event.target.value)}
-                      className="flex-1 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                      placeholder="e.g. 500081"
+                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      placeholder="6-digit PIN"
                       inputMode="numeric"
                     />
                     <button
                       type="button"
                       onClick={() => void checkPincode()}
-                      className="rounded-2xl bg-emerald px-4 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-2xl bg-emerald-500 px-6 py-4 text-[13px] font-bold text-slate-900 shadow-sm transition-all hover:bg-orange-500 hover:text-white disabled:opacity-50"
                       disabled={pincodeLoading}
                     >
-                      {pincodeLoading ? "Checking…" : "Auto-fill"}
+                      Check
                     </button>
                   </div>
-                  {errors.pincode && <p className="mt-2 text-sm text-rose-600">{errors.pincode}</p>}
+                  {errors.pincode && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.pincode}</p>}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-900">City *</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">City</label>
                   <input
                     value={form.city}
-                    onChange={(event) => handleInput("city", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="e.g. Hyderabad"
+                    readOnly
+                    className="w-full rounded-2xl border border-slate-200 bg-[#F5F5F7] px-6 py-4 text-sm text-slate-500"
+                    placeholder="Auto-filled"
                   />
-                  {errors.city && <p className="mt-2 text-sm text-rose-600">{errors.city}</p>}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-900">State *</label>
-                  <input
-                    value={form.state}
-                    onChange={(event) => handleInput("state", event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald/70 focus:ring-2 focus:ring-emerald/10"
-                    placeholder="e.g. Telangana"
-                  />
-                  {errors.state && <p className="mt-2 text-sm text-rose-600">{errors.state}</p>}
                 </div>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-slate-950">Payment method</h2>
-              <div className="mt-6 space-y-4">
-                <label className="flex items-center gap-3 rounded-3xl border border-emerald/20 bg-white p-4 text-sm transition hover:border-emerald/40">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-8">Payment</h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-4 rounded-[32px] border border-emerald-100 bg-emerald-50/30 p-8 cursor-pointer transition-all hover:border-emerald-500 group">
                   <input
                     type="radio"
                     name="payment"
                     value="cod"
                     checked={form.paymentMethod === "cod"}
                     onChange={() => handleInput("paymentMethod", "cod")}
-                    className="h-4 w-4 text-emerald focus:ring-emerald"
+                    className="h-5 w-5 border-emerald-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <div>
-                    <div className="font-semibold text-slate-950">Cash on Delivery</div>
-                    <div className="mt-1 text-slate-600">Pay when your order arrives.</div>
+                    <span className="text-[15px] font-bold text-slate-900">Cash on Delivery</span>
+                    <p className="mt-1 text-sm text-slate-600">Securely pay in cash when your order is delivered to your doorstep.</p>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 rounded-3xl border border-emerald-200 bg-slate-100 p-4 text-sm text-slate-500">
+
+                <label className="flex items-center gap-4 rounded-[32px] border border-slate-100 bg-white p-8 cursor-pointer transition-all hover:border-emerald-500 group">
                   <input
                     type="radio"
                     name="payment"
                     value="online"
                     checked={form.paymentMethod === "online"}
                     onChange={() => handleInput("paymentMethod", "online")}
-                    disabled
-                    className="h-4 w-4 text-emerald focus:ring-emerald"
+                    className="h-5 w-5 border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <div>
-                    <div className="font-semibold">Online Payment</div>
-                    <div className="mt-1 text-slate-500">Coming soon. Select Cash on Delivery for now.</div>
+                    <span className="text-[15px] font-bold text-slate-900">Online Payment</span>
+                    <p className="mt-1 text-sm text-slate-600">Pay securely via Cards, UPI, or Netbanking using Razorpay.</p>
                   </div>
                 </label>
               </div>
             </div>
           </section>
 
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-emerald-200 bg-slate-50 p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-950">Order summary</h2>
-                  <p className="mt-1 text-sm text-slate-600">Review the items you are about to order.</p>
-                </div>
-                <div className="rounded-full bg-emerald-600 px-3 py-1 text-sm font-semibold text-white">{items.length} item{items.length === 1 ? "" : "s"}</div>
-              </div>
+          <aside>
+            <div className="sticky top-24 rounded-[32px] bg-emerald-50 p-8 border border-emerald-100">
+              <h2 className="text-2xl font-bold text-slate-900">Order Summary</h2>
 
-              <div className="mt-6 space-y-4">
-                {items.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-sm text-slate-600">
-                    Your cart is empty. Add items from the store to continue.
-                  </div>
-                ) : (
-                  items.map((item) => (
-                    <div key={item.id} className="flex gap-4 rounded-3xl border border-emerald-200 bg-white p-4">
-                      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-100">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400 italic">No image</div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-slate-950">{item.name}</div>
-                        <div className="mt-2 text-xs">
-                          {item.originalPrice && item.originalPrice > item.price ? (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-slate-900">{formatINR(item.price)}</span>
-                              <span className="text-slate-500 line-through">{formatINR(item.originalPrice)}</span>
-                            </div>
-                          ) : (
-                            <span className="text-slate-600">{formatINR(item.price)}</span>
-                          )}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-600">Qty {item.qty}</div>
-                      </div>
-                      <div className="text-right text-sm font-semibold text-slate-900">{formatINR(item.price * item.qty)}</div>
+              <div className="mt-8 space-y-6">
+                {items.map((item) => (
+                  <div key={item.id} className="flex gap-4">
+                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-white border border-emerald-100">
+                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                     </div>
-                  ))
-                )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{sanitizeText(item.name)}</p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">Qty {item.qty}</p>
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">{formatCurrency(item.price * item.qty)}</p>
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-6 space-y-3 rounded-3xl bg-white p-4 text-sm text-slate-700">
-                <div className="flex items-center justify-between">
+              <div className="mt-8 space-y-4 border-t border-emerald-200 pt-8">
+                <div className="flex justify-between text-[15px] font-medium text-slate-600">
                   <span>Subtotal</span>
-                  <span>{formatINR(total)}</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex justify-between text-[15px] font-medium text-slate-600">
                   <span>Shipping</span>
-                  <span className="font-medium text-emerald-600 uppercase">Free</span>
+                  <span className="text-emerald-600 font-bold uppercase tracking-widest text-[11px]">Free</span>
                 </div>
-                <div className="flex items-center justify-between font-semibold text-slate-950">
+                <div className="mt-4 flex justify-between text-xl font-bold text-slate-900">
                   <span>Total</span>
-                  <span>{formatINR(total)}</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
               </div>
 
               <button
                 onClick={placeOrder}
-                className="mt-4 w-full rounded-full bg-emerald px-6 py-4 text-base font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={submitting || !items.length}
+                className="mt-8 w-full rounded-full bg-emerald-500 py-5 text-[15px] font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:bg-orange-500 hover:text-white hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
-                {submitting ? "Placing order..." : "Place Order"}
+                {submitting ? "Processing..." : "Place Order"}
               </button>
 
-              {saveError && <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{saveError}</p>}
-              {errors.cart && <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{errors.cart}</p>}
+              {saveError && <p className="mt-4 text-center text-xs font-semibold text-rose-600">{saveError}</p>}
             </div>
           </aside>
         </div>
-      </div>
-    </main>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

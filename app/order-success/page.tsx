@@ -104,8 +104,8 @@ function OrderSuccessPageContent() {
   if (loading) {
     return (
       <main className="min-h-screen bg-white px-6 py-24 text-slate-900">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-200 bg-slate-50 p-12 shadow-lg">
-          <div className="h-72 animate-pulse rounded-3xl bg-slate-200" />
+        <div className="mx-auto max-w-3xl rounded-[40px] border border-emerald-100 bg-emerald-50/30 p-12 shadow-sm">
+          <div className="h-72 animate-pulse rounded-[32px] bg-emerald-100/50" />
         </div>
       </main>
     );
@@ -114,10 +114,10 @@ function OrderSuccessPageContent() {
   if (error || !order) {
     return (
       <main className="min-h-screen bg-white px-6 py-24 text-slate-900">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-200 bg-slate-50 p-12 shadow-lg text-center">
-          <h1 className="text-2xl font-semibold">Unable to load order</h1>
+        <div className="mx-auto max-w-3xl rounded-[40px] border border-emerald-100 bg-emerald-50 p-12 text-center">
+          <h1 className="text-2xl font-bold">Unable to load order</h1>
           <p className="mt-4 text-slate-600">{error || "Please check your order link and try again."}</p>
-          <Link href="/" className="mt-8 inline-flex rounded-full bg-emerald px-6 py-3 text-emerald-900 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 hover:text-white">
+          <Link href="/" className="mt-8 inline-flex rounded-full bg-emerald-500 px-8 py-4 text-[15px] font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:bg-orange-500 hover:text-white hover:scale-105">
             Continue Shopping
           </Link>
         </div>
@@ -126,72 +126,70 @@ function OrderSuccessPageContent() {
   }
 
   return (
-    <main className="min-h-screen store-surface px-6 py-20">
+    <main className="min-h-screen bg-white selection:bg-emerald-500 selection:text-slate-900 px-6 py-20">
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="rounded-[32px] border border-emerald/20 bg-emerald-950/90 p-10 shadow-2xl shadow-emerald/20">
-          <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Order Placed Successfully</p>
-          <h1 className="mt-4 text-4xl font-semibold text-white">Thank you, {order.customerName}.</h1>
-          <p className="mt-3 max-w-2xl text-slate-300">Your order has been received and is being processed. You can track status from your account.</p>
+        <div className="rounded-[40px] border border-emerald-100 bg-emerald-50 p-10 shadow-lg shadow-emerald-500/5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-700">Order Placed Successfully</span>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">Thank you, {order.customerName}.</h1>
+          <p className="mt-3 max-w-2xl text-lg text-slate-600">Your order has been received and is being processed. We&apos;ll notify you when it&apos;s on its way.</p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-emerald/20 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">Order ID</p>
-              <p className="mt-2 text-xl font-semibold text-white">{order.id}</p>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+            <div className="rounded-[32px] border border-emerald-200/50 bg-white p-6 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Order ID</p>
+              <p className="mt-2 text-xl font-bold text-slate-900">{order.id.toUpperCase()}</p>
             </div>
-            <div className="rounded-3xl border border-emerald/20 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400">Invoice</p>
-              <p className="mt-2 text-xl font-semibold text-white">{order.invoiceNumber}</p>
+            <div className="rounded-[32px] border border-emerald-200/50 bg-white p-6 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Invoice Number</p>
+              <p className="mt-2 text-xl font-bold text-slate-900">{order.invoiceNumber || 'Pending'}</p>
             </div>
           </div>
         </div>
 
-        <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6 rounded-[32px] border border-gray-800 bg-slate-900 p-8 shadow-xl">
+        <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-8 rounded-[40px] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/20">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">Order details</h2>
-                <p className="mt-1 text-slate-400">A summary of your purchase and delivery details.</p>
+                <h2 className="text-2xl font-bold text-slate-900">Order Details</h2>
+                <p className="mt-1 text-slate-500">A summary of your purchase.</p>
               </div>
-              <span className="rounded-full border border-emerald/20 bg-emerald-950/80 px-4 py-2 text-sm text-emerald-300">{order.paymentMethod === "cod" ? "Cash on Delivery" : order.paymentMethod}</span>
+              <span className="rounded-full bg-emerald-100 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-emerald-700">
+                {order.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online"}
+              </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-5">
-                <p className="text-sm text-slate-400">Customer</p>
-                <p className="mt-2 text-lg font-semibold text-white">{order.customerName}</p>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-slate-100 bg-slate-50/50 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Customer</p>
+                <p className="mt-2 font-bold text-slate-900">{order.customerName}</p>
+                <p className="mt-1 text-sm text-slate-500">{order.phone}</p>
               </div>
-              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-5">
-                <p className="text-sm text-slate-400">Phone</p>
-                <p className="mt-2 text-lg font-semibold text-white">{order.phone}</p>
+              <div className="rounded-[24px] border border-slate-100 bg-slate-50/50 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Delivery Address</p>
+                <p className="mt-2 text-sm font-medium text-slate-900 leading-relaxed">
+                  {order.shipping.address}<br />
+                  {order.shipping.city}, {order.shipping.state} {order.shipping.pincode}
+                </p>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-              <p className="text-sm text-slate-400">Delivery Address</p>
-              <p className="mt-3 text-slate-200">{order.shipping.address}</p>
-              <p className="mt-2 text-slate-200">{order.shipping.city}, {order.shipping.state}, {order.shipping.pincode}</p>
-            </div>
-
-            <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-              <h3 className="text-lg font-semibold text-white">Products ordered</h3>
-              <div className="mt-4 space-y-3">
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-slate-900">Items</h3>
+              <div className="space-y-3">
                 {order.cartItems.map((item) => (
-                  <div key={item.id} className="rounded-3xl border border-slate-800 bg-slate-900 p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 overflow-hidden rounded-3xl bg-slate-800">
-                        <img
-                          src={item.image || '/images/products/placeholder.svg'}
-                          alt={item.name}
-                          onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-semibold text-white">{item.name}</div>
-                        <div className="mt-1 text-sm text-slate-400">Qty {item.quantity}</div>
-                      </div>
-                      <div className="text-right text-sm text-slate-300">₹{item.price}</div>
+                  <div key={item.id} className="group flex items-center gap-4 rounded-[24px] border border-slate-100 bg-white p-4 transition-all hover:border-emerald-200">
+                    <div className="h-20 w-20 overflow-hidden rounded-2xl bg-emerald-50">
+                      <img
+                        src={item.image || '/images/products/placeholder.svg'}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+                      />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-900 truncate">{item.name}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">Qty {item.quantity}</p>
+                    </div>
+                    <p className="font-bold text-slate-900">₹{item.price.toLocaleString('en-IN')}</p>
                   </div>
                 ))}
               </div>
@@ -199,46 +197,44 @@ function OrderSuccessPageContent() {
           </div>
 
           <aside className="space-y-6">
-            <div className="rounded-[32px] border border-emerald/20 bg-slate-900 p-8 shadow-xl">
-              <h2 className="text-xl font-semibold text-white">Summary</h2>
-              <div className="mt-6 space-y-4 text-sm text-slate-400">
-                <div className="flex items-center justify-between">
+            <div className="rounded-[40px] bg-emerald-50 p-8 border border-emerald-100 shadow-lg shadow-emerald-500/5">
+              <h2 className="text-2xl font-bold text-slate-900">Summary</h2>
+              <div className="mt-8 space-y-4">
+                <div className="flex justify-between text-[15px] font-medium text-slate-600">
                   <span>Subtotal</span>
-                  <span>₹{order.subtotal}</span>
+                  <span>₹{order.subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex justify-between text-[15px] font-medium text-slate-600">
                   <span>Shipping</span>
-                  <span>{order.shippingCharge === 0 ? "Free" : `₹${order.shippingCharge}`}</span>
+                  <span className="text-emerald-700 font-bold uppercase tracking-widest text-[11px]">
+                    {order.shippingCharge === 0 ? "FREE" : `₹${order.shippingCharge.toLocaleString('en-IN')}`}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between font-semibold text-white">
+                <div className="mt-4 border-t border-emerald-200 pt-4 flex justify-between text-xl font-bold text-slate-900">
                   <span>Total</span>
-                  <span>₹{order.total}</span>
+                  <span>₹{order.total.toLocaleString('en-IN')}</span>
                 </div>
-              </div>
-              <div className="mt-6 rounded-3xl border border-emerald/20 bg-emerald-950/70 p-4 text-slate-200">
-                <p className="text-sm">Estimated delivery within 3-5 business days.</p>
               </div>
 
               {/* Invoice Section */}
-              <div className="mt-6 space-y-3 border-t border-slate-700 pt-6">
-                <h3 className="text-sm font-semibold text-white">Invoice</h3>
+              <div className="mt-12 pt-8 border-t border-emerald-200">
                 {invoiceError && (
-                  <div className="rounded-lg bg-red-950 p-3 text-sm text-red-200">
+                  <div className="mb-4 rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 border border-rose-100">
                     {invoiceError}
                   </div>
                 )}
                 {invoiceUrl ? (
                   <button
                     onClick={downloadInvoice}
-                    className="w-full rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
+                    className="w-full rounded-full bg-emerald-500 py-4 text-[15px] font-bold text-slate-900 shadow-md shadow-emerald-500/10 transition-all hover:bg-orange-500 hover:text-white"
                   >
-                    📄 Download Invoice
+                    Download Invoice
                   </button>
                 ) : (
                   <button
                     onClick={generateInvoice}
                     disabled={generatingInvoice}
-                    className="w-full rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+                    className="w-full rounded-full bg-emerald-500 py-4 text-[15px] font-bold text-slate-900 shadow-md shadow-emerald-500/10 transition-all hover:bg-orange-500 hover:text-white disabled:opacity-50"
                   >
                     {generatingInvoice ? "Generating..." : "Generate Invoice"}
                   </button>
@@ -246,12 +242,12 @@ function OrderSuccessPageContent() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Link href="/account/orders" className="inline-flex w-full items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald/20 transition hover:bg-emerald-600">
-                My Orders
+            <div className="flex flex-col gap-4">
+              <Link href="/account/orders" className="flex w-full items-center justify-center rounded-full bg-slate-900 py-4 text-[15px] font-bold text-white transition-all hover:bg-slate-800">
+                View My Orders
               </Link>
-              <Link href="/" className="inline-flex w-full items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-200">
-                Continue Shopping
+              <Link href="/" className="flex w-full items-center justify-center rounded-full border border-emerald-200 bg-white py-4 text-[15px] font-bold text-slate-900 transition-all hover:bg-emerald-50">
+                Back to Home
               </Link>
             </div>
           </aside>

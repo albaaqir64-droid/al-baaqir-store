@@ -9,8 +9,10 @@ import {
   query,
   where,
   DocumentData,
+  limit as firestoreLimit,
 } from "firebase/firestore";
 import type { ProductRecord } from "./productTypes";
+import { sanitizeText } from "./utils";
 
 function createSlug(value: string) {
   return String(value)
@@ -58,7 +60,7 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
 
   return {
     id: docSnap.id,
-    name: String(data.name ?? ""),
+    name: sanitizeText(String(data.name ?? "")),
     category: String(data.category ?? ""),
     price: Number(data.price ?? 0),
     stock: Number(data.stock ?? 0),
@@ -66,7 +68,7 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     discount: discountValue,
     active: data.active !== false,
     featured: data.featured === true,
-    description: String(data.description ?? ""),
+    description: sanitizeText(String(data.description ?? "")),
     // Older products may use `coverImage`; prefer the current mainImage field
     // but retain that existing catalog data as the display image fallback.
     mainImage: normalizeProductImageUrl(data.mainImage ?? data.coverImage ?? data.image),
@@ -126,9 +128,23 @@ export async function fetchProductsByCategory(category: string): Promise<Product
 
 export async function fetchSaleProducts(limit: number = 12): Promise<ProductRecord[]> {
   const productsRef = collection(db, "products");
-  const saleQuery = query(productsRef, where("discountPercent", ">", 0), where("active", "==", true));
+  const saleQuery = query(
+    productsRef,
+    where("discountPercent", ">", 0),
+    where("active", "==", true),
+    firestoreLimit(limit)
+  );
   const snapshot = await getDocs(saleQuery);
-  return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc).slice(0, limit);
+  return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
+}
+
+/**
+ * Fetches unique categories that have at least one active product.
+ */
+export async function fetchActiveCategories(): Promise<string[]> {
+  const products = await fetchProducts(true);
+  const categories = new Set(products.map(p => p.category));
+  return Array.from(categories).sort();
 }
 
 export async function fetchNewArrivals(limit: number = 12): Promise<ProductRecord[]> {

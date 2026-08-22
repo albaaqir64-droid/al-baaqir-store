@@ -18,6 +18,7 @@ export interface ProductRecord {
   lastUpdated: any;
   sizes?: string[];
   colors?: string[];
+  variantStock?: Record<string, number>;
   featured: boolean;
   rating?: number;
   hsnSac?: string;

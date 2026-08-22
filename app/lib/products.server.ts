@@ -3,6 +3,7 @@ import "server-only";
 import { getAdminStorage, getAdminApp } from "./firebaseAdmin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import type { ProductSavePayload, ProductRecord } from "./productTypes";
+import { sanitizeText } from "./utils";
 
 function createSlug(value: string) {
   return String(value).trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 200);
@@ -34,7 +35,7 @@ export async function createProduct(payload: ProductSavePayload) {
 
     const data = withoutUndefined({
       id: productId,
-      name: String(payload.name ?? "").trim(),
+      name: sanitizeText(String(payload.name ?? "")),
       category: String(payload.category ?? "").trim(),
       price: Number(payload.price) || 0,
       stock: Number(payload.stock) || 0,
@@ -45,12 +46,14 @@ export async function createProduct(payload: ProductSavePayload) {
       mainImage: String(payload.mainImage ?? "").trim(),
       galleryImages: galleryImages.map(img => String(img ?? "").trim()),
       images: galleryImages.map(img => String(img ?? "").trim()),
-      description: optionalText(payload.description),
+      description: payload.description ? sanitizeText(payload.description) : undefined,
       discount,
       discountPercent: discount,
       featured: payload.featured === true,
       hsnSac: optionalText(payload.hsnSac),
-      gstRate: optionalFiniteNumber(payload.gstRate)
+      gstRate: optionalFiniteNumber(payload.gstRate),
+      sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : [],
+      colors: Array.isArray(payload.colors) ? payload.colors.map(c => String(c)) : [],
     });
 
     await docRef.set(data);
@@ -76,14 +79,16 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
   const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : undefined;
 
   const updatePayload: Record<string, unknown> = withoutUndefined({
-    name: payload.name !== undefined ? String(payload.name).trim() : undefined,
+    name: payload.name !== undefined ? sanitizeText(String(payload.name)) : undefined,
     category: payload.category !== undefined ? String(payload.category).trim() : undefined,
     price: payload.price !== undefined ? Number(payload.price) || 0 : undefined,
     stock: payload.stock !== undefined ? Number(payload.stock) || 0 : undefined,
     active: payload.active,
-    description: payload.description !== undefined ? optionalText(payload.description) ?? null : undefined,
+    description: payload.description !== undefined ? sanitizeText(String(payload.description)) : undefined,
     hsnSac: payload.hsnSac !== undefined ? optionalText(payload.hsnSac) ?? null : undefined,
     gstRate: payload.gstRate !== undefined ? optionalFiniteNumber(payload.gstRate) ?? null : undefined,
+    sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : undefined,
+    colors: Array.isArray(payload.colors) ? payload.colors.map(c => String(c)) : undefined,
     lastUpdated: FieldValue.serverTimestamp()
   });
 
@@ -212,4 +217,17 @@ export async function fetchProductsForApi(options?: {
   }
 
   return products;
+}
+
+export async function fetchActiveCategories(): Promise<string[]> {
+  const firestore = getFirestore(getAdminApp());
+  const snapshot = await firestore.collection("products").where("active", "==", true).get();
+  const categories = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data();
+    if (data.category) {
+      categories.add(String(data.category).trim());
+    }
+  });
+  return Array.from(categories).sort();
 }

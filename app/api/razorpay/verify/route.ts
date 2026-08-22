@@ -53,28 +53,74 @@ export async function POST(req: Request) {
     const db = getFirestore(getAdminApp());
     const orderRef = db.collection("orders").doc();
 
-    await orderRef.set({
-      customerName: String(orderMeta.customerName ?? ""),
-      phone: String(orderMeta.phone ?? ""),
-      email: String(orderMeta.email ?? ""),
-      customerGSTIN: String(orderMeta.customerGSTIN ?? "").trim().toUpperCase(),
-      paymentMethod: String(orderMeta.paymentMethod ?? "razorpay"),
-      subtotal: Number(orderMeta.subtotal ?? 0) || 0,
-      shippingCharge: Number(orderMeta.shippingCharge ?? 0) || 0,
-      total: Number(orderMeta.total ?? 0) || 0,
-      invoiceNumber,
-      status: "confirmed",
-      shipping,
-      cartItems: orderItems,
-      payment: {
-        provider: "razorpay",
-        paymentId: razorpay_payment_id,
-        orderId: razorpay_order_id,
-        signature: razorpay_signature,
-      },
-      paymentStatus: "paid",
-      createdAt: FieldValue.serverTimestamp(),
-      lastUpdated: FieldValue.serverTimestamp(),
+    // --- STOCK DEDUCTION LOGIC ---
+    await db.runTransaction(async (transaction) => {
+      // 1. Get all unique product IDs from order
+      const productIds = Array.from(new Set(orderItems.map(item => item.id)));
+      const productSnapshots = await Promise.all(
+        productIds.map(id => transaction.get(db.collection("products").doc(id)))
+      );
+
+      const productMap = new Map();
+      productSnapshots.forEach(snap => {
+        if (snap.exists) productMap.set(snap.id, snap.data());
+      });
+
+      // 2. Calculate stock updates
+      for (const item of orderItems) {
+        const product = productMap.get(item.id);
+        if (!product) continue;
+
+        const updates: Record<string, any> = { lastUpdated: FieldValue.serverTimestamp() };
+        const variantStock = (product.variantStock || {}) as Record<string, number>;
+
+        // Variant Deduction
+        const size = item.selectedSize || "";
+        const color = item.selectedColor || "";
+        let vKey = "";
+        if (size && color) vKey = `${size}_${color}`;
+        else if (size) vKey = `size_${size}`;
+        else if (color) vKey = `color_${color}`;
+
+        if (vKey && variantStock[vKey] !== undefined) {
+          variantStock[vKey] = Math.max(0, variantStock[vKey] - item.quantity);
+          updates.variantStock = variantStock;
+        }
+
+        // Main Stock Deduction
+        const mainStockField = (product.inventory !== undefined) ? "inventory" :
+                              (product.quantity !== undefined && product.stock === undefined) ? "quantity" : "stock";
+
+        const currentStock = Number(product[mainStockField] || 0);
+        updates[mainStockField] = Math.max(0, currentStock - item.quantity);
+
+        transaction.update(db.collection("products").doc(item.id), updates);
+      }
+
+      // 3. Create Order
+      transaction.set(orderRef, {
+        customerName: String(orderMeta.customerName ?? ""),
+        phone: String(orderMeta.phone ?? ""),
+        email: String(orderMeta.email ?? ""),
+        customerGSTIN: String(orderMeta.customerGSTIN ?? "").trim().toUpperCase(),
+        paymentMethod: "online",
+        subtotal: Number(orderMeta.subtotal ?? 0),
+        shippingCharge: Number(orderMeta.shippingCharge ?? 0),
+        total: Number(orderMeta.total ?? 0),
+        invoiceNumber,
+        status: "confirmed",
+        shipping,
+        cartItems: orderItems,
+        payment: {
+          provider: "razorpay",
+          paymentId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+          signature: razorpay_signature,
+        },
+        paymentStatus: "paid",
+        createdAt: FieldValue.serverTimestamp(),
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
     });
 
     const orderId = orderRef.id;

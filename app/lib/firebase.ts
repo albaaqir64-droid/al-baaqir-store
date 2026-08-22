@@ -23,7 +23,10 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Keep the Node/server path on getFirestore: this transport option is browser-only.
 export const db = typeof window === "undefined"
   ? getFirestore(app)
-  : initializeFirestore(app, { experimentalForceLongPolling: true });
+  : initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
+    });
 
 export const storage = getStorage(app);
 export const auth = getAuth(app);

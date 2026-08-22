@@ -6,6 +6,7 @@ import { addCartItem } from "../../lib/cart";
 import { fetchPincodeLocation, PincodeLocation } from "../../lib/pincode";
 import { toggleWishlistItem, isWishlisted } from "../../lib/wishlist";
 import type { ProductRecord } from "../../lib/productTypes";
+import { formatCurrency, sanitizeText } from "../../lib/utils";
 import { Toast } from "../../components/Toast";
 
 export default function ProductDetailClient({ product }: { product: ProductRecord }) {
@@ -17,6 +18,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
   const [mainIndex, setMainIndex] = useState(0);
   const [size, setSize] = useState<string | null>(product.sizes?.[0] ?? null);
+  const [color, setColor] = useState<string | null>(product.colors?.[0] ?? null);
   const [qty, setQty] = useState(1);
   const [pincode, setPincode] = useState("");
   const [pincodeError, setPincodeError] = useState<string | null>(null);
@@ -77,9 +79,6 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
     return (Math.abs(h) % 200) + 20;
   }
 
-  function formatINR(amount: number) {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-  }
 
   async function checkPincode() {
     setPincodeLoading(true);
@@ -101,212 +100,223 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
     }
   }
 
-  return (
-    <div>
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Left Side: Images */}
-        <div>
-          <div className="rounded-3xl border border-emerald-200 overflow-hidden bg-emerald-50 cursor-zoom-in" onClick={() => openLightbox(mainIndex)}>
-            <img
-              src={allImages[mainIndex] || '/images/products/placeholder.svg'}
-              alt={product.name}
-              onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
-              className="w-full h-[420px] object-cover"
-            />
-          </div>
+  const getVariantStock = () => {
+    if (!product.variantStock) return product.stock;
 
-          <div className="mt-4 flex gap-3">
-            {allImages.map((img, i) => (
-              <button key={String(i)} onClick={() => { setMainIndex(i); openLightbox(i); }} className={`h-20 w-20 overflow-hidden rounded-xl border ${i === mainIndex ? 'border-emerald' : 'border-emerald-200'}`}>
-                <img
-                  src={img || '/images/products/placeholder.svg'}
-                  alt={`${product.name} ${i + 1}`}
-                  onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
+    let key = "";
+    if (size && color) key = `${size}_${color}`;
+    else if (size) key = `size_${size}`;
+    else if (color) key = `color_${color}`;
+
+    if (key && product.variantStock[key] !== undefined) {
+      return product.variantStock[key];
+    }
+    return product.stock;
+  };
+
+  const currentStock = getVariantStock();
+
+  return (
+    <div className="grid gap-16 lg:grid-cols-2">
+      {/* Left Side: Images */}
+      <div className="space-y-6">
+        <div
+          className="relative aspect-square overflow-hidden rounded-[40px] bg-emerald-50 cursor-zoom-in group border border-emerald-100"
+          onClick={() => openLightbox(mainIndex)}
+        >
+          <img
+            src={allImages[mainIndex] || '/images/products/placeholder.svg'}
+            alt={product.name}
+            loading="eager"
+            decoding="sync"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+          />
+          {product.discountPercent && (
+            <div className="absolute left-8 top-8 rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-bold tracking-widest text-slate-900 uppercase shadow-sm">
+              {product.discountPercent}% OFF
+            </div>
+          )}
         </div>
 
-        {/* Right Side: Product Details */}
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-950">{product.name}</h1>
-          <div className="mt-2 flex items-center gap-3">
-            <div className="flex items-center text-amber-500">{Array.from({ length: 5 }).map((_, i) => (
-              <svg key={i} className="h-4 w-4" viewBox="0 0 24 24" fill={i < Math.round(product.rating ?? 0) ? 'currentColor' : 'none'} stroke="currentColor"><path d="M12 .587l3.668 7.431L23.4 9.75l-5.7 5.566L19.335 24 12 19.897 4.665 24l1.635-8.684L.6 9.75l7.732-1.732z"/></svg>
-            ))}</div>
-            <div className="text-sm text-slate-600">{product.rating ?? '—'} · {seededReviewsCount(product.id)} reviews</div>
-          </div>
-
-          <div className="mt-4 flex items-end gap-4">
-            <div>
-              <div className="text-2xl font-semibold text-slate-950">{formatINR(discountedPrice)}</div>
-              {product.discountPercent ? (
-                <div className="text-sm text-slate-500"><span className="line-through mr-2">{formatINR(product.price)}</span><span className="text-gold font-semibold">{product.discountPercent}% off</span></div>
-              ) : (
-                <div className="text-sm text-slate-500">{formatINR(product.price)}</div>
-              )}
-            </div>
-            <div className="ml-auto text-sm text-slate-600">Inclusive of all taxes</div>
-          </div>
-
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-slate-900">Size</h4>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {product.sizes?.map((s) => (
-                <button key={s} onClick={() => setSize(s)} className={`rounded-md border px-3 py-2 text-sm ${size === s ? 'border-emerald bg-emerald text-white' : 'border-emerald-200 text-slate-700'}`}>{s}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-10 w-10 rounded-md border border-emerald-200">−</button>
-              <div className="w-12 text-center">{qty}</div>
-              <button onClick={() => setQty((q) => Math.min(Math.max(0, product.stock), q + 1))} disabled={product.stock < 1} className="h-10 w-10 rounded-md border border-emerald-200 disabled:opacity-50">+</button>
-            </div>
-
-            <div className="flex flex-1 flex-wrap items-center gap-3">
-              <button
-                onClick={() => {
-                  addCartItem({
-                    id: product.id,
-                    name: product.name,
-                    price: product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price,
-                    originalPrice: product.price,
-                    discountPercent: product.discountPercent,
-                    image: product.mainImage ?? product.images?.[0] ?? '',
-                    productUrl: `/product/${product.id}`,
-                    hsnSac: product.hsnSac,
-                    gstRate: product.gstRate,
-                    stock: product.stock
-                  }, qty);
-                  setToastVariant("success");
-                  setToastMessage("Added to cart successfully.");
-                  window.setTimeout(() => setToastMessage(null), 2200);
-                }}
-                disabled={product.stock < 1}
-                className="rounded-full bg-emerald px-5 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
-              >
-                Add to Cart
-              </button>
-              <button
-                onClick={() => {
-                  addCartItem({
-                    id: product.id,
-                    name: product.name,
-                    price: product.discountPercent ? Math.round(product.price * (1 - product.discountPercent / 100)) : product.price,
-                    originalPrice: product.price,
-                    discountPercent: product.discountPercent,
-                    image: product.mainImage ?? product.images?.[0] ?? '',
-                    productUrl: `/product/${product.id}`,
-                    hsnSac: product.hsnSac,
-                    gstRate: product.gstRate,
-                    stock: product.stock
-                  }, qty);
-                  router.push('/checkout');
-                }}
-                disabled={product.stock < 1}
-                className="rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200 disabled:opacity-50"
-              >
-                Buy Now
-              </button>
-              <button
-                onClick={() => {
-                  const nextWishlist = toggleWishlistItem({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    image: product.mainImage ?? product.images?.[0] ?? '',
-                    productUrl: `/product/${product.id}`,
-                  });
-                  const nowWishlisted = nextWishlist.some((item) => item.id === product.id);
-                  setWishlisted(nowWishlisted);
-                  setToastVariant("success");
-                  setToastMessage(nowWishlisted ? "Added to wishlist." : "Removed from wishlist.");
-                  window.setTimeout(() => setToastMessage(null), 2200);
-                }}
-                className="rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-50"
-              >
-                {wishlisted ? '♥' : '♡'} Wishlist
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-sm text-slate-600">Check delivery to pincode</label>
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={pincode}
-                  onChange={(e) => {
-                    setPincode(e.target.value);
-                    setPincodeError(null);
-                    setPincodeOk(null);
-                    setPincodeLocation(null);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void checkPincode();
-                    }
-                  }}
-                  placeholder="Enter pincode"
-                  className="flex-1 rounded-md border border-emerald-200 px-3 py-2"
-                  inputMode="numeric"
-                />
-                <button
-                  type="button"
-                  onClick={() => void checkPincode()}
-                  className="rounded-md bg-emerald px-4 py-2 text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
-                  disabled={pincodeLoading}
-                >
-                  {pincodeLoading ? "Checking…" : "Check"}
-                </button>
-              </div>
-              {pincodeOk !== null && (
-                <div className={`mt-2 rounded-lg px-3 py-2 text-sm ${pincodeOk ? 'bg-emerald-50 text-emerald-900' : 'bg-rose-50 text-rose-900'}`}>
-                  {pincodeOk ? (
-                    <>
-                      Delivery available in {pincodeLocation?.city}, {pincodeLocation?.state}
-                    </>
-                  ) : (
-                    pincodeError
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-600">Cash on Delivery</p>
-              <p className="mt-2 text-sm text-slate-700">Available for select pincodes. Additional charges may apply.</p>
-            </div>
-          </div>
-
-          {toastMessage && <Toast message={toastMessage} variant={toastVariant} />}
-          <div className="mt-6 space-y-3">
-            <div>
-              <h4 className="text-sm font-medium">Return Policy</h4>
-              <p className="mt-1 text-sm text-slate-600">7-day returns on unused items with tags. See our full policy for exclusions.</p>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-medium">Product details</h4>
-              <ul className="mt-2 text-sm text-slate-600 list-disc list-inside">
-                <li>Material: Premium leather</li>
-                <li>Made in: India</li>
-                <li>Care: Wipe clean with a dry cloth</li>
-              </ul>
-            </div>
-          </div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          {allImages.map((img, i) => (
+            <button
+              key={String(i)}
+              onClick={() => { setMainIndex(i); }}
+              className={`relative aspect-square w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-emerald-50 border transition-all ${
+                i === mainIndex ? 'border-emerald-500 ring-2 ring-emerald-500 ring-offset-2' : 'border-emerald-100 opacity-60 hover:opacity-100'
+              }`}
+            >
+              <img
+                src={img || '/images/products/placeholder.svg'}
+                alt={`${product.name} ${i + 1}`}
+                className="h-full w-full object-cover"
+                onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Product Description Section - Now Below the Top Section */}
-      <div className="mt-16 border-t border-slate-100 pt-10">
-        <h3 className="text-xl font-semibold text-slate-950">Description</h3>
-        <p className="mt-6 text-slate-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+      {/* Right Side: Product Details */}
+      <div className="flex flex-col">
+        <div className="mb-8">
+          <p className="text-[13px] font-bold uppercase tracking-[0.3em] text-emerald-600 mb-4">
+            {product.category}
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
+            {sanitizeText(product.name)}
+          </h1>
+
+          <div className="mt-6 flex items-baseline gap-4">
+            <span className="text-3xl font-bold tracking-tight text-slate-900">
+              {formatCurrency(discountedPrice)}
+            </span>
+            {product.discountPercent && (
+              <span className="text-lg font-medium text-slate-400 line-through">
+                {formatCurrency(product.price)}
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-sm font-medium text-emerald-700">MRP inclusive of all taxes</p>
+        </div>
+
+        {/* Selection Options */}
+        <div className="space-y-8">
+          {product.sizes && product.sizes.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900">Select Size</h4>
+                <button className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors">Size Guide</button>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {product.sizes.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSize(s)}
+                    className={`rounded-2xl border py-4 text-sm font-bold transition-all ${
+                      size === s
+                        ? 'border-emerald-500 bg-emerald-500 text-slate-900 shadow-sm'
+                        : 'border-emerald-100 text-slate-600 hover:border-emerald-500'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {product.colors && product.colors.length > 0 && (
+            <div>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-4">Select Color</h4>
+              <div className="flex flex-wrap gap-3">
+                {product.colors.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={`h-10 w-10 rounded-full border-2 transition-all ${
+                      color === c ? "border-emerald-500 ring-2 ring-emerald-500/20 ring-offset-2" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="space-y-4 pt-4">
+            <button
+              onClick={() => {
+                addCartItem({
+                  id: product.id,
+                  name: product.name,
+                  price: discountedPrice,
+                  originalPrice: product.price,
+                  discountPercent: product.discountPercent,
+                  image: product.mainImage ?? product.images?.[0] ?? '',
+                  productUrl: `/product/${product.id}`,
+                  hsnSac: product.hsnSac,
+                  gstRate: product.gstRate,
+                  stock: currentStock,
+                  selectedSize: size ?? undefined,
+                  selectedColor: color ?? undefined,
+                }, qty);
+                router.push('/cart');
+              }}
+              disabled={currentStock < 1}
+              className="w-full rounded-full bg-emerald-500 py-5 text-[15px] font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600 hover:text-white hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {currentStock < 1 ? 'Out of Stock' : 'Add to Bag'}
+            </button>
+
+            <button
+              onClick={() => {
+                const nextWishlist = toggleWishlistItem({
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  image: product.mainImage ?? product.images?.[0] ?? '',
+                  productUrl: `/product/${product.id}`,
+                });
+                const nowWishlisted = nextWishlist.some((item) => item.id === product.id);
+                setWishlisted(nowWishlisted);
+              }}
+              className="w-full rounded-full border border-emerald-200 py-5 text-[15px] font-bold text-slate-900 transition-all hover:border-emerald-500 hover:bg-emerald-50 active:scale-[0.98]"
+            >
+              {wishlisted ? '♥ In Wishlist' : '♡ Add to Wishlist'}
+            </button>
+          </div>
+        </div>
+
+        {/* Delivery Check */}
+        <div className="mt-12 rounded-[32px] bg-emerald-50 p-8 border border-emerald-100">
+          <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-6">Delivery Details</h4>
+          <div className="flex gap-2">
+            <input
+              value={pincode}
+              onChange={(e) => setPincode(e.target.value)}
+              placeholder="Enter Pincode"
+              className="flex-1 rounded-2xl border border-emerald-100 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+            />
+            <button
+              onClick={() => void checkPincode()}
+              disabled={pincodeLoading}
+              className="rounded-2xl bg-emerald-500 px-8 py-4 text-sm font-bold text-slate-900 shadow-sm transition-all hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+            >
+              Check
+            </button>
+          </div>
+          {pincodeOk !== null && (
+            <div className={`mt-4 text-sm font-medium ${pincodeOk ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {pincodeOk ? `Fast delivery available to ${pincodeLocation?.city}` : pincodeError}
+            </div>
+          )}
+        </div>
+
+        {/* Description & Details */}
+        <div className="mt-12 space-y-8 border-t border-slate-100 pt-12">
+          <div>
+            <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-4">Product Description</h4>
+            <p className="text-[15px] leading-relaxed text-slate-500 whitespace-pre-wrap">
+              {sanitizeText(product.description || '')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-2">Ref. Number</h4>
+              <p className="text-sm text-slate-500">{product.hsnSac || 'AB-2026-001'}</p>
+            </div>
+            <div>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-2">Material</h4>
+              <p className="text-sm text-slate-500">Premium Handcrafted Leather</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Full-Screen Image Lightbox */}
@@ -316,43 +326,51 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           onClick={() => setIsLightboxOpen(false)}
         >
           <button
-            className="absolute top-6 right-6 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition shadow-lg"
+            className="absolute top-8 right-8 z-50 rounded-full bg-white/10 p-4 text-white hover:bg-white/20 transition-all backdrop-blur-md"
             onClick={() => setIsLightboxOpen(false)}
             aria-label="Close"
           >
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
           {allImages.length > 1 && (
             <>
               <button
-                className="absolute left-4 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition md:left-10 shadow-lg"
+                className="absolute left-8 z-50 rounded-full bg-white/10 p-4 text-white hover:bg-white/20 transition-all backdrop-blur-md"
                 onClick={showPrev}
                 aria-label="Previous image"
               >
-                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <button
-                className="absolute right-4 z-50 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition md:right-10 shadow-lg"
+                className="absolute right-8 z-50 rounded-full bg-white/10 p-4 text-white hover:bg-white/20 transition-all backdrop-blur-md"
                 onClick={showNext}
                 aria-label="Next image"
               >
-                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </>
           )}
 
           <div className="relative h-full w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* Preload adjacent images */}
+            <div className="hidden">
+              {allImages.map((img, idx) => (
+                <img key={idx} src={img} alt="preload" />
+              ))}
+            </div>
             <img
               src={allImages[lightboxIndex]}
               alt={`${product.name} - image ${lightboxIndex + 1}`}
               className="max-h-full max-w-full object-contain shadow-2xl select-none"
+              loading="eager"
+              decoding="async"
             />
 
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-white/70 text-sm py-4">

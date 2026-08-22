@@ -59,6 +59,8 @@ export async function POST(req: Request) {
       featured: body.featured === true,
       hsnSac: String(body.hsnSac ?? body.hsn ?? body.sac ?? "").trim() || undefined,
       gstRate: body.gstRate !== undefined && body.gstRate !== "" ? Number(body.gstRate) : undefined,
+      sizes: Array.isArray(body.sizes) ? body.sizes : undefined,
+      colors: Array.isArray(body.colors) ? body.colors : undefined,
     };
 
     const createdProduct = await createProduct(payload);

@@ -4,6 +4,7 @@ import ProductCard from "./components/ProductCard";
 import Newsletter from "./components/Newsletter";
 import Link from "next/link";
 import { fetchNewArrivals, fetchProducts } from "./lib/products";
+import { formatCurrency } from "./lib/utils";
 
 const categories = [
   {
@@ -51,170 +52,175 @@ function getProductImage(product: { mainImage?: string; images?: string[]; galle
 export default async function Home() {
   const newArrivals = await fetchNewArrivals(4);
   const activeProducts = await fetchProducts();
+
   // Filter only products marked as featured in the admin panel
   const featuredProducts = activeProducts.filter(p => p.featured).slice(0, 4);
+
   const categoryProducts = new Map(
     categories.map((category) => {
       const products = activeProducts
-        .filter((product) => product.category.trim().toLocaleLowerCase() === category.category.toLocaleLowerCase())
+        .filter((product) => product.category.trim().toLowerCase() === category.category.toLowerCase())
         .sort((a, b) => Number(b.featured) - Number(a.featured) || (b.rating ?? 0) - (a.rating ?? 0));
       return [category.category, products[0]];
     })
   );
 
+  const activeCategoryList = categories.filter(cat => categoryProducts.get(cat.category));
+
   return (
-    <div className="min-h-screen brand-page text-slate-900">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-emerald-500 selection:text-slate-900">
       <Header />
 
       <main>
-        <section className="relative brand-hero">
-          <div className="mx-auto max-w-[1200px] px-6 py-12 lg:py-16">
-            <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-              <div className="space-y-6">
-                <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">New season premium drops</p>
-                <h1 className="text-4xl sm:text-5xl font-semibold leading-tight tracking-tight text-slate-950">Al Baaqir</h1>
-                <p className="text-4xl sm:text-5xl font-semibold leading-tight tracking-tight text-slate-950">Premium belts and bags for refined style.</p>
-                <p className="max-w-xl text-base leading-8 text-slate-700">Discover leather essentials crafted with precision and rich finishes, designed to elevate every outfit with subtle luxury.</p>
-                <div className="flex flex-wrap gap-4">
-                  <Link href="/belts" className="inline-flex items-center justify-center rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:text-white">Shop Belts</Link>
-                  <Link href="/bags" className="inline-flex items-center justify-center rounded-full border border-emerald px-6 py-3 text-sm font-semibold text-emerald transition hover:bg-emerald-50">Shop Bags</Link>
-                </div>
-              </div>
-              <div className="flex justify-center lg:justify-end">
-                <div className="relative overflow-hidden rounded-[32px] border border-emerald-200 bg-emerald-50" style={{ minWidth: '320px', maxWidth: '500px' }}>
-                  <div className="relative h-[300px] sm:h-[380px] lg:h-[420px]">
-                    <img src="/images/categories/hero.svg" alt="Premium leather belt" className="absolute inset-0 h-full w-full img-cover" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="categories" className="max-w-7xl mx-auto px-6 py-16">
-          <div className="mb-10 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Shop by Category</p>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Explore belts, bags, and premium essentials.</h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {categories.map((category) => {
-              const product = categoryProducts.get(category.category);
-              return (
-                <Link key={category.title} href={product ? `/product/${product.id}` : category.href} className="group overflow-hidden rounded-3xl border border-emerald-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/10">
-                  <div className="h-56 overflow-hidden bg-gold-50">
-                    {product && getProductImage(product) ? (
-                      <img src={getProductImage(product)} alt={product.name} className="h-full w-full img-cover transition duration-500 group-hover:scale-105" />
-                    ) : product ? (
-                      <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">Product image unavailable</div>
-                    ) : (
-                      <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">No products available</div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-slate-950">{category.title}</h3>
-                    {product ? (
-                      <>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-600">â‚¹{product.price.toLocaleString("en-IN")}</p>
-                      </>
-                    ) : (
-                      <p className="mt-2 text-sm leading-6 text-slate-600">No products available.</p>
-                    )}
-                  </div>
+        {/* Hero Section - Restored Brand Colors */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 to-white py-20 lg:py-32">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="flex flex-col items-center text-center">
+              <span className="mb-4 text-[13px] font-bold uppercase tracking-[0.3em] text-emerald-700 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                Al Baaqir Essentials
+              </span>
+              <h1 className="max-w-4xl text-5xl font-bold tracking-tight text-slate-900 sm:text-7xl animate-in fade-in slide-in-from-bottom-6 duration-1000 fill-mode-both">
+                Refined style for the <br className="hidden sm:block" /> modern individual.
+              </h1>
+              <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-600 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
+                Discover a curated collection of premium belts and bags, meticulously crafted to elevate your daily ritual with understated elegance.
+              </p>
+              <div className="mt-12 flex flex-wrap justify-center gap-6 animate-in fade-in slide-in-from-bottom-10 duration-1000 fill-mode-both">
+                <Link
+                  href="/men"
+                  className="rounded-full bg-emerald-500 px-8 py-4 text-[15px] font-bold text-slate-900 transition-all hover:bg-emerald-600 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/20"
+                >
+                  Shop the Collection
                 </Link>
-              );
-            })}
+                <Link
+                  href="/new-arrivals"
+                  className="group flex items-center gap-2 text-[15px] font-bold text-slate-900 transition-all hover:text-emerald-700"
+                >
+                  Explore New Arrivals
+                  <svg className="transition-transform group-hover:translate-x-1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Subtle Hero Image/Gradient */}
+          <div className="mt-20 flex justify-center px-6">
+            <div className="relative aspect-[21/9] w-full max-w-6xl overflow-hidden rounded-[40px] shadow-2xl">
+              <img
+                src="/images/categories/hero.svg"
+                alt="Al Baaqir Craftsmanship"
+                className="h-full w-full object-cover transition-transform duration-1000 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </div>
           </div>
         </section>
 
-        <section id="new-arrivals" className="max-w-7xl mx-auto px-6 py-16 bg-emerald-50">
-          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">New Arrivals</p>
-              <h2 className="mt-3 text-3xl font-semibold text-slate-950">Fresh leather goods for the season.</h2>
+        {/* Categories - Sleek Grid */}
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Shop by Category</h2>
+              <p className="mt-4 text-lg text-slate-500">Find exactly what you&apos;re looking for.</p>
             </div>
-            <p className="max-w-xl text-sm text-slate-600">Shop the newest products added to our Firestore catalog.</p>
-          </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {newArrivals.length === 0 ? (
-              <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center text-slate-600">No products available.</div>
-            ) : (
-              newArrivals.map((product) => (
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {activeCategoryList.map((category) => {
+                const product = categoryProducts.get(category.category);
+                return (
+                  <Link
+                    key={category.title}
+                    href={category.href}
+                    className="group relative aspect-[4/5] overflow-hidden rounded-[32px] bg-emerald-50"
+                  >
+                    {product && getProductImage(product) && (
+                      <img
+                        src={getProductImage(product)}
+                        alt={category.title}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 p-8 flex flex-col justify-end">
+                      <h3 className="text-2xl font-bold text-white">{category.title}</h3>
+                      <p className="mt-2 text-sm text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        {category.subtitle}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Collection - Brand Themed */}
+        <section className="bg-emerald-50/50 py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600">Selected</span>
+                <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Curated Essentials</h2>
+              </div>
+              <Link href="/featured" className="text-[15px] font-bold text-emerald-700 hover:text-emerald-800 transition-colors">
+                View All Featured Items →
+              </Link>
+            </div>
+
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={{
                     id: product.id,
                     name: product.name,
                     price: product.discountPercent
-                      ? `₹${Math.round(product.price * (1 - product.discountPercent / 100)).toLocaleString("en-IN")}`
-                      : `₹${product.price.toLocaleString("en-IN")}`,
+                      ? formatCurrency(Math.round(Number(product.price || 0) * (1 - Number(product.discountPercent || 0) / 100)))
+                      : formatCurrency(Number(product.price || 0)),
                     originalPriceNum: product.price,
                     discountPercent: product.discountPercent,
                     image: getProductImage(product),
                     description: product.description,
                     discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+                    hsnSac: product.hsnSac,
+                    gstRate: product.gstRate,
                   }}
                 />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section id="featured" className="max-w-7xl mx-auto px-6 py-16">
-          <div className="mb-10 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Featured</p>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Featured Firestore products</h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {featuredProducts.length === 0 ? (
-              <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center text-slate-600">No products available.</div>
-            ) : (
-              featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={{
-                    id: product.id,
-                    name: product.name,
-                    price: product.discountPercent
-                      ? `₹${Math.round(product.price * (1 - product.discountPercent / 100)).toLocaleString("en-IN")}`
-                      : `₹${product.price.toLocaleString("en-IN")}`,
-                    originalPriceNum: product.price,
-                    discountPercent: product.discountPercent,
-                    image: getProductImage(product),
-                    description: product.description,
-                    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
-                  }}
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-6 py-16 brand-section-warm rounded-[32px] border border-gold-300/40">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="space-y-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-900/80">Why Choose Al Baaqir</p>
-              <h2 className="text-3xl font-semibold">Exclusive leather goods built to last.</h2>
-              <p className="text-sm leading-7 text-emerald-950/80">From premium leather sourcing to careful handcraftsmanship, every piece is designed for enduring style and everyday luxury.</p>
+              ))}
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-800">Handmade</p>
-                <p className="mt-3 text-lg font-semibold">Artisan finish</p>
-                <p className="mt-2 text-sm text-emerald-950/75">Skilled artisans create thoughtful details across every piece.</p>
+          </div>
+        </section>
+
+        {/* Brand Philosophy - Apple Style Typography */}
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <h2 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
+              Quality you can feel. <br />
+              Craftsmanship you can trust.
+            </h2>
+            <p className="mt-12 text-xl leading-relaxed text-slate-500">
+              At Al Baaqir, we believe that luxury is found in the details. Our commitment to premium materials and artisan finishing ensures that every piece isn&apos;t just an accessory—it&apos;s a companion for life.
+            </p>
+            <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-12">
+              <div>
+                <div className="text-3xl font-bold text-slate-900">100%</div>
+                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-slate-400">Genuine Leather</div>
               </div>
-              <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-800">Materials</p>
-                <p className="mt-3 text-lg font-semibold">Premium leather</p>
-                <p className="mt-2 text-sm text-emerald-950/75">Only the finest leather and hardware meet our standards.</p>
+              <div>
+                <div className="text-3xl font-bold text-slate-900">Artisan</div>
+                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-slate-400">Handcrafted</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-slate-900">Lifetime</div>
+                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-slate-400">Durability</div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <Newsletter />
+        <section className="max-w-7xl mx-auto px-6 py-12">
+          <div className="rounded-[40px] bg-emerald-950 p-8 sm:p-16 text-emerald-50">
+            <Newsletter />
+          </div>
         </section>
       </main>
 

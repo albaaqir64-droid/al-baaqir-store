@@ -30,11 +30,13 @@ export async function POST(request: Request) {
           price: amount(value.price),
           originalPrice: value.originalPrice !== undefined ? amount(value.originalPrice) : null,
           discountPercent: value.discountPercent !== undefined ? amount(value.discountPercent) : null,
-          quantity: Math.floor(amount(value.quantity)),
+          quantity: Math.floor(amount(value.quantity || value.qty)),
           image: text(value.image),
           productUrl: text(value.productUrl),
           hsnSac: text(value.hsnSac) || null,
           gstRate: amount(value.gstRate),
+          selectedSize: text(value.selectedSize) || null,
+          selectedColor: text(value.selectedColor) || null,
         };
       })
       .filter((item) => item.id && item.name && item.quantity > 0);
@@ -64,15 +66,57 @@ export async function POST(request: Request) {
       const products = await Promise.all(
         [...quantities.keys()].map(async (id) => [id, await transaction.get(db.collection("products").doc(id))] as const)
       );
+
       for (const [productId, snapshot] of products) {
-        const requested = quantities.get(productId) ?? 0;
         const product = snapshot.data();
-        const stock = Math.max(0, Math.floor(amount(product?.stock)));
-        if (!snapshot.exists || product?.active === false || stock < requested) {
+        const requestedTotal = quantities.get(productId) ?? 0;
+
+        if (!snapshot.exists || product?.active === false) {
           const productName = text(product?.name) || "this product";
-          throw new InsufficientStockError(`Only ${stock} item${stock === 1 ? "" : "s"} are available for ${productName}.`);
+          throw new InsufficientStockError(`${productName} is no longer available.`);
         }
-        transaction.update(snapshot.ref, { stock: stock - requested, lastUpdated: FieldValue.serverTimestamp() });
+
+        const updates: Record<string, any> = { lastUpdated: FieldValue.serverTimestamp() };
+        const variantStock = (product?.variantStock || {}) as Record<string, number>;
+        let hasVariantUpdates = false;
+
+        // 1. Check and update variant-specific stock
+        for (const item of items.filter(i => i.id === productId)) {
+          const size = item.selectedSize || "";
+          const color = item.selectedColor || "";
+
+          let vKey = "";
+          if (size && color) vKey = `${size}_${color}`;
+          else if (size) vKey = `size_${size}`;
+          else if (color) vKey = `color_${color}`;
+
+          if (vKey && variantStock[vKey] !== undefined) {
+            const currentVStock = Math.max(0, Math.floor(amount(variantStock[vKey])));
+            if (currentVStock < item.quantity) {
+              const variantLabel = size && color ? `${size}/${color}` : (size || color);
+              throw new InsufficientStockError(`Only ${currentVStock} items available for ${item.name} (${variantLabel}).`);
+            }
+            variantStock[vKey] = currentVStock - item.quantity;
+            hasVariantUpdates = true;
+          }
+        }
+
+        if (hasVariantUpdates) {
+          updates.variantStock = variantStock;
+        }
+
+        // 2. Update main stock field (fallback lookup: stock -> inventory -> quantity)
+        const mainStockField = (product?.inventory !== undefined) ? "inventory" :
+                              (product?.quantity !== undefined && product?.stock === undefined) ? "quantity" : "stock";
+
+        const currentMainStock = Math.max(0, Math.floor(amount(product?.[mainStockField] ?? 0)));
+        if (currentMainStock < requestedTotal) {
+          const productName = text(product?.name) || "this product";
+          throw new InsufficientStockError(`Only ${currentMainStock} items available for ${productName}.`);
+        }
+
+        updates[mainStockField] = currentMainStock - requestedTotal;
+        transaction.update(snapshot.ref, updates);
       }
 
       transaction.create(orderRef, {

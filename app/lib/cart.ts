@@ -16,6 +16,8 @@ export type CartItem = {
   hsnSac?: string;
   gstRate?: number;
   stock?: number;
+  selectedSize?: string;
+  selectedColor?: string;
 };
 
 const CART_KEY = 'albaaqir_cart';
@@ -46,6 +48,8 @@ export function sanitizeCartItem(item: any): CartItem {
     hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
     gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
     stock: Number.isFinite(Number(item?.stock)) ? Math.max(0, Math.floor(Number(item.stock))) : undefined,
+    selectedSize: item?.selectedSize || undefined,
+    selectedColor: item?.selectedColor || undefined,
   };
 }
 
@@ -155,6 +159,8 @@ function serializeCartItem(item: CartItem): Record<string, any> {
     gstRate,
     originalPrice,
     discountPercent,
+    selectedSize: item.selectedSize || null,
+    selectedColor: item.selectedColor || null,
   };
 }
 
@@ -196,7 +202,12 @@ export function saveCartItems(items: CartItem[]) {
 
 export function addCartItem(item: Omit<CartItem, 'qty'>, quantity: number) {
   const current = getCartItems();
-  const existing = current.find((entry) => entry.id === item.id);
+  const existing = current.find(
+    (entry) =>
+      entry.id === item.id &&
+      entry.selectedSize === item.selectedSize &&
+      entry.selectedColor === item.selectedColor
+  );
   const stockLimit = Number.isFinite(Number(item.stock)) ? Math.max(0, Math.floor(Number(item.stock))) : Number.POSITIVE_INFINITY;
   if (stockLimit < 1) return current;
   if (existing) {
@@ -209,15 +220,21 @@ export function addCartItem(item: Omit<CartItem, 'qty'>, quantity: number) {
   return current;
 }
 
-export function updateCartItemQty(id: string, qty: number) {
+export function updateCartItemQty(id: string, qty: number, selectedSize?: string, selectedColor?: string) {
   const current = getCartItems();
-  const next = current.map((item) => item.id === id ? { ...item, qty: Math.max(1, qty) } : item);
+  const next = current.map((item) =>
+    item.id === id && item.selectedSize === selectedSize && item.selectedColor === selectedColor
+      ? { ...item, qty: Math.max(1, qty) }
+      : item
+  );
   saveCartItems(next);
   return next;
 }
 
-export function removeCartItem(id: string) {
-  const next = getCartItems().filter((item) => item.id !== id);
+export function removeCartItem(id: string, selectedSize?: string, selectedColor?: string) {
+  const next = getCartItems().filter(
+    (item) => !(item.id === id && item.selectedSize === selectedSize && item.selectedColor === selectedColor)
+  );
   saveCartItems(next);
   return next;
 }

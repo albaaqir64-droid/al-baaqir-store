@@ -44,7 +44,14 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
      - `FIREBASE_PROJECT_ID`
      - `FIREBASE_CLIENT_EMAIL`
      - `FIREBASE_PRIVATE_KEY` (include `\n` for newlines)
-2. **Firestore Indexes**: This project requires composite indexes for order lookups.
+### Razorpay Configuration
+1. **API Keys**: Get your Test/Live keys from the Razorpay Dashboard.
+2. **Environment Variables**: Set the following in Vercel/Environment:
+   - `RAZORPAY_KEY_ID`: Your public Key ID.
+   - `RAZORPAY_KEY_SECRET`: Your secret Key.
+   - *Note*: The frontend automatically receives the `keyId` from the secure server-side order creation API.
+
+### Firestore Indexes
    - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)
    - **Order Management**: `status` (Ascending) + `createdAt` (Descending)
 3. **Storage Rules**: Ensure Firebase Storage rules allow writes to the `products/` path using Firebase Auth.

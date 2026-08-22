@@ -31,15 +31,15 @@ export default async function Page() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8 flex items-center justify-between gap-6">
+        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Shirts</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">Smart shirts for everyday wear</h1>
-            <p className="mt-3 text-sm text-slate-600">Comfortable, breathable shirts in several fits and colours.</p>
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-emerald-500">Shirts</p>
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">Smart shirts for everyday wear</h1>
+            <p className="mt-3 text-lg text-slate-600 max-w-2xl">Comfortable, breathable shirts in several fits and colours.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-slate-600">Sort:</label>
-            <select className="rounded-full border border-emerald-200 px-4 py-2">
+          <div className="flex items-center gap-3 self-start md:self-auto">
+            <label className="text-sm font-medium text-slate-500">Sort by:</label>
+            <select className="rounded-full border border-emerald-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:outline-none transition-colors">
               <option>Featured</option>
               <option>Price: Low to High</option>
               <option>Price: High to Low</option>
@@ -47,26 +47,36 @@ export default async function Page() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-4">
+        <div className="grid gap-12 lg:grid-cols-4">
           <aside className="hidden lg:block">
-            <div className="rounded-2xl border border-emerald-200 bg-white p-5">
-              <h3 className="text-sm font-semibold text-slate-900">Filters</h3>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
+            <div className="sticky top-24 rounded-[32px] border border-emerald-100 bg-white/50 p-8 backdrop-blur-sm">
+              <h3 className="text-lg font-semibold text-slate-950">Filters</h3>
+
+              <div className="mt-8 space-y-8 text-sm">
                 <div>
-                  <p className="font-medium text-slate-800">Size</p>
-                  <div className="mt-2 flex flex-col gap-2">
-                    <label className="flex items-center gap-2"><input type="checkbox" /> Small</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" /> Medium</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" /> Large</label>
+                  <p className="font-bold uppercase tracking-wider text-slate-900 text-[11px]">Size</p>
+                  <div className="mt-4 flex flex-col gap-3 text-slate-600">
+                    <label className="flex items-center gap-3 cursor-pointer hover:text-emerald-600 transition-colors">
+                      <input type="checkbox" className="h-4 w-4 rounded border-emerald-200 text-emerald-500 focus:ring-emerald-500" />
+                      Small
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer hover:text-emerald-600 transition-colors">
+                      <input type="checkbox" className="h-4 w-4 rounded border-emerald-200 text-emerald-500 focus:ring-emerald-500" />
+                      Medium
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer hover:text-emerald-600 transition-colors">
+                      <input type="checkbox" className="h-4 w-4 rounded border-emerald-200 text-emerald-500 focus:ring-emerald-500" />
+                      Large
+                    </label>
                   </div>
                 </div>
 
                 <div>
-                  <p className="font-medium text-slate-800">Color</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-black" aria-label="Black" />
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-amber-700" aria-label="Brown" />
-                    <button className="h-8 w-8 rounded-full border border-emerald-200 bg-slate-200" aria-label="Tan" />
+                  <p className="font-bold uppercase tracking-wider text-slate-900 text-[11px]">Color</p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button className="h-8 w-8 rounded-full border-2 border-white bg-black ring-1 ring-slate-200 hover:ring-emerald-500 transition-all" aria-label="Black" />
+                    <button className="h-8 w-8 rounded-full border-2 border-white bg-[#8B4513] ring-1 ring-slate-200 hover:ring-emerald-500 transition-all" aria-label="Brown" />
+                    <button className="h-8 w-8 rounded-full border-2 border-white bg-[#D2B48C] ring-1 ring-slate-200 hover:ring-emerald-500 transition-all" aria-label="Tan" />
                   </div>
                 </div>
               </div>
@@ -74,16 +84,27 @@ export default async function Page() {
           </aside>
 
           <div className="lg:col-span-3">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {products.length > 0 ? (
+              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-64 flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-emerald-100 bg-white/50 text-slate-500">
+                <p>No products found in this category.</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-12 text-center">
-          <Link href="/">← Back to Home</Link>
+        <div className="mt-20 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors"
+          >
+            <span>←</span> Back to Home
+          </Link>
         </div>
       </main>
 

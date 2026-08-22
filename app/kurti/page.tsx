@@ -31,20 +31,31 @@ export default async function Page() {
     <div className="min-h-screen brand-page text-slate-900">
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald">Kurti</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Elegant kurtis for modern everyday style</h1>
-          <p className="mt-3 text-sm text-slate-600">Discover breathable tailoring and graceful silhouettes that blend comfort with polish.</p>
+        <div className="mb-12">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-emerald-500">Kurti</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">Elegant kurtis for modern everyday style</h1>
+          <p className="mt-3 text-lg text-slate-600 max-w-2xl">Discover breathable tailoring and graceful silhouettes that blend comfort with polish.</p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {products.length > 0 ? (
+          <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-64 flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-emerald-100 bg-white/50 text-slate-500">
+            <p>No products found in this category.</p>
+          </div>
+        )}
 
-        <div className="mt-12 text-center">
-          <Link href="/" className="text-sm text-slate-600">← Back to Home</Link>
+        <div className="mt-20 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors"
+          >
+            <span>←</span> Back to Home
+          </Link>
         </div>
       </main>
       <Footer />

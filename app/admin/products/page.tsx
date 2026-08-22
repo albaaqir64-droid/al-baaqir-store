@@ -23,7 +23,24 @@ type ProductForm = {
   featured: boolean;
   hsnSac: string;
   gstRate: string;
+  sizes: string[];
+  colors: string[];
+  variantStock: Record<string, string>;
 };
+
+const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
+const PREDEFINED_COLORS = [
+  { name: "Black", hex: "#000000" },
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Red", hex: "#FF0000" },
+  { name: "Blue", hex: "#0000FF" },
+  { name: "Green", hex: "#008000" },
+  { name: "Yellow", hex: "#FFFF00" },
+  { name: "Pink", hex: "#FFC0CB" },
+  { name: "Grey", hex: "#808080" },
+  { name: "Brown", hex: "#A52A2A" },
+  { name: "Beige", hex: "#F5F5DC" },
+];
 
 const CATEGORIES = [
   "Belts",
@@ -53,6 +70,9 @@ const initialForm: ProductForm = {
   featured: false,
   hsnSac: "",
   gstRate: "",
+  sizes: [],
+  colors: [],
+  variantStock: {},
 };
 
 export default function AdminProductsPage() {
@@ -323,6 +343,13 @@ export default function AdminProductsPage() {
         featured: form.featured,
         hsnSac: form.hsnSac.trim(),
         gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
+        sizes: form.sizes,
+        colors: form.colors,
+        variantStock: Object.fromEntries(
+          Object.entries(form.variantStock)
+            .map(([key, val]) => [key, Number(val) || 0] as [string, number])
+            .filter(([, val]) => val > 0)
+        ),
       };
 
       if (!payload.name) throw new Error('Product name is required.');
@@ -373,6 +400,11 @@ export default function AdminProductsPage() {
       featured: p.featured === true,
       hsnSac: p.hsnSac || '',
       gstRate: p.gstRate === undefined ? '' : String(p.gstRate),
+      sizes: p.sizes || [],
+      colors: p.colors || [],
+      variantStock: Object.fromEntries(
+        Object.entries(p.variantStock || {}).map(([k, v]) => [k, String(v)])
+      ),
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -494,6 +526,58 @@ export default function AdminProductsPage() {
             )}
           </div>
 
+          <div>
+            <label className="block text-sm font-medium mb-2">Available Sizes</label>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABLE_SIZES.map((size) => (
+                <label key={size} className={`flex items-center justify-center px-3 py-1 rounded-full border text-sm cursor-pointer transition ${
+                  form.sizes.includes(size) ? 'bg-emerald text-white border-emerald' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald'
+                }`}>
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={form.sizes.includes(size)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        updateField('sizes', [...form.sizes, size]);
+                      } else {
+                        updateField('sizes', form.sizes.filter(s => s !== size));
+                      }
+                    }}
+                  />
+                  {size}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Available Colors</label>
+            <div className="flex flex-wrap gap-2">
+              {PREDEFINED_COLORS.map((color) => (
+                <label key={color.name} className={`group relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 cursor-pointer transition ${
+                  form.colors.includes(color.hex) ? 'ring-2 ring-emerald ring-offset-2' : ''
+                }`} style={{ backgroundColor: color.hex }} title={color.name}>
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={form.colors.includes(color.hex)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        updateField('colors', [...form.colors, color.hex]);
+                      } else {
+                        updateField('colors', form.colors.filter(c => c !== color.hex));
+                      }
+                    }}
+                  />
+                  {form.colors.includes(color.hex) && (
+                    <span className={`text-[10px] ${color.hex === '#FFFFFF' || color.hex === '#FFFF00' || color.hex === '#F5F5DC' ? 'text-black' : 'text-white'}`}>✓</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="md:col-span-2">
             <label className="block text-sm font-medium">Description</label>
             <textarea className="mt-1 w-full rounded border px-3 py-2" value={form.description} onChange={(e) => updateField('description', e.target.value)} />
@@ -513,6 +597,78 @@ export default function AdminProductsPage() {
             <input id="featured" type="checkbox" checked={form.featured} onChange={(e) => updateField('featured', e.target.checked)} />
             <label htmlFor="featured" className="text-sm">Featured</label>
           </div>
+
+          {(form.sizes.length > 0 || form.colors.length > 0) && (
+            <div className="md:col-span-2 rounded-xl border border-emerald/20 bg-white p-4">
+              <h3 className="mb-3 font-semibold text-emerald-900">Variant Inventory Management</h3>
+              <p className="mb-4 text-xs text-slate-500">Set specific stock for each combination. If left empty or 0, the main "Stock" field above will be used as fallback.</p>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {form.sizes.length > 0 && form.colors.length > 0 ? (
+                  form.sizes.map(size => (
+                    form.colors.map(colorHex => {
+                      const colorName = PREDEFINED_COLORS.find(c => c.hex === colorHex)?.name || colorHex;
+                      const key = `${size}_${colorHex}`;
+                      return (
+                        <div key={key} className="flex flex-col gap-1">
+                          <label className="text-xs font-medium text-slate-600">{size} / {colorName}</label>
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            className="w-full rounded border border-slate-200 px-3 py-1.5 text-sm"
+                            value={form.variantStock[key] || ""}
+                            onChange={(e) => {
+                              const next = { ...form.variantStock, [key]: e.target.value };
+                              updateField('variantStock', next);
+                            }}
+                          />
+                        </div>
+                      );
+                    })
+                  ))
+                ) : form.sizes.length > 0 ? (
+                  form.sizes.map(size => {
+                    const key = `size_${size}`;
+                    return (
+                      <div key={key} className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-600">Size: {size}</label>
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          className="w-full rounded border border-slate-200 px-3 py-1.5 text-sm"
+                          value={form.variantStock[key] || ""}
+                          onChange={(e) => {
+                            const next = { ...form.variantStock, [key]: e.target.value };
+                            updateField('variantStock', next);
+                          }}
+                        />
+                      </div>
+                    );
+                  })
+                ) : (
+                  form.colors.map(colorHex => {
+                    const colorName = PREDEFINED_COLORS.find(c => c.hex === colorHex)?.name || colorHex;
+                    const key = `color_${colorHex}`;
+                    return (
+                      <div key={key} className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-600">Color: {colorName}</label>
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          className="w-full rounded border border-slate-200 px-3 py-1.5 text-sm"
+                          value={form.variantStock[key] || ""}
+                          onChange={(e) => {
+                            const next = { ...form.variantStock, [key]: e.target.value };
+                            updateField('variantStock', next);
+                          }}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="md:col-span-2">
             <button className="w-full rounded-xl bg-emerald px-6 py-3 text-white shadow-lg shadow-emerald/20 transition hover:bg-emerald-600 disabled:opacity-60" type="submit" disabled={saving}>
