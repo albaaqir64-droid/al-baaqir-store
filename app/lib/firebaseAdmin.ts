@@ -25,16 +25,11 @@ function loadServiceAccountFromFile(): ServiceAccountJson | null {
   const serviceAccountPath = resolveServiceAccountPath();
   if (!serviceAccountPath) return null;
 
-  if (!fs.existsSync(serviceAccountPath)) {
-    console.error(`Firebase service account file not found: ${serviceAccountPath}`);
-    return null;
-  }
-
   try {
+    if (!fs.existsSync(serviceAccountPath)) return null;
     const raw = fs.readFileSync(serviceAccountPath, "utf8");
     return JSON.parse(raw) as ServiceAccountJson;
   } catch (err) {
-    console.error("Could not parse Firebase service account JSON:", (err && (err as Error).message) || String(err));
     return null;
   }
 }
@@ -103,20 +98,15 @@ function getStorageBucket(serviceAccount: ServiceAccountJson | null): string {
 
 function createAdminApp() {
   const serviceAccountFromFile = loadServiceAccountFromFile();
-  // If a service account JSON is present, populate server-side env vars so
-  // other server modules that expect env vars will see them (keeps creds server-side).
   if (serviceAccountFromFile) {
     applyServiceAccountToEnv(serviceAccountFromFile);
   }
+
   const serviceAccount = serviceAccountFromFile || createServiceAccountFromEnv();
 
   if (!serviceAccount) {
-    const filePath = resolveServiceAccountPath();
-    if (filePath) {
-      throw new Error(`Missing Firebase admin credentials. Service account path is set to ${filePath}, but the file could not be loaded.`);
-    }
     throw new Error(
-      "Missing Firebase admin credentials. Set FIREBASE_SERVICE_ACCOUNT_PATH to a valid service account JSON file, or provide FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL as server-side environment variables."
+      "Missing Firebase admin credentials. Provide FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL as environment variables."
     );
   }
 

@@ -46,9 +46,8 @@ export async function POST(req: Request) {
       return apiError("Invalid order payload", 400);
     }
 
-    const datePrefix = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const invoiceNumber = `INV-${datePrefix}-${randomSuffix}`;
+    // Use the invoice number from metadata if available, otherwise generate one
+    const invoiceNumber = String(orderMeta.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
 
     const db = getFirestore(getAdminApp());
     const orderRef = db.collection("orders").doc();
@@ -57,44 +56,56 @@ export async function POST(req: Request) {
     await db.runTransaction(async (transaction) => {
       // 1. Get all unique product IDs from order
       const productIds = Array.from(new Set(orderItems.map(item => item.id)));
-      const productSnapshots = await Promise.all(
+      const snapshots = await Promise.all(
         productIds.map(id => transaction.get(db.collection("products").doc(id)))
       );
 
-      const productMap = new Map();
-      productSnapshots.forEach(snap => {
-        if (snap.exists) productMap.set(snap.id, snap.data());
-      });
+      const productSnapshots = new Map(snapshots.map(s => [s.id, s]));
 
-      // 2. Calculate stock updates
+      // Group items by product ID to handle multiple variants of the same product correctly
+      const itemsByProduct = new Map<string, typeof orderItems>();
       for (const item of orderItems) {
-        const product = productMap.get(item.id);
-        if (!product) continue;
+        const list = itemsByProduct.get(item.id) || [];
+        list.push(item);
+        itemsByProduct.set(item.id, list);
+      }
 
+      for (const [productId, items] of itemsByProduct.entries()) {
+        const snap = productSnapshots.get(productId);
+        if (!snap || !snap.exists) continue;
+
+        const product = snap.data() || {};
         const updates: Record<string, any> = { lastUpdated: FieldValue.serverTimestamp() };
-        const variantStock = (product.variantStock || {}) as Record<string, number>;
+        const variantStock = { ...(product.variantStock || {}) } as Record<string, number>;
 
-        // Variant Deduction
-        const size = item.selectedSize || "";
-        const color = item.selectedColor || "";
-        let vKey = "";
-        if (size && color) vKey = `${size}_${color}`;
-        else if (size) vKey = `size_${size}`;
-        else if (color) vKey = `color_${color}`;
+        let totalQtyForThisProduct = 0;
 
-        if (vKey && variantStock[vKey] !== undefined) {
-          variantStock[vKey] = Math.max(0, variantStock[vKey] - item.quantity);
-          updates.variantStock = variantStock;
+        for (const item of items) {
+          totalQtyForThisProduct += item.quantity;
+
+          // Variant Deduction
+          const size = item.selectedSize || "";
+          const color = item.selectedColor || "";
+          let vKey = "";
+          if (size && color) vKey = `${size}_${color}`;
+          else if (size) vKey = `size_${size}`;
+          else if (color) vKey = `color_${color}`;
+
+          if (vKey && variantStock[vKey] !== undefined) {
+            variantStock[vKey] = Math.max(0, variantStock[vKey] - item.quantity);
+          }
         }
+
+        updates.variantStock = variantStock;
 
         // Main Stock Deduction
         const mainStockField = (product.inventory !== undefined) ? "inventory" :
                               (product.quantity !== undefined && product.stock === undefined) ? "quantity" : "stock";
 
         const currentStock = Number(product[mainStockField] || 0);
-        updates[mainStockField] = Math.max(0, currentStock - item.quantity);
+        updates[mainStockField] = Math.max(0, currentStock - totalQtyForThisProduct);
 
-        transaction.update(db.collection("products").doc(item.id), updates);
+        transaction.update(snap.ref, updates);
       }
 
       // 3. Create Order
