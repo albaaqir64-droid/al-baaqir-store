@@ -51,6 +51,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
    - `RAZORPAY_KEY_SECRET`: Your secret Key.
    - *Note*: The frontend automatically receives the `keyId` from the secure server-side order creation API.
 
+### Features
+1. **Online Payment Discount**: Automatically offers a 10% discount when selecting Razorpay at checkout.
+2. **Inventory Management**: Real-time stock deduction for both main products and specific variants during checkout.
+
 ### Firestore Indexes
    - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)
    - **Order Management**: `status` (Ascending) + `createdAt` (Descending)

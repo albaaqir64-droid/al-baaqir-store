@@ -24,7 +24,7 @@ const defaultForm = {
   pincode: "",
   city: "",
   state: "",
-  paymentMethod: "cod",
+  paymentMethod: "online",
 };
 
 import { formatCurrency, sanitizeText } from "../lib/utils";
@@ -420,7 +420,26 @@ export default function CheckoutPage() {
             <div>
               <h2 className="text-2xl font-bold text-slate-900 mb-8">Payment</h2>
               <div className="space-y-4">
-                <label className="flex items-center gap-4 rounded-[32px] border border-emerald-100 bg-emerald-50/30 p-8 cursor-pointer transition-all hover:border-emerald-500 group">
+                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "online" ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white"}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="online"
+                    checked={form.paymentMethod === "online"}
+                    onChange={() => handleInput("paymentMethod", "online")}
+                    className="h-5 w-5 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[15px] font-bold text-slate-900">Online Payment</span>
+                      <span className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-900">Save 10%</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600 font-medium text-emerald-700">Pay online and get 10% discount instantly.</p>
+                    <p className="mt-1 text-xs text-slate-500">Pay securely via Cards, UPI, or Netbanking using Razorpay.</p>
+                  </div>
+                </label>
+
+                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "cod" ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white"}`}>
                   <input
                     type="radio"
                     name="payment"
@@ -432,21 +451,6 @@ export default function CheckoutPage() {
                   <div>
                     <span className="text-[15px] font-bold text-slate-900">Cash on Delivery</span>
                     <p className="mt-1 text-sm text-slate-600">Securely pay in cash when your order is delivered to your doorstep.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-4 rounded-[32px] border border-slate-100 bg-white p-8 cursor-pointer transition-all hover:border-emerald-500 group">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="online"
-                    checked={form.paymentMethod === "online"}
-                    onChange={() => handleInput("paymentMethod", "online")}
-                    className="h-5 w-5 border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <div>
-                    <span className="text-[15px] font-bold text-slate-900">Online Payment</span>
-                    <p className="mt-1 text-sm text-slate-600">Pay securely via Cards, UPI, or Netbanking using Razorpay.</p>
                   </div>
                 </label>
               </div>
