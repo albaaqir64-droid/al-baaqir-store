@@ -116,6 +116,7 @@ export async function POST(req: Request) {
         customerGSTIN: String(orderMeta.customerGSTIN ?? "").trim().toUpperCase(),
         paymentMethod: "online",
         subtotal: Number(orderMeta.subtotal ?? 0),
+        discount: Number(orderMeta.discount ?? 0),
         shippingCharge: Number(orderMeta.shippingCharge ?? 0),
         total: Number(orderMeta.total ?? 0),
         invoiceNumber,

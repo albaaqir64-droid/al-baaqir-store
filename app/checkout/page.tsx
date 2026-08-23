@@ -62,6 +62,15 @@ export default function CheckoutPage() {
     [items]
   );
 
+  const onlineDiscount = useMemo(() => {
+    if (form.paymentMethod === 'online') {
+      return Math.round(total * 0.10); // 10% Discount
+    }
+    return 0;
+  }, [total, form.paymentMethod]);
+
+  const finalTotal = total - onlineDiscount;
+
 
   function validateOrderPayload(order: any) {
     if (!order || typeof order !== 'object') return false;
@@ -145,7 +154,7 @@ export default function CheckoutPage() {
     });
 
     const shippingCharge = 0;
-    const orderTotal = Number(total) + shippingCharge;
+    const orderTotal = Number(finalTotal) + shippingCharge;
     const invoiceNumber = generateInvoiceNumber();
 
     const orderMeta = {
@@ -155,6 +164,7 @@ export default function CheckoutPage() {
       customerGSTIN: String(form.customerGSTIN.trim().toUpperCase()),
       paymentMethod: String(form.paymentMethod),
       subtotal: Number(total) || 0,
+      discount: onlineDiscount,
       shippingCharge,
       total: orderTotal,
       invoiceNumber,
@@ -260,6 +270,7 @@ export default function CheckoutPage() {
       shipping: orderMeta.shipping,
       cartItems: cartItems,
       subtotal: Number(orderMeta.subtotal) || 0,
+      discount: Number(orderMeta.discount) || 0,
       shippingCharge: Number(orderMeta.shippingCharge) || 0,
       total: Number(orderMeta.total) || 0,
       invoiceNumber: String(orderMeta.invoiceNumber ?? ""),
@@ -466,13 +477,19 @@ export default function CheckoutPage() {
                   <span>Subtotal</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
+                {onlineDiscount > 0 && (
+                  <div className="flex justify-between text-[15px] font-medium text-emerald-600">
+                    <span>Online Payment Discount (10%)</span>
+                    <span>-{formatCurrency(onlineDiscount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-[15px] font-medium text-slate-600">
                   <span>Shipping</span>
                   <span className="text-emerald-600 font-bold uppercase tracking-widest text-[11px]">Free</span>
                 </div>
                 <div className="mt-4 flex justify-between text-xl font-bold text-slate-900">
                   <span>Total</span>
-                  <span>{formatCurrency(total)}</span>
+                  <span>{formatCurrency(finalTotal)}</span>
                 </div>
               </div>
 

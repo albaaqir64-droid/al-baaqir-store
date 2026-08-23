@@ -129,6 +129,7 @@ export async function POST(request: Request) {
         paymentStatus: "pending",
         status: "pending",
         subtotal: amount(body.subtotal),
+        discount: amount(body.discount),
         shippingCharge: amount(body.shippingCharge),
         total: amount(body.total),
         invoiceNumber: text(body.invoiceNumber),
