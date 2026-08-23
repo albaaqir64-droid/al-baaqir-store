@@ -51,6 +51,19 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
    - `RAZORPAY_KEY_SECRET`: Your secret Key.
    - *Note*: The frontend automatically receives the `keyId` from the secure server-side order creation API.
 
+### Visual Identity & Assets
+1. **Hero Banner**: The homepage uses a premium luxury hero section designed for a 1920x900 image.
+   - **Asset Path**: Save your high-resolution luxury banner as `public/images/hero-watch.jpg`.
+2. **Header Behavior**: The header uses a dynamic transparency effect. It is transparent on top of the hero banner and transitions to a blurred white background upon scrolling.
+3. **Typography**: Uses bold, wide-tracked uppercase typography for navigation to align with premium watch brand aesthetics.
+
+### Shiprocket Configuration
+1. **API Credentials**: Get your credentials from the Shiprocket Settings -> API -> Configure.
+2. **Environment Variables**: Set the following in Vercel:
+   - `SHIPROCKET_EMAIL`: The email used for Shiprocket login.
+   - `SHIPROCKET_PASSWORD`: The password used for Shiprocket login.
+3. **Pickup Location**: The integration defaults to a pickup location named "Primary". Ensure this exists in your Shiprocket panel under Settings -> Pickup Locations.
+
 ### Features
 1. **Online Payment Discount**: Automatically offers a 10% discount when selecting Razorpay at checkout.
 2. **Inventory Management**: Real-time stock deduction for both main products and specific variants during checkout.

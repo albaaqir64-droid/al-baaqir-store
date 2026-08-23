@@ -420,7 +420,8 @@ export default function CheckoutPage() {
             <div>
               <h2 className="text-2xl font-bold text-slate-900 mb-8">Payment</h2>
               <div className="space-y-4">
-                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "online" ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white"}`}>
+                {/* 1. Online Payment FIRST (Top Priority) */}
+                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "online" ? "border-emerald-500 bg-emerald-50/50 shadow-md" : "border-slate-100 bg-white"}`}>
                   <input
                     type="radio"
                     name="payment"
@@ -431,14 +432,15 @@ export default function CheckoutPage() {
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[15px] font-bold text-slate-900">Online Payment</span>
-                      <span className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-900">Save 10%</span>
+                      <span className="text-[16px] font-extrabold text-slate-900">⭐ Online Payment</span>
+                      <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white animate-pulse">Save 10%</span>
                     </div>
-                    <p className="mt-1 text-sm text-slate-600 font-medium text-emerald-700">Pay online and get 10% discount instantly.</p>
-                    <p className="mt-1 text-xs text-slate-500">Pay securely via Cards, UPI, or Netbanking using Razorpay.</p>
+                    <p className="mt-1 text-[15px] font-bold text-emerald-600">Pay online and get 10% discount</p>
+                    <p className="mt-1 text-xs text-slate-500 font-medium">Safe & Secure via Cards, UPI, or Netbanking</p>
                   </div>
                 </label>
 
+                {/* 2. Cash on Delivery SECOND */}
                 <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "cod" ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white"}`}>
                   <input
                     type="radio"
@@ -450,7 +452,7 @@ export default function CheckoutPage() {
                   />
                   <div>
                     <span className="text-[15px] font-bold text-slate-900">Cash on Delivery</span>
-                    <p className="mt-1 text-sm text-slate-600">Securely pay in cash when your order is delivered to your doorstep.</p>
+                    <p className="mt-1 text-sm text-slate-600">Securely pay in cash when your order is delivered.</p>
                   </div>
                 </label>
               </div>

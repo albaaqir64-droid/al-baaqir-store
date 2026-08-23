@@ -1,6 +1,7 @@
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
 
 export const runtime = "nodejs";
 
@@ -140,7 +141,23 @@ export async function POST(request: Request) {
       });
     });
 
-    return apiJson({ success: true, orderId: orderRef.id });
+    const orderId = orderRef.id;
+
+    // --- SHIPROCKET INTEGRATION ---
+    try {
+      const orderDoc = await orderRef.get();
+      const shiprocketResult = await syncOrderToShiprocket(orderId, orderDoc.data());
+      await orderRef.update(shiprocketResult);
+    } catch (shiprocketErr) {
+      console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
+      await orderRef.update({
+        shiprocketStatus: "FAILED",
+        shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
+        shiprocketSyncAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    return apiJson({ success: true, orderId });
   } catch (error) {
     if (error instanceof InsufficientStockError) return apiError(error.message, 409);
     console.error("Order creation failed:", error);

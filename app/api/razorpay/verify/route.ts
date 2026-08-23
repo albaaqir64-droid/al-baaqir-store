@@ -3,6 +3,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { getAdminApp } from "@/app/lib/firebaseAdmin";
 import { sanitizeCartItems, sanitizeShipping } from "@/app/lib/firestore";
+import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
 
 export const runtime = "nodejs";
 
@@ -72,7 +73,9 @@ export async function POST(req: Request) {
 
       for (const [productId, items] of itemsByProduct.entries()) {
         const snap = productSnapshots.get(productId);
-        if (!snap || !snap.exists) continue;
+        if (!snap || !snap.exists) {
+          throw new Error(`Product ${productId} no longer exists.`);
+        }
 
         const product = snap.data() || {};
         const updates: Record<string, any> = { lastUpdated: FieldValue.serverTimestamp() };
@@ -92,7 +95,13 @@ export async function POST(req: Request) {
           else if (color) vKey = `color_${color}`;
 
           if (vKey && variantStock[vKey] !== undefined) {
-            variantStock[vKey] = Math.max(0, variantStock[vKey] - item.quantity);
+            const currentVStock = variantStock[vKey] || 0;
+            if (currentVStock < item.quantity) {
+              // Note: User has already paid. We deduct what we can,
+              // but you might want to log this for manual refund/customer service.
+              console.error(`Oversell detected during payment verification for ${productId} (${vKey})`);
+            }
+            variantStock[vKey] = Math.max(0, currentVStock - item.quantity);
           }
         }
 
@@ -103,6 +112,9 @@ export async function POST(req: Request) {
                               (product.quantity !== undefined && product.stock === undefined) ? "quantity" : "stock";
 
         const currentStock = Number(product[mainStockField] || 0);
+        if (currentStock < totalQtyForThisProduct) {
+          console.error(`Oversell detected during payment verification for product ${productId}`);
+        }
         updates[mainStockField] = Math.max(0, currentStock - totalQtyForThisProduct);
 
         transaction.update(snap.ref, updates);
@@ -136,6 +148,20 @@ export async function POST(req: Request) {
     });
 
     const orderId = orderRef.id;
+
+    // --- SHIPROCKET INTEGRATION ---
+    try {
+      const orderDoc = await orderRef.get();
+      const shiprocketResult = await syncOrderToShiprocket(orderId, orderDoc.data());
+      await orderRef.update(shiprocketResult);
+    } catch (shiprocketErr) {
+      console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
+      await orderRef.update({
+        shiprocketStatus: "FAILED",
+        shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
+        shiprocketSyncAt: FieldValue.serverTimestamp(),
+      });
+    }
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

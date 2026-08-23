@@ -1,9 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
 import { useAuth } from "../hooks/useAuth";
-
 import { NAVIGATION_GROUPS } from "../lib/utils";
 
 const NAV_GROUPS = NAVIGATION_GROUPS;
@@ -12,10 +10,15 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { user, profile } = useAuth();
 
   useEffect(() => {
-    // Fetch active categories
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+
     fetch('/api/categories')
       .then(res => res.json())
       .then(data => {
@@ -41,6 +44,7 @@ export default function Header() {
     window.addEventListener('albaaqir-cart-updated', updateCount);
     window.addEventListener('storage', updateCount);
     return () => {
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener('albaaqir-cart-updated', updateCount);
       window.removeEventListener('storage', updateCount);
     };
@@ -49,18 +53,18 @@ export default function Header() {
   const isLoggedIn = user && !user.isAnonymous;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-emerald-100 bg-white/80 backdrop-blur-xl">
-      <div className="bg-emerald-600 py-2 text-center text-[11px] font-bold tracking-widest text-white uppercase">
+    <header className={`sticky top-0 z-50 w-full transition-all duration-500 ${isScrolled ? "border-b border-emerald-100 bg-white/90 backdrop-blur-xl" : "bg-transparent"}`}>
+      <div className={`py-2 text-center text-[10px] font-bold tracking-[0.4em] text-white uppercase transition-colors duration-500 ${isScrolled ? "bg-emerald-600" : "bg-black/10 backdrop-blur-md"}`}>
         Free shipping on orders over ₹10,000
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <div className="flex items-center gap-12">
-          <Link href="/" className="text-xl font-bold tracking-tight text-slate-900 hover:text-emerald-600 transition-colors">
-            Al Baaqir
+          <Link href="/" className={`text-2xl font-black tracking-tighter transition-colors duration-500 ${isScrolled ? "text-slate-900" : "text-white"}`}>
+            AL BAAQIR
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-8 text-[13px] font-medium text-slate-600">
+          <nav className="hidden lg:flex items-center gap-8 text-[12px] font-bold tracking-[0.2em] uppercase">
             {NAV_GROUPS.map((group) => {
               const filteredCategories = group.categories?.filter(cat =>
                 activeCategories.includes(cat)
@@ -73,21 +77,21 @@ export default function Header() {
               return (
                 <div key={group.label} className="group relative py-4">
                   {group.href ? (
-                    <Link href={group.href} className="hover:text-slate-900 transition-colors">
+                    <Link href={group.href} className={`transition-colors duration-300 ${isScrolled ? "text-slate-600 hover:text-emerald-600" : "text-white/70 hover:text-white"}`}>
                       {group.label}
                     </Link>
                   ) : (
                     <>
-                      <button className="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                      <button className={`flex items-center gap-1 transition-colors duration-300 ${isScrolled ? "text-slate-600 hover:text-emerald-600" : "text-white/70 hover:text-white"}`}>
                         {group.label}
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg className="transition-transform group-hover:rotate-180" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m6 9 6 6 6-6"/></svg>
                       </button>
-                      <div className="invisible absolute top-full left-0 w-48 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl opacity-0 transition-all group-hover:visible group-hover:opacity-100">
+                      <div className="invisible absolute top-full left-0 w-56 rounded-[24px] border border-slate-100 bg-white p-3 shadow-2xl opacity-0 transition-all duration-300 group-hover:visible group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
                         {filteredCategories?.map((cat) => (
                           <Link
                             key={cat}
                             href={`/${cat.toLowerCase().replace(/\s+/g, '-')}`}
-                            className="block rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors"
+                            className="block rounded-xl px-4 py-3 text-[13px] font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                           >
                             {cat}
                           </Link>
@@ -101,56 +105,52 @@ export default function Header() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-600">
-          <Link href="/search" className="p-2 hover:text-slate-900 transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div className={`flex items-center gap-2 transition-colors duration-500 ${isScrolled ? "text-slate-600" : "text-white"}`}>
+          <Link href="/search" className="p-2 hover:text-emerald-400 transition-colors">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </Link>
 
-          <Link href="/account" className="hidden sm:flex items-center gap-2 p-2 hover:text-slate-900 transition-colors text-[13px] font-medium">
+          <Link href="/account" className="hidden sm:flex items-center gap-3 p-2 hover:text-emerald-400 transition-colors text-[11px] font-bold uppercase tracking-widest">
             {isLoggedIn ? (
-              <span className="max-w-[80px] truncate">{profile?.displayName || profile?.email?.split('@')[0]}</span>
+              <span className="max-w-[100px] truncate">{profile?.displayName || profile?.email?.split('@')[0]}</span>
             ) : (
-              <span>Login</span>
+              <span>Account</span>
             )}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </Link>
 
-          <Link href="/cart" className="relative p-2 text-slate-600 hover:text-emerald-600 transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6h15l-1.5 9h-12L6 6Z"/><path d="M6 6 4 2H2"/></svg>
+          <Link href="/cart" className="relative p-2 hover:text-emerald-400 transition-colors">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 6h15l-1.5 9h-12L6 6Z"/><path d="M6 6 4 2H2"/></svg>
             {cartCount > 0 && (
-              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold text-white shadow-sm">
+              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-black text-slate-900 shadow-lg shadow-emerald-500/20">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 text-slate-900">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <button onClick={() => setOpen(!open)} className={`lg:hidden p-2 transition-colors ${isScrolled ? "text-slate-900" : "text-white"}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-slate-100 bg-white/95 px-6 py-8 animate-in slide-in-from-top duration-300">
-          <div className="flex flex-col gap-6">
+        <div className="lg:hidden border-t border-slate-100 bg-white px-6 py-8 animate-in slide-in-from-top duration-300">
+          <div className="flex flex-col gap-8">
             {NAV_GROUPS.map((group) => {
               const filteredCategories = group.categories?.filter(cat =>
                 activeCategories.includes(cat)
               );
-
-              if (!group.href && (!filteredCategories || filteredCategories.length === 0)) {
-                return null;
-              }
-
+              if (!group.href && (!filteredCategories || filteredCategories.length === 0)) return null;
               return (
                 <div key={group.label}>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">{group.label}</p>
-                  <div className="flex flex-col gap-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-6">{group.label}</p>
+                  <div className="flex flex-col gap-5">
                     {group.href ? (
-                      <Link href={group.href} className="text-lg font-medium" onClick={() => setOpen(false)}>{group.label}</Link>
+                      <Link href={group.href} className="text-xl font-bold text-slate-900 tracking-tight" onClick={() => setOpen(false)}>{group.label}</Link>
                     ) : (
                       filteredCategories?.map((cat) => (
-                        <Link key={cat} href={`/${cat.toLowerCase().replace(/\s+/g, '-')}`} className="text-lg font-medium" onClick={() => setOpen(false)}>{cat}</Link>
+                        <Link key={cat} href={`/${cat.toLowerCase().replace(/\s+/g, '-')}`} className="text-xl font-bold text-slate-900 tracking-tight" onClick={() => setOpen(false)}>{cat}</Link>
                       ))
                     )}
                   </div>

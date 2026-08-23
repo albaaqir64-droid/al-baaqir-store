@@ -72,46 +72,64 @@ export default async function Home() {
       <Header />
 
       <main>
-        {/* Hero Section - Restored Brand Colors */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 to-white py-20 lg:py-32">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col items-center text-center">
-              <span className="mb-4 text-[13px] font-bold uppercase tracking-[0.3em] text-emerald-700 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                Al Baaqir Essentials
-              </span>
-              <h1 className="max-w-4xl text-5xl font-bold tracking-tight text-slate-900 sm:text-7xl animate-in fade-in slide-in-from-bottom-6 duration-1000 fill-mode-both">
-                Refined style for the <br className="hidden sm:block" /> modern individual.
-              </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-600 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
-                Discover a curated collection of premium belts and bags, meticulously crafted to elevate your daily ritual with understated elegance.
-              </p>
-              <div className="mt-12 flex flex-wrap justify-center gap-6 animate-in fade-in slide-in-from-bottom-10 duration-1000 fill-mode-both">
-                <Link
-                  href="/men"
-                  className="rounded-full bg-emerald-500 px-8 py-4 text-[15px] font-bold text-slate-900 transition-all hover:bg-emerald-600 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/20"
-                >
-                  Shop the Collection
-                </Link>
-                <Link
-                  href="/new-arrivals"
-                  className="group flex items-center gap-2 text-[15px] font-bold text-slate-900 transition-all hover:text-emerald-700"
-                >
-                  Explore New Arrivals
-                  <svg className="transition-transform group-hover:translate-x-1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </Link>
-              </div>
-            </div>
+        {/* Premium Luxury Hero Section */}
+        <section className="relative h-[80vh] min-h-[600px] max-h-[900px] w-full overflow-hidden bg-slate-900">
+          {/* Background Image Container */}
+          <div className="absolute inset-0">
+            <img
+              src="/images/hero-watch.jpg"
+              alt="Al Baaqir Luxury Watch Collection"
+              className="h-full w-full object-cover object-center"
+            />
+            {/* Cinematic Gradient Overlay for Typography Contrast */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
 
-          {/* Subtle Hero Image/Gradient */}
-          <div className="mt-20 flex justify-center px-6">
-            <div className="relative aspect-[21/9] w-full max-w-6xl overflow-hidden rounded-[40px] shadow-2xl">
-              <img
-                src="/images/categories/hero.svg"
-                alt="Al Baaqir Craftsmanship"
-                className="h-full w-full object-cover transition-transform duration-1000 hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          <div className="relative mx-auto flex h-full max-w-7xl items-center px-6">
+            <div className="max-w-3xl text-left">
+              <span className="mb-4 inline-block text-[13px] font-bold uppercase tracking-[0.4em] text-emerald-400 animate-in fade-in slide-in-from-left-4 duration-1000">
+                Premium Precision. Timeless Elegance.
+              </span>
+
+              <h1 className="text-6xl font-extrabold tracking-tight text-white sm:text-7xl lg:text-8xl animate-in fade-in slide-in-from-left-6 duration-1000 fill-mode-both">
+                DEFINE YOUR <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-200 to-emerald-400">STYLE.</span>
+              </h1>
+
+              <p className="mt-8 max-w-lg text-lg leading-relaxed text-slate-300 animate-in fade-in slide-in-from-left-8 duration-1000 fill-mode-both">
+                Crafted for those who value every second. Discover the Al Baaqir watch collection—where luxury meets precision.
+              </p>
+
+              <div className="mt-12 flex flex-wrap items-center gap-8 animate-in fade-in slide-in-from-left-10 duration-1000 fill-mode-both">
+                <Link
+                  href="/watches"
+                  className="rounded-full bg-emerald-500 px-10 py-5 text-[15px] font-bold text-slate-900 transition-all hover:bg-emerald-400 hover:scale-105 active:scale-95 shadow-2xl shadow-emerald-500/20"
+                >
+                  SHOP NOW
+                </Link>
+
+                <div className="hidden sm:flex items-center gap-4 text-slate-400 text-sm font-medium">
+                  <div className="h-px w-8 bg-slate-700" />
+                  Free Shipping on All Orders
+                </div>
+              </div>
+
+              {/* Luxury Feature Indicators */}
+              <div className="mt-20 grid grid-cols-2 sm:grid-cols-4 gap-8 opacity-60 animate-in fade-in duration-1000 delay-500">
+                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-white">
+                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Premium Quality
+                 </div>
+                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-white">
+                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Accurate Timing
+                 </div>
+                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-white">
+                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Genuine Leather
+                 </div>
+                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-white">
+                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Water Resistant
+                 </div>
+              </div>
             </div>
           </div>
         </section>
