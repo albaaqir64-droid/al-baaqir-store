@@ -32,6 +32,7 @@ export default function OrdersAdminPage() {
   const [note, setNote] = useState("");
   const [actionStatus, setActionStatus] = useState<OrderStatus>("pending");
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [shiprocketLoading, setShiprocketLoading] = useState(false);
   const [invoiceError, setInvoiceError] = useState("");
   const [invoiceSuccess, setInvoiceSuccess] = useState("");
 
@@ -58,6 +59,35 @@ export default function OrdersAdminPage() {
     setNote("");
     loadOrders();
   }
+
+  const syncToShiprocket = async (order: OrderRecord) => {
+    setShiprocketLoading(true);
+    setInvoiceError("");
+    setInvoiceSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/shiprocket/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const parsed = await readApiJson<{ error?: string; message?: string; shiprocketOrderId?: string }>(response);
+
+      if (!parsed.ok) {
+        setInvoiceError(parsed.error || "Failed to sync with Shiprocket");
+        return;
+      }
+
+      setInvoiceSuccess(parsed.data?.message || "Synced to Shiprocket successfully!");
+      loadOrders();
+    } catch (err) {
+      setInvoiceError("Failed to sync with Shiprocket. Please try again.");
+      console.error("Shiprocket sync error:", err);
+    } finally {
+      setShiprocketLoading(false);
+    }
+  };
 
   const generateInvoice = async (order: OrderRecord) => {
     setInvoiceLoading(true);
@@ -224,7 +254,14 @@ export default function OrdersAdminPage() {
                         <td className="px-4 py-4"><span className="font-medium text-white">{order.invoiceNumber}</span></td>
                         <td className="px-4 py-4">{order.customerName}</td>
                         <td className="px-4 py-4">{order.phone}</td>
-                        <td className="px-4 py-4"><span className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">{statusLabel(order.status)}</span></td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">{statusLabel(order.status)}</span>
+                            {order.shiprocketOrderId && (
+                              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">🚀 Synced</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-4">₹{order.total}</td>
                         <td className="px-4 py-4">{order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : "-"}</td>
                         <td className="px-4 py-4">
@@ -292,53 +329,100 @@ export default function OrdersAdminPage() {
                 <OrderTimeline current={selectedOrder.status} />
               </div>
 
-              {/* Invoice Section */}
-              <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Invoice Management</h3>
-                
-                {invoiceError && (
-                  <div className="mb-4 rounded-lg bg-red-950 p-3 text-sm text-red-200">
-                    {invoiceError}
-                  </div>
-                )}
-                
-                {invoiceSuccess && (
-                  <div className="mb-4 rounded-lg bg-green-950 p-3 text-sm text-green-200">
-                    {invoiceSuccess}
-                  </div>
-                )}
+              {/* Invoice & Shipping Section */}
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Invoice Management</h3>
 
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => downloadShippingLabel(selectedOrder)}
-                    className="rounded-full bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
-                  >
-                    Download Shipping Label
-                  </button>
-                  {selectedOrder.invoiceUrl ? (
-                    <>
-                      <button
-                        onClick={() => downloadInvoice(selectedOrder)}
-                        className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
-                      >
-                        📄 Download Invoice
-                      </button>
-                      <button
-                        onClick={() => resendInvoiceEmail(selectedOrder)}
-                        disabled={invoiceLoading}
-                        className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
-                      >
-                        {invoiceLoading ? "Sending..." : "📧 Resend Email"}
-                      </button>
-                    </>
-                  ) : (
+                  {invoiceError && (
+                    <div className="mb-4 rounded-lg bg-red-950 p-3 text-sm text-red-200">
+                      {invoiceError}
+                    </div>
+                  )}
+
+                  {invoiceSuccess && (
+                    <div className="mb-4 rounded-lg bg-green-950 p-3 text-sm text-green-200">
+                      {invoiceSuccess}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
                     <button
-                      onClick={() => generateInvoice(selectedOrder)}
-                      disabled={invoiceLoading}
-                      className="rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                      onClick={() => downloadShippingLabel(selectedOrder)}
+                      className="rounded-full bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
                     >
-                      {invoiceLoading ? "Generating..." : "⚡ Generate Invoice"}
+                      Download Shipping Label
                     </button>
+                    {selectedOrder.invoiceUrl ? (
+                      <>
+                        <button
+                          onClick={() => downloadInvoice(selectedOrder)}
+                          className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white"
+                        >
+                          📄 Download Invoice
+                        </button>
+                        <button
+                          onClick={() => resendInvoiceEmail(selectedOrder)}
+                          disabled={invoiceLoading}
+                          className="rounded-full bg-emerald px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+                        >
+                          {invoiceLoading ? "Sending..." : "📧 Resend Email"}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => generateInvoice(selectedOrder)}
+                        disabled={invoiceLoading}
+                        className="rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        {invoiceLoading ? "Generating..." : "⚡ Generate Invoice"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Shiprocket Logistics</h3>
+
+                  {selectedOrder.shiprocketOrderId ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-emerald-400">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                        <span className="text-sm font-medium">Synced with Shiprocket</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-slate-400">SR Order ID</p>
+                          <p className="font-mono text-white">{selectedOrder.shiprocketOrderId}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">SR Shipment ID</p>
+                          <p className="font-mono text-white">{selectedOrder.shiprocketShipmentId || "N/A"}</p>
+                        </div>
+                      </div>
+                      <button
+                         disabled
+                         className="w-full rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-500"
+                      >
+                         Already Synced
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-slate-400">This order has not been synced to Shiprocket yet.</p>
+                      {selectedOrder.shiprocketError && (
+                        <div className="rounded-lg bg-red-950/50 border border-red-900/50 p-3 text-xs text-red-200">
+                          <strong>Error:</strong> {selectedOrder.shiprocketError}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => syncToShiprocket(selectedOrder)}
+                        disabled={shiprocketLoading}
+                        className="w-full rounded-full bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:opacity-50"
+                      >
+                        {shiprocketLoading ? "Syncing..." : "🚀 Sync to Shiprocket"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

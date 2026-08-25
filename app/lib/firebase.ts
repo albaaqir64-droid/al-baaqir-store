@@ -3,16 +3,15 @@ import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "fir
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+// Default config as fallback
 const firebaseConfig = {
-  apiKey: "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
-  authDomain: "al-baaqir-store.firebaseapp.com",
-  projectId: "al-baaqir-store",
-  // Standard bucket is usually project-id.appspot.com,
-  // though new projects sometimes use .firebasestorage.app
-  storageBucket: "al-baaqir-store.firebasestorage.app",
-  messagingSenderId: "806944771261",
-  appId: "1:806944771261:web:0897e2e02edc3c0417fbd4",
-  measurementId: "G-CZE3JN5695",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "al-baaqir-store.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "al-baaqir-store",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "al-baaqir-store.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "806944771261",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:806944771261:web:0897e2e02edc3c0417fbd4",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-CZE3JN5695",
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

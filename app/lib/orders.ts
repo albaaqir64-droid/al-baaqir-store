@@ -71,6 +71,12 @@ export interface OrderRecord {
   shipping: ShippingInfo;
   cartItems: OrderItem[];
   internalNotes?: string;
+  // Shiprocket Integration
+  shiprocketOrderId?: string;
+  shiprocketShipmentId?: string;
+  shiprocketStatus?: string;
+  shiprocketError?: string;
+  shiprocketSyncAt?: string;
 }
 
 function normalizeOrder(id: string, data: DocumentData): OrderRecord {
@@ -116,6 +122,11 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
     invoiceUrl: data.invoiceUrl ?? undefined,
     invoiceGeneratedAt: data.invoiceGeneratedAt ?? undefined,
     internalNotes: String(data.internalNotes ?? ""),
+    shiprocketOrderId: data.shiprocketOrderId || undefined,
+    shiprocketShipmentId: data.shiprocketShipmentId || undefined,
+    shiprocketStatus: data.shiprocketStatus || undefined,
+    shiprocketError: data.shiprocketError || undefined,
+    shiprocketSyncAt: data.shiprocketSyncAt || undefined,
   };
 }
 
