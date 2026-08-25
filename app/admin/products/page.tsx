@@ -21,6 +21,7 @@ type ProductForm = {
   discountPercent: string;
   active: boolean;
   featured: boolean;
+  gender: string;
   hsnSac: string;
   gstRate: string;
   sizes: string[];
@@ -52,10 +53,13 @@ const CATEGORIES = [
   "Shirts",
   "T-Shirts",
   "Jeans",
+  "Watches",
   "Women",
   "Men",
   "Other",
 ];
+
+const GENDERS = ["Men", "Women", "Unisex"];
 
 const initialForm: ProductForm = {
   name: "",
@@ -68,6 +72,7 @@ const initialForm: ProductForm = {
   discountPercent: "0",
   active: true,
   featured: false,
+  gender: "Unisex",
   hsnSac: "",
   gstRate: "",
   sizes: [],
@@ -341,6 +346,7 @@ export default function AdminProductsPage() {
         discountPercent: Number(form.discountPercent || 0),
         active: form.active,
         featured: form.featured,
+        gender: form.gender,
         hsnSac: form.hsnSac.trim(),
         gstRate: form.gstRate === "" ? undefined : Number(form.gstRate),
         sizes: form.sizes,
@@ -398,6 +404,7 @@ export default function AdminProductsPage() {
       discountPercent: String(p.discountPercent || 0),
       active: p.active !== false,
       featured: p.featured === true,
+      gender: p.gender || 'Unisex',
       hsnSac: p.hsnSac || '',
       gstRate: p.gstRate === undefined ? '' : String(p.gstRate),
       sizes: p.sizes || [],
@@ -459,6 +466,13 @@ export default function AdminProductsPage() {
             <label className="block text-sm font-medium">Category</label>
             <select className="mt-1 w-full rounded border px-3 py-2" value={form.category} onChange={(e) => updateField('category', e.target.value)}>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">Gender</label>
+            <select className="mt-1 w-full rounded border px-3 py-2" value={form.gender} onChange={(e) => updateField('gender', e.target.value)}>
+              {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
 

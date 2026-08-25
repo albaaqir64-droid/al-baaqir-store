@@ -61,6 +61,7 @@ export async function POST(req: Request) {
       gstRate: body.gstRate !== undefined && body.gstRate !== "" ? Number(body.gstRate) : undefined,
       sizes: Array.isArray(body.sizes) ? body.sizes : undefined,
       colors: Array.isArray(body.colors) ? body.colors : undefined,
+      gender: body.gender !== undefined ? String(body.gender).trim() : undefined,
     };
 
     const createdProduct = await createProduct(payload);
@@ -96,6 +97,7 @@ export async function PUT(req: Request) {
       featured: body.featured !== undefined ? body.featured === true : undefined,
       hsnSac: body.hsnSac !== undefined ? String(body.hsnSac ?? "").trim() : undefined,
       gstRate: body.gstRate !== undefined && body.gstRate !== "" ? Number(body.gstRate) : undefined,
+      gender: body.gender !== undefined ? String(body.gender).trim() : undefined,
     };
 
     await updateProduct(String(body.id), payload as any);

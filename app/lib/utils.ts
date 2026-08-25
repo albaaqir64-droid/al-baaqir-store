@@ -27,7 +27,7 @@ export function sanitizeText(text: string): string {
 export const NAVIGATION_GROUPS = [
   {
     label: "Men",
-    categories: ["Men", "Shirts", "T-Shirts", "Jeans", "Karachi Suit"],
+    categories: ["Men", "Shirts", "T-Shirts", "Jeans", "Karachi Suit", "Watches"],
   },
   {
     label: "Women",

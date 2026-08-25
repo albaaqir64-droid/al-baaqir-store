@@ -37,6 +37,7 @@ export async function createProduct(payload: ProductSavePayload) {
       id: productId,
       name: sanitizeText(String(payload.name ?? "")),
       category: String(payload.category ?? "").trim(),
+      gender: String(payload.gender ?? "").trim(),
       price: Number(payload.price) || 0,
       stock: Number(payload.stock) || 0,
       active: payload.active !== false,
@@ -85,6 +86,7 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
     stock: payload.stock !== undefined ? Number(payload.stock) || 0 : undefined,
     active: payload.active,
     description: payload.description !== undefined ? sanitizeText(String(payload.description)) : undefined,
+    gender: payload.gender !== undefined ? String(payload.gender).trim() : undefined,
     hsnSac: payload.hsnSac !== undefined ? optionalText(payload.hsnSac) ?? null : undefined,
     gstRate: payload.gstRate !== undefined ? optionalFiniteNumber(payload.gstRate) ?? null : undefined,
     sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : undefined,
@@ -154,6 +156,7 @@ function normalizeProductFromAdmin(id: string, data: Record<string, unknown>): P
     id,
     name: String(data.name ?? ""),
     category: String(data.category ?? ""),
+    gender: String(data.gender ?? ""),
     price: Number(data.price ?? 0),
     stock: Number(data.stock ?? 0),
     discountPercent: discountValue,
@@ -177,6 +180,7 @@ function normalizeProductFromAdmin(id: string, data: Record<string, unknown>): P
 
 export async function fetchProductsForApi(options?: {
   category?: string;
+  gender?: string;
   search?: string;
   discount?: boolean;
   activeOnly?: boolean;
@@ -192,6 +196,10 @@ export async function fetchProductsForApi(options?: {
 
   if (options?.category) {
     products = products.filter((product) => product.category === options.category);
+  }
+
+  if (options?.gender) {
+    products = products.filter((product) => product.gender === options.gender);
   }
 
   if (options?.discount) {

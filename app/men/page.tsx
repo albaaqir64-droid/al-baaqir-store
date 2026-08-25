@@ -2,8 +2,9 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import Link from "next/link";
-import { fetchProductsByCategory } from "../lib/products";
+import { fetchProducts } from "../lib/products";
 import type { ProductRecord } from "../lib/productTypes";
+import { NAVIGATION_GROUPS } from "../lib/utils";
 
 function toCard(product: ProductRecord) {
   const price = Number(product.price) || 0;
@@ -23,7 +24,18 @@ function toCard(product: ProductRecord) {
 }
 
 export default async function Page() {
-  const data = await fetchProductsByCategory('Men');
+  const allProducts = await fetchProducts(true);
+
+  // Men's categories defined in navigation
+  const menCategories = NAVIGATION_GROUPS.find(g => g.label === "Men")?.categories || [];
+
+  const data = allProducts.filter(p => {
+    // Show if gender is Men/Unisex OR if category is in the Men's list
+    const isMenGender = p.gender === "Men" || p.gender === "Unisex";
+    const isMenCategory = menCategories.includes(p.category);
+    return isMenGender || isMenCategory;
+  });
+
   const products = data.map(toCard);
   return (
     <div className="min-h-screen brand-page text-slate-900">

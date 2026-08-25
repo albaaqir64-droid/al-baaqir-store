@@ -62,6 +62,7 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     id: docSnap.id,
     name: sanitizeText(String(data.name ?? "")),
     category: String(data.category ?? ""),
+    gender: String(data.gender ?? ""),
     price: Number(data.price ?? 0),
     stock: Number(data.stock ?? 0),
     discountPercent: discountValue,
@@ -124,6 +125,11 @@ export async function fetchProductsByCategory(category: string): Promise<Product
   const categoryQuery = query(productsRef, where("category", "==", category), where("active", "==", true));
   const snapshot = await getDocs(categoryQuery);
   return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
+}
+
+export async function fetchProductsByGender(gender: string): Promise<ProductRecord[]> {
+  const products = await fetchProducts(true);
+  return products.filter(p => p.gender === gender || p.gender === "Unisex");
 }
 
 export async function fetchSaleProducts(limit: number = 12): Promise<ProductRecord[]> {
