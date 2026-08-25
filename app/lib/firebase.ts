@@ -3,10 +3,17 @@ import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "fir
 import { getStorage } from "firebase/storage";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-// Default config as fallback
+// Determine Auth Domain dynamically for production to prevent unauthorized-domain errors
+const getAuthDomain = () => {
+  if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) return process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+
+  // Fallback to the default firebaseapp.com domain which is always authorized
+  return "al-baaqir-store.firebaseapp.com";
+};
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "al-baaqir-store.firebaseapp.com",
+  authDomain: getAuthDomain(),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "al-baaqir-store",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "al-baaqir-store.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "806944771261",
