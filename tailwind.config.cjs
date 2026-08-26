@@ -8,6 +8,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        brand: {
+          dark: '#092328',
+          teal: '#12544F',
+          green: '#2A835F',
+          light: '#8BBB92',
+        },
         emerald: {
           50: '#FFFC8C',
           100: '#FFF9B8',

@@ -70,65 +70,65 @@ export default function AdminPage() {
 
   return (
     <AdminGuard>
-      <main className="admin-theme min-h-screen bg-emerald-50 text-emerald-900">
+      <main className="admin-theme min-h-screen bg-brand-off-white text-brand-dark">
         <div className="mx-auto grid min-h-screen max-w-[1900px] grid-cols-1 gap-6 px-4 py-6 xl:grid-cols-[280px_1fr]">
-          <aside className="rounded-[32px] border border-slate-800 bg-slate-950/95 p-6 shadow-2xl shadow-emerald/10 backdrop-blur-md">
+          <aside className="rounded-[32px] border border-brand-light bg-white p-6 shadow-2xl backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="grid h-14 w-14 place-items-center rounded-3xl bg-emerald-500 text-2xl font-semibold text-slate-950 shadow-inner shadow-emerald/20">AB</div>
+              <div className="grid h-14 w-14 place-items-center rounded-3xl bg-brand-teal text-2xl font-semibold text-white shadow-inner">AB</div>
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">Al Baaqir</p>
-                <h2 className="text-2xl font-semibold text-white">Admin HQ</h2>
+                <p className="text-sm uppercase tracking-[0.3em] text-brand-green">Al Baaqir</p>
+                <h2 className="text-2xl font-semibold text-brand-dark">Admin HQ</h2>
               </div>
             </div>
 
-            <nav className="mt-10 space-y-2 text-slate-300">
+            <nav className="mt-10 space-y-2 text-brand-dark">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block rounded-3xl border px-4 py-3 transition hover:border-emerald/30 hover:bg-slate-900/80 ${link.href === "/admin" ? "border-emerald/20 bg-emerald-500/10 text-white" : "border-slate-800 bg-slate-900 text-slate-300"}`}
+                  className={`block rounded-3xl border px-4 py-3 transition hover:border-brand-teal/30 hover:bg-brand-light/20 ${link.href === "/admin" ? "border-brand-teal/20 bg-brand-teal text-white" : "border-brand-light bg-white text-brand-dark"}`}
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-10 rounded-[28px] border border-slate-800 bg-slate-900 p-5 shadow-lg">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Team</p>
+            <div className="mt-10 rounded-[28px] border border-brand-light bg-brand-off-white p-5 shadow-lg">
+              <p className="text-sm uppercase tracking-[0.3em] text-brand-teal">Team</p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-emerald-700 text-lg font-semibold text-slate-950">AL</div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-teal to-brand-green text-lg font-semibold text-white">AL</div>
                 <div>
-                  <p className="font-semibold text-white">Aaliya</p>
-                  <p className="text-sm text-slate-500">Store manager</p>
+                  <p className="font-semibold text-brand-dark">Aaliya</p>
+                  <p className="text-sm text-brand-teal">Store manager</p>
                 </div>
               </div>
             </div>
           </aside>
 
           <section className="space-y-6">
-            <div className="rounded-[32px] border border-slate-800 bg-slate-900/90 p-6 shadow-2xl shadow-slate-950/30 backdrop-blur-sm md:flex md:items-center md:justify-between md:gap-6">
+            <div className="rounded-[32px] border border-brand-light bg-brand-dark p-6 shadow-2xl text-white backdrop-blur-sm md:flex md:items-center md:justify-between md:gap-6">
               <div className="space-y-3">
-                <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">Dashboard</p>
-                <h1 className="text-4xl font-semibold text-white">Premium store analytics</h1>
-                <p className="max-w-2xl text-slate-400">View core metrics and jump directly to product, order, and inventory management.</p>
+                <p className="text-sm uppercase tracking-[0.3em] text-brand-light">Dashboard</p>
+                <h1 className="text-4xl font-semibold">Premium store analytics</h1>
+                <p className="max-w-2xl text-brand-light/80">View core metrics and jump directly to product, order, and inventory management.</p>
               </div>
-              <Link href="/admin/products" className="inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400">
+              <Link href="/admin/products" className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-teal">
                 Manage products
               </Link>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: "Total Products", value: productCount, icon: "📦", accent: "bg-emerald-500/15" },
-                { label: "Total Orders", value: orders.length, icon: "🛒", accent: "bg-gold/15" },
-                { label: "Revenue", value: formatCurrency(totalRevenue), icon: "₹", accent: "bg-emerald-500/15" },
-                { label: "Pending Orders", value: pendingOrders, icon: "⏳", accent: "bg-rose-500/10" },
+                { label: "Total Products", value: productCount, icon: "📦", accent: "bg-brand-teal/15" },
+                { label: "Total Orders", value: orders.length, icon: "🛒", accent: "bg-brand-green/15" },
+                { label: "Revenue", value: formatCurrency(totalRevenue), icon: "₹", accent: "bg-brand-teal/15" },
+                { label: "Pending Orders", value: pendingOrders, icon: "⏳", accent: "bg-brand-light/30" },
               ].map((card) => (
-                <div key={card.label} className="rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-5 shadow-xl shadow-emerald/5 transition hover:-translate-y-1 hover:shadow-emerald/20">
+                <div key={card.label} className="rounded-[28px] border border-brand-light bg-white px-6 py-5 shadow-xl transition hover:-translate-y-1">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm uppercase tracking-[0.3em] text-slate-500">{card.label}</p>
-                      <p className="mt-3 text-3xl font-semibold text-white">{card.value}</p>
+                      <p className="text-sm uppercase tracking-[0.3em] text-brand-teal">{card.label}</p>
+                      <p className="mt-3 text-3xl font-semibold text-brand-dark">{card.value}</p>
                     </div>
                     <div className={`${card.accent} grid h-14 w-14 place-items-center rounded-3xl text-2xl`}>{card.icon}</div>
                   </div>
@@ -136,43 +136,43 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="rounded-[32px] border border-slate-800 bg-slate-900/95 p-6 shadow-2xl shadow-slate-950/30">
+            <div className="rounded-[32px] border border-brand-light bg-white p-6 shadow-2xl">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold text-white">Recent orders</h2>
-                  <p className="mt-2 text-slate-400">Check recent sales and review order status at a glance.</p>
+                  <h2 className="text-2xl font-semibold text-brand-dark">Recent orders</h2>
+                  <p className="mt-2 text-brand-teal">Check recent sales and review order status at a glance.</p>
                 </div>
-                <Link href="/admin/orders" className="inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400">
+                <Link href="/admin/orders" className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-teal">
                   View all orders
                 </Link>
               </div>
 
-              <div className="mt-6 overflow-x-auto rounded-[28px] border border-slate-800 bg-slate-950/90">
-                <table className="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-200">
-                  <thead className="bg-slate-950/90 text-slate-400">
+              <div className="mt-6 overflow-x-auto rounded-[28px] border border-brand-light bg-brand-off-white">
+                <table className="min-w-full divide-y divide-brand-light text-left text-sm text-brand-dark">
+                  <thead className="bg-brand-off-white text-brand-teal">
                     <tr>
                       {['Order ID', 'Customer', 'Total', 'Status', 'Date'].map((header) => (
                         <th key={header} className="px-5 py-4 font-semibold uppercase tracking-[0.16em]">{header}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody className="divide-y divide-brand-light">
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="px-5 py-10 text-center text-slate-500">Loading orders...</td>
+                        <td colSpan={5} className="px-5 py-10 text-center text-brand-teal">Loading orders...</td>
                       </tr>
                     ) : orders.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-5 py-10 text-center text-slate-400">No orders available yet.</td>
+                        <td colSpan={5} className="px-5 py-10 text-center text-brand-teal">No orders available yet.</td>
                       </tr>
                     ) : (
                       orders.slice(0, 5).map((order) => (
-                        <tr key={order.id} className="transition hover:bg-slate-900/80">
-                          <td className="px-5 py-4 text-slate-200">{order.id.slice(-8).toUpperCase()}</td>
-                          <td className="px-5 py-4 text-slate-300">{order.customerName || 'Guest'}</td>
-                          <td className="px-5 py-4 text-slate-200">{formatCurrency(order.total)}</td>
-                          <td className="px-5 py-4 text-slate-300 capitalize">{order.status.replace(/_/g, ' ')}</td>
-                          <td className="px-5 py-4 text-slate-300">{order.createdAt ? (order.createdAt.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : new Date(order.createdAt).toLocaleDateString()) : '-'}</td>
+                        <tr key={order.id} className="transition hover:bg-brand-light/20">
+                          <td className="px-5 py-4 text-brand-dark">{order.id.slice(-8).toUpperCase()}</td>
+                          <td className="px-5 py-4 text-brand-teal">{order.customerName || 'Guest'}</td>
+                          <td className="px-5 py-4 text-brand-dark">{formatCurrency(order.total)}</td>
+                          <td className="px-5 py-4 text-brand-teal capitalize">{order.status.replace(/_/g, ' ')}</td>
+                          <td className="px-5 py-4 text-brand-teal">{order.createdAt ? (order.createdAt.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : new Date(order.createdAt).toLocaleDateString()) : '-'}</td>
                         </tr>
                       ))
                     )}

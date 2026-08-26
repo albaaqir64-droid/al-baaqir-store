@@ -21,12 +21,12 @@ export default function AccountDashboard() {
         <div className="max-w-5xl mx-auto">
           <header className="mb-12 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-semibold text-emerald-900">My Account</h1>
-              <p className="mt-2 text-emerald-900/60">Welcome back, {profile?.displayName || profile?.email || "Guest"}</p>
+              <h1 className="text-4xl font-semibold text-brand-dark">My Account</h1>
+              <p className="mt-2 text-brand-dark/60">Welcome back, {profile?.displayName || profile?.email || "Guest"}</p>
             </div>
             <button
               onClick={handleLogout}
-              className="px-6 py-2 rounded-full border border-rose-200 text-rose-600 font-medium hover:bg-rose-50 transition"
+              className="px-6 py-2 rounded-full border border-brand-dark/10 text-brand-dark/60 font-medium hover:bg-brand-dark hover:text-white transition"
             >
               Logout
             </button>
@@ -78,10 +78,10 @@ export default function AccountDashboard() {
 
 function DashboardCard({ title, desc, href, icon }: { title: string; desc: string; href: string; icon: string }) {
   return (
-    <Link href={href} className="group block p-8 rounded-[32px] border border-emerald-100 bg-white shadow-sm hover:shadow-xl hover:shadow-emerald-900/5 hover:-translate-y-1 transition-all duration-300">
+    <Link href={href} className="group block p-8 rounded-[32px] border border-brand-light/20 bg-white shadow-sm hover:shadow-xl hover:shadow-brand-dark/5 hover:-translate-y-1 transition-all duration-300">
       <div className="text-3xl mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold text-emerald-900 group-hover:text-emerald-700 transition">{title}</h3>
-      <p className="mt-2 text-sm text-emerald-900/60 leading-relaxed">{desc}</p>
+      <h3 className="text-xl font-semibold text-brand-dark group-hover:text-brand-teal transition">{title}</h3>
+      <p className="mt-2 text-sm text-brand-dark/60 leading-relaxed">{desc}</p>
     </Link>
   );
 }

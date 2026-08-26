@@ -50,19 +50,19 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-white selection:bg-emerald-500 selection:text-slate-900">
+    <div className="min-h-screen bg-brand-off-white selection:bg-brand-teal selection:text-white">
       <Header />
       <main className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-12">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Your Bag</h1>
-          <p className="mt-4 text-lg text-slate-600">Review your curated essentials.</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-brand-dark">Your Bag</h1>
+          <p className="mt-4 text-lg text-brand-teal/70">Review your curated essentials.</p>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-[40px] bg-emerald-50 p-16 text-center border border-emerald-100">
-            <h2 className="text-2xl font-bold text-slate-900">Your bag is empty</h2>
-            <p className="mt-4 text-slate-600">Discover something new and build your collection.</p>
-            <Link href="/" className="mt-8 inline-block rounded-full bg-emerald-500 px-8 py-4 text-[15px] font-bold text-slate-900 transition-all hover:bg-orange-500 hover:text-white hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/20">
+          <div className="rounded-[40px] bg-white p-16 text-center border border-brand-light shadow-xl">
+            <h2 className="text-2xl font-semibold text-brand-dark">Your bag is empty</h2>
+            <p className="mt-4 text-brand-teal/70">Discover something new and build your collection.</p>
+            <Link href="/" className="mt-8 inline-block rounded-full bg-brand-teal px-8 py-4 text-[15px] font-bold text-white transition-all hover:bg-brand-green hover:scale-105 active:scale-95 shadow-lg">
               Continue Shopping
             </Link>
           </div>
@@ -70,8 +70,8 @@ export default function Page() {
           <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
             <section className="space-y-8">
               {items.map((item) => (
-                <div key={item.id} className="flex gap-6 border-b border-slate-100 pb-8">
-                  <div className="relative aspect-square w-32 overflow-hidden rounded-2xl bg-[#F5F5F7]">
+                <div key={item.id} className="flex gap-6 border-b border-brand-light pb-8">
+                  <div className="relative aspect-square w-32 overflow-hidden rounded-2xl bg-white border border-brand-light">
                     <img
                       src={item.image || '/images/products/placeholder.svg'}
                       alt={item.name}
@@ -83,28 +83,28 @@ export default function Page() {
                   <div className="flex flex-1 flex-col">
                     <div className="flex items-start justify-between">
                       <div>
-                        <Link href={item.productUrl} className="text-xl font-bold text-slate-900 hover:opacity-70 transition-opacity">
+                        <Link href={item.productUrl} className="text-xl font-semibold text-brand-dark hover:text-brand-teal transition-colors">
                           {sanitizeText(item.name)}
                         </Link>
                         {item.hsnSac && (
-                          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">{item.hsnSac}</p>
+                          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-teal/40">{item.hsnSac}</p>
                         )}
                       </div>
-                      <p className="text-xl font-bold text-slate-900">{formatCurrency(item.price * item.qty)}</p>
+                      <p className="text-xl font-semibold text-brand-dark">{formatCurrency(item.price * item.qty)}</p>
                     </div>
 
                     <div className="mt-6 flex items-center justify-between">
-                      <div className="flex items-center rounded-full border border-slate-200 p-1">
+                      <div className="flex items-center rounded-full border border-brand-light p-1 bg-white">
                         <button
                           onClick={() => void updateQty(item.id, item.qty - 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-brand-dark hover:bg-brand-off-white transition-colors"
                         >
                           −
                         </button>
                         <span className="w-10 text-center text-sm font-bold">{item.qty}</span>
                         <button
                           onClick={() => void updateQty(item.id, item.qty + 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-brand-dark hover:bg-brand-off-white transition-colors"
                         >
                           +
                         </button>
@@ -124,7 +124,7 @@ export default function Page() {
               <div className="pt-4">
                 <button
                   onClick={() => { clearCart(); setItems([]); }}
-                  className="text-sm font-semibold text-slate-400 hover:text-slate-900 transition-colors"
+                  className="text-sm font-semibold text-brand-teal/40 hover:text-brand-dark transition-colors"
                 >
                   Clear all items
                 </button>
@@ -132,21 +132,21 @@ export default function Page() {
             </section>
 
             <aside>
-              <div className="sticky top-24 rounded-[32px] bg-emerald-50 p-8 border border-emerald-100">
-                <h2 className="text-2xl font-bold text-slate-900">Summary</h2>
+              <div className="sticky top-24 rounded-[32px] bg-brand-dark p-8 border border-brand-teal shadow-2xl text-white">
+                <h2 className="text-2xl font-semibold text-white">Summary</h2>
 
                 <div className="mt-8 space-y-4">
-                  <div className="flex justify-between text-[15px] font-medium text-slate-600">
+                  <div className="flex justify-between text-[15px] font-medium text-brand-light">
                     <span>Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-[15px] font-medium text-slate-600">
+                  <div className="flex justify-between text-[15px] font-medium text-brand-light">
                     <span>Shipping</span>
-                    <span className="text-emerald-600 font-bold uppercase tracking-widest text-[11px]">
+                    <span className="text-brand-green font-bold uppercase tracking-widest text-[11px]">
                       {subtotal >= 10000 ? 'FREE' : 'Calculated at next step'}
                     </span>
                   </div>
-                  <div className="mt-4 border-t border-emerald-200 pt-4 flex justify-between text-xl font-bold text-slate-900">
+                  <div className="mt-4 border-t border-brand-teal pt-4 flex justify-between text-xl font-semibold text-white">
                     <span>Total</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
@@ -154,10 +154,11 @@ export default function Page() {
 
                 <Link
                   href="/checkout"
-                  className="mt-8 block w-full rounded-full bg-emerald-500 py-4 text-center text-[15px] font-bold text-slate-900 transition-all hover:bg-orange-500 hover:text-white hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+                  className="mt-8 block w-full rounded-full bg-brand-teal py-4 text-center text-[15px] font-bold text-white transition-all hover:bg-brand-green hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-teal/20"
                 >
                   Checkout
                 </Link>
+
 
                 {stockMessage && (
                   <p className="mt-4 text-center text-sm font-medium text-rose-600">{stockMessage}</p>

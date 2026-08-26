@@ -49,29 +49,29 @@ export default function CustomerLoginPage() {
 
   return (
     <main className="min-h-screen brand-page px-6 py-24">
-      <div className="mx-auto max-w-md rounded-[32px] border border-emerald-200 bg-white p-10 shadow-2xl shadow-gold/10">
-        <h1 className="text-3xl font-semibold text-emerald-900">Sign in</h1>
-        <p className="mt-3 text-emerald-900/70">Welcome back! Sign in to manage your orders and profile.</p>
+      <div className="mx-auto max-w-md rounded-[32px] border border-brand-light/20 bg-white p-10 shadow-2xl shadow-brand-dark/5">
+        <h1 className="text-3xl font-semibold text-brand-dark">Sign in</h1>
+        <p className="mt-3 text-brand-dark/60">Welcome back! Sign in to manage your orders and profile.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-emerald-900">Email address</label>
+            <label className="block text-sm font-medium text-brand-dark">Email address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-3xl border border-emerald-200 bg-gold-50 px-4 py-3 text-sm text-emerald-900 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/20"
+              className="mt-2 w-full rounded-3xl border border-brand-light/20 bg-brand-off-white px-4 py-3 text-sm text-brand-dark outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/10"
               placeholder="name@example.com"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-emerald-900">Password</label>
+            <label className="block text-sm font-medium text-brand-dark">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-3xl border border-emerald-200 bg-gold-50 px-4 py-3 text-sm text-emerald-900 outline-none focus:border-emerald/70 focus:ring-2 focus:ring-emerald/20"
+              className="mt-2 w-full rounded-3xl border border-brand-light/20 bg-brand-off-white px-4 py-3 text-sm text-brand-dark outline-none focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/10"
               placeholder="••••••••"
               required
             />
@@ -81,7 +81,7 @@ export default function CustomerLoginPage() {
 
           <button
             disabled={loading}
-            className="w-full rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+            className="w-full rounded-full bg-brand-teal px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
             type="submit"
           >
             {loading ? "Signing in..." : "Sign in"}
@@ -90,16 +90,16 @@ export default function CustomerLoginPage() {
 
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-emerald-100"></span>
+            <span className="w-full border-t border-brand-light/10"></span>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-emerald-900/50">Or continue with</span>
+            <span className="bg-white px-2 text-brand-dark/40">Or continue with</span>
           </div>
         </div>
 
         <button
           onClick={handleGoogleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-full border border-emerald-200 bg-white px-6 py-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
+          className="flex w-full items-center justify-center gap-3 rounded-full border border-brand-light/20 bg-white px-6 py-3 text-sm font-medium text-brand-dark transition hover:bg-brand-off-white"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -122,15 +122,15 @@ export default function CustomerLoginPage() {
           Google
         </button>
 
-        <p className="mt-8 text-center text-sm text-emerald-900/70">
+        <p className="mt-8 text-center text-sm text-brand-dark/60">
           Don't have an account?{" "}
-          <Link href="/account/register" className="font-semibold text-emerald-700 hover:underline">
+          <Link href="/account/register" className="font-semibold text-brand-teal hover:underline">
             Sign up
           </Link>
         </p>
 
         <p className="mt-6 text-center text-sm">
-          <Link href="/" className="text-emerald-700/70 hover:underline">← Back to Store</Link>
+          <Link href="/" className="text-brand-teal/60 hover:underline">← Back to Store</Link>
         </p>
       </div>
     </main>

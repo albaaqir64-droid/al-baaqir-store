@@ -15,17 +15,17 @@ export function OrderTimeline({ current }: { current: OrderStatus }) {
   const currentIndex = statusSteps.findIndex((step) => step.key === current);
 
   return (
-    <div className="space-y-5 rounded-3xl border border-emerald-200 bg-slate-50 p-5 shadow-sm">
-      <h3 className="text-lg font-semibold text-slate-950">Order progress</h3>
+    <div className="space-y-5 rounded-3xl border border-brand-light bg-brand-off-white p-5 shadow-sm">
+      <h3 className="text-lg font-semibold text-brand-dark uppercase tracking-wider">Order progress</h3>
       <div className="space-y-4">
         {statusSteps.map((step, index) => {
           const isDone = index <= currentIndex;
           return (
             <div key={step.key} className="flex items-start gap-4">
-              <div className={`mt-1 h-4 w-4 rounded-full border ${isDone ? "border-emerald bg-emerald" : "border-slate-300 bg-white"}`} />
+              <div className={`mt-1 h-4 w-4 rounded-full border ${isDone ? "border-brand-green bg-brand-green" : "border-brand-light bg-white"}`} />
               <div className="flex-1">
-                <div className={`font-semibold ${isDone ? "text-slate-950" : "text-slate-600"}`}>{step.label}</div>
-                <div className="text-sm text-slate-500">{isDone ? "Completed" : "Waiting"}</div>
+                <div className={`font-semibold ${isDone ? "text-brand-dark" : "text-brand-teal/60"}`}>{step.label}</div>
+                <div className="text-sm text-brand-teal/50">{isDone ? "Completed" : "Waiting"}</div>
               </div>
             </div>
           );

@@ -316,88 +316,88 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 selection:bg-emerald-500 selection:text-slate-900">
+    <div className="min-h-screen bg-brand-off-white text-brand-dark selection:bg-brand-teal selection:text-white">
       <Header />
 
       <main className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-12">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Checkout</h1>
-          <p className="mt-4 text-lg text-slate-600">Securely finalize your curated essentials.</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-brand-dark">Checkout</h1>
+          <p className="mt-4 text-lg text-brand-teal/70">Securely finalize your curated essentials.</p>
         </div>
 
         {submitted && (
-          <div className="mb-8 rounded-[32px] bg-emerald-50 border border-emerald-100 p-8 text-emerald-900">
-            <h2 className="text-xl font-bold">Order placed successfully!</h2>
-            <p className="mt-2 text-sm text-emerald-700">Your order request has been received. We will contact you shortly to confirm shipping and payment.</p>
+          <div className="mb-8 rounded-[32px] bg-brand-green/10 border border-brand-green/20 p-8 text-brand-green">
+            <h2 className="text-xl font-semibold">Order placed successfully!</h2>
+            <p className="mt-2 text-sm">Your order request has been received. We will contact you shortly to confirm shipping and payment.</p>
           </div>
         )}
 
         <div className="grid gap-16 lg:grid-cols-[1fr_420px]">
           <section className="space-y-12">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-8">Shipping Address</h2>
+              <h2 className="text-2xl font-semibold text-brand-dark mb-8">Shipping Address</h2>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Full Name</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">Full Name</label>
                   <input
                     value={form.fullName}
                     onChange={(event) => handleInput("fullName", event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="w-full rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                     placeholder="Enter your name"
                   />
                   {errors.fullName && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.fullName}</p>}
                 </div>
                 <div>
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Mobile</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">Mobile</label>
                   <input
                     value={form.mobile}
                     onChange={(event) => handleInput("mobile", event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="w-full rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                     placeholder="10-digit number"
                     inputMode="numeric"
                   />
                   {errors.mobile && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.mobile}</p>}
                 </div>
                 <div>
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Email</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">Email</label>
                   <input
                     value={form.email}
                     onChange={(event) => handleInput("email", event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="w-full rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                     placeholder="you@example.com"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">House / Street</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">House / Street</label>
                   <div className="space-y-4">
                     <input
                       value={form.house}
                       onChange={(event) => handleInput("house", event.target.value)}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      className="w-full rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                       placeholder="House / Flat No."
                     />
                     <input
                       value={form.street}
                       onChange={(event) => handleInput("street", event.target.value)}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      className="w-full rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                       placeholder="Street / Area / Colony"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">Pincode</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">Pincode</label>
                   <div className="flex gap-2">
                     <input
                       value={form.pincode}
                       onChange={(event) => handleInput("pincode", event.target.value)}
-                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      className="flex-1 rounded-2xl border border-brand-light bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                       placeholder="6-digit PIN"
                       inputMode="numeric"
                     />
                     <button
                       type="button"
                       onClick={() => void checkPincode()}
-                      className="rounded-2xl bg-emerald-500 px-6 py-4 text-[13px] font-bold text-slate-900 shadow-sm transition-all hover:bg-orange-500 hover:text-white disabled:opacity-50"
+                      className="rounded-2xl bg-brand-teal px-6 py-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-brand-green disabled:opacity-50"
                       disabled={pincodeLoading}
                     >
                       Check
@@ -406,11 +406,11 @@ export default function CheckoutPage() {
                   {errors.pincode && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.pincode}</p>}
                 </div>
                 <div>
-                  <label className="text-[13px] font-bold uppercase tracking-widest text-slate-900 block mb-3">City</label>
+                  <label className="text-[13px] font-bold uppercase tracking-widest text-brand-teal block mb-3">City</label>
                   <input
                     value={form.city}
                     readOnly
-                    className="w-full rounded-2xl border border-slate-200 bg-[#F5F5F7] px-6 py-4 text-sm text-slate-500"
+                    className="w-full rounded-2xl border border-brand-light bg-brand-off-white px-6 py-4 text-sm text-brand-teal/50"
                     placeholder="Auto-filled"
                   />
                 </div>
@@ -418,41 +418,41 @@ export default function CheckoutPage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-8">Payment</h2>
+              <h2 className="text-2xl font-semibold text-brand-dark mb-8">Payment</h2>
               <div className="space-y-4">
                 {/* 1. Online Payment FIRST (Top Priority) */}
-                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "online" ? "border-emerald-500 bg-emerald-50/50 shadow-md" : "border-slate-100 bg-white"}`}>
+                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-brand-teal group ${form.paymentMethod === "online" ? "border-brand-teal bg-brand-teal/5 shadow-md" : "border-brand-light bg-white"}`}>
                   <input
                     type="radio"
                     name="payment"
                     value="online"
                     checked={form.paymentMethod === "online"}
                     onChange={() => handleInput("paymentMethod", "online")}
-                    className="h-5 w-5 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    className="h-5 w-5 border-brand-light text-brand-teal focus:ring-brand-teal"
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[16px] font-extrabold text-slate-900">⭐ Online Payment</span>
-                      <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white animate-pulse">Save 10%</span>
+                      <span className="text-[16px] font-bold text-brand-dark">⭐ Online Payment</span>
+                      <span className="rounded-full bg-brand-green px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white animate-pulse">Save 10%</span>
                     </div>
-                    <p className="mt-1 text-[15px] font-bold text-emerald-600">Pay online and get 10% discount</p>
-                    <p className="mt-1 text-xs text-slate-500 font-medium">Safe & Secure via Cards, UPI, or Netbanking</p>
+                    <p className="mt-1 text-[15px] font-semibold text-brand-green">Pay online and get 10% discount</p>
+                    <p className="mt-1 text-xs text-brand-teal/60 font-medium">Safe & Secure via Cards, UPI, or Netbanking</p>
                   </div>
                 </label>
 
                 {/* 2. Cash on Delivery SECOND */}
-                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-emerald-500 group ${form.paymentMethod === "cod" ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white"}`}>
+                <label className={`flex items-center gap-4 rounded-[32px] border p-8 cursor-pointer transition-all hover:border-brand-teal group ${form.paymentMethod === "cod" ? "border-brand-teal bg-brand-teal/5" : "border-brand-light bg-white"}`}>
                   <input
                     type="radio"
                     name="payment"
                     value="cod"
                     checked={form.paymentMethod === "cod"}
                     onChange={() => handleInput("paymentMethod", "cod")}
-                    className="h-5 w-5 border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                    className="h-5 w-5 border-brand-light text-brand-teal focus:ring-brand-teal"
                   />
                   <div>
-                    <span className="text-[15px] font-bold text-slate-900">Cash on Delivery</span>
-                    <p className="mt-1 text-sm text-slate-600">Securely pay in cash when your order is delivered.</p>
+                    <span className="text-[15px] font-semibold text-brand-dark">Cash on Delivery</span>
+                    <p className="mt-1 text-sm text-brand-teal/70">Securely pay in cash when your order is delivered.</p>
                   </div>
                 </label>
               </div>
@@ -460,40 +460,40 @@ export default function CheckoutPage() {
           </section>
 
           <aside>
-            <div className="sticky top-24 rounded-[32px] bg-emerald-50 p-8 border border-emerald-100">
-              <h2 className="text-2xl font-bold text-slate-900">Order Summary</h2>
+            <div className="sticky top-24 rounded-[32px] bg-brand-dark p-8 border border-brand-teal shadow-2xl text-white">
+              <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
 
               <div className="mt-8 space-y-6">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4">
-                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-white border border-emerald-100">
+                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-white border border-brand-light">
                       <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate">{sanitizeText(item.name)}</p>
-                      <p className="mt-1 text-xs font-medium text-slate-500">Qty {item.qty}</p>
+                      <p className="text-sm font-semibold text-white truncate">{sanitizeText(item.name)}</p>
+                      <p className="mt-1 text-xs font-medium text-brand-light">Qty {item.qty}</p>
                     </div>
-                    <p className="text-sm font-bold text-slate-900">{formatCurrency(item.price * item.qty)}</p>
+                    <p className="text-sm font-semibold text-white">{formatCurrency(item.price * item.qty)}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-8 space-y-4 border-t border-emerald-200 pt-8">
-                <div className="flex justify-between text-[15px] font-medium text-slate-600">
+              <div className="mt-8 space-y-4 border-t border-brand-teal pt-8">
+                <div className="flex justify-between text-[15px] font-medium text-brand-light">
                   <span>Subtotal</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
                 {onlineDiscount > 0 && (
-                  <div className="flex justify-between text-[15px] font-medium text-emerald-600">
+                  <div className="flex justify-between text-[15px] font-medium text-brand-green">
                     <span>Online Payment Discount (10%)</span>
                     <span>-{formatCurrency(onlineDiscount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-[15px] font-medium text-slate-600">
+                <div className="flex justify-between text-[15px] font-medium text-brand-light">
                   <span>Shipping</span>
-                  <span className="text-emerald-600 font-bold uppercase tracking-widest text-[11px]">Free</span>
+                  <span className="text-brand-green font-bold uppercase tracking-widest text-[11px]">Free</span>
                 </div>
-                <div className="mt-4 flex justify-between text-xl font-bold text-slate-900">
+                <div className="mt-4 flex justify-between text-xl font-semibold text-white">
                   <span>Total</span>
                   <span>{formatCurrency(finalTotal)}</span>
                 </div>
@@ -502,10 +502,11 @@ export default function CheckoutPage() {
               <button
                 onClick={placeOrder}
                 disabled={submitting || !items.length}
-                className="mt-8 w-full rounded-full bg-emerald-500 py-5 text-[15px] font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:bg-orange-500 hover:text-white hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className="mt-8 w-full rounded-full bg-brand-teal py-5 text-[15px] font-bold text-white shadow-lg shadow-brand-teal/20 transition-all hover:bg-brand-green hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {submitting ? "Processing..." : "Place Order"}
               </button>
+
 
               {saveError && <p className="mt-4 text-center text-xs font-semibold text-rose-600">{saveError}</p>}
             </div>

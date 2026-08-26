@@ -121,7 +121,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
       {/* Left Side: Images */}
       <div className="space-y-6">
         <div
-          className="relative aspect-square overflow-hidden rounded-[40px] bg-emerald-50 cursor-zoom-in group border border-emerald-100"
+          className="relative aspect-square overflow-hidden rounded-[40px] bg-white cursor-zoom-in group border border-brand-light"
           onClick={() => openLightbox(mainIndex)}
         >
           <img
@@ -133,7 +133,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
           />
           {product.discountPercent && (
-            <div className="absolute left-8 top-8 rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-bold tracking-widest text-slate-900 uppercase shadow-sm">
+            <div className="absolute left-8 top-8 rounded-full bg-brand-green px-4 py-1.5 text-[11px] font-bold tracking-widest text-white uppercase shadow-sm">
               {product.discountPercent}% OFF
             </div>
           )}
@@ -144,8 +144,8 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <button
               key={String(i)}
               onClick={() => { setMainIndex(i); }}
-              className={`relative aspect-square w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-emerald-50 border transition-all ${
-                i === mainIndex ? 'border-emerald-500 ring-2 ring-emerald-500 ring-offset-2' : 'border-emerald-100 opacity-60 hover:opacity-100'
+              className={`relative aspect-square w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-white border transition-all ${
+                i === mainIndex ? 'border-brand-teal ring-2 ring-brand-teal ring-offset-2' : 'border-brand-light opacity-60 hover:opacity-100'
               }`}
             >
               <img
@@ -162,24 +162,24 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
       {/* Right Side: Product Details */}
       <div className="flex flex-col">
         <div className="mb-8">
-          <p className="text-[13px] font-bold uppercase tracking-[0.3em] text-emerald-600 mb-4">
+          <p className="text-[13px] font-bold uppercase tracking-[0.3em] text-brand-teal mb-4">
             {product.category}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl leading-tight">
+          <h1 className="text-4xl font-semibold tracking-tight text-brand-dark sm:text-5xl leading-tight">
             {sanitizeText(product.name)}
           </h1>
 
           <div className="mt-6 flex items-baseline gap-4">
-            <span className="text-3xl font-bold tracking-tight text-slate-900">
+            <span className="text-3xl font-semibold tracking-tight text-brand-dark">
               {formatCurrency(discountedPrice)}
             </span>
             {product.discountPercent && (
-              <span className="text-lg font-medium text-slate-400 line-through">
+              <span className="text-lg font-medium text-brand-teal/40 line-through">
                 {formatCurrency(product.price)}
               </span>
             )}
           </div>
-          <p className="mt-2 text-sm font-medium text-emerald-700">MRP inclusive of all taxes</p>
+          <p className="mt-2 text-sm font-medium text-brand-green">MRP inclusive of all taxes</p>
         </div>
 
         {/* Selection Options */}
@@ -187,8 +187,8 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           {product.sizes && product.sizes.length > 0 && (
             <div>
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900">Select Size</h4>
-                <button className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors">Size Guide</button>
+                <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark">Select Size</h4>
+                <button className="text-[13px] font-medium text-brand-teal/50 hover:text-brand-dark transition-colors">Size Guide</button>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {product.sizes.map((s) => (
@@ -197,8 +197,8 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                     onClick={() => setSize(s)}
                     className={`rounded-2xl border py-4 text-sm font-bold transition-all ${
                       size === s
-                        ? 'border-emerald-500 bg-emerald-500 text-slate-900 shadow-sm'
-                        : 'border-emerald-100 text-slate-600 hover:border-emerald-500'
+                        ? 'border-brand-teal bg-brand-teal text-white shadow-sm'
+                        : 'border-brand-light text-brand-teal hover:border-brand-teal'
                     }`}
                   >
                     {s}
@@ -210,14 +210,14 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
           {product.colors && product.colors.length > 0 && (
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-4">Select Color</h4>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-4">Select Color</h4>
               <div className="flex flex-wrap gap-3">
                 {product.colors.map((c) => (
                   <button
                     key={c}
                     onClick={() => setColor(c)}
                     className={`h-10 w-10 rounded-full border-2 transition-all ${
-                      color === c ? "border-emerald-500 ring-2 ring-emerald-500/20 ring-offset-2" : "border-transparent"
+                      color === c ? "border-brand-teal ring-2 ring-brand-teal/20 ring-offset-2" : "border-transparent"
                     }`}
                     style={{ backgroundColor: c }}
                     title={c}
@@ -248,7 +248,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                 router.push('/cart');
               }}
               disabled={currentStock < 1}
-              className="w-full rounded-full bg-emerald-500 py-5 text-[15px] font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600 hover:text-white hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full rounded-full bg-brand-teal py-5 text-[15px] font-bold text-white shadow-lg shadow-brand-teal/20 transition-all hover:bg-brand-green hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
             >
               {currentStock < 1 ? 'Out of Stock' : 'Add to Bag'}
             </button>
@@ -265,7 +265,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                 const nowWishlisted = nextWishlist.some((item) => item.id === product.id);
                 setWishlisted(nowWishlisted);
               }}
-              className="w-full rounded-full border border-emerald-200 py-5 text-[15px] font-bold text-slate-900 transition-all hover:border-emerald-500 hover:bg-emerald-50 active:scale-[0.98]"
+              className="w-full rounded-full border border-brand-light py-5 text-[15px] font-bold text-brand-dark transition-all hover:border-brand-teal hover:bg-brand-off-white active:scale-[0.98]"
             >
               {wishlisted ? '♥ In Wishlist' : '♡ Add to Wishlist'}
             </button>
@@ -273,51 +273,52 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
         </div>
 
         {/* Delivery Check */}
-        <div className="mt-12 rounded-[32px] bg-emerald-50 p-8 border border-emerald-100">
-          <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-6">Delivery Details</h4>
+        <div className="mt-12 rounded-[32px] bg-brand-dark p-8 border border-brand-teal text-white shadow-xl">
+          <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-light mb-6">Delivery Details</h4>
           <div className="flex gap-2">
             <input
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
               placeholder="Enter Pincode"
-              className="flex-1 rounded-2xl border border-emerald-100 bg-white px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="flex-1 rounded-2xl border border-brand-teal bg-brand-teal/20 px-6 py-4 text-sm text-white placeholder:text-brand-light/40 focus:outline-none focus:ring-2 focus:ring-brand-teal/40"
             />
             <button
               onClick={() => void checkPincode()}
               disabled={pincodeLoading}
-              className="rounded-2xl bg-emerald-500 px-8 py-4 text-sm font-bold text-slate-900 shadow-sm transition-all hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+              className="rounded-2xl bg-brand-green px-8 py-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-teal disabled:opacity-50"
             >
               Check
             </button>
           </div>
           {pincodeOk !== null && (
-            <div className={`mt-4 text-sm font-medium ${pincodeOk ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className={`mt-4 text-sm font-medium ${pincodeOk ? 'text-brand-light' : 'text-rose-400'}`}>
               {pincodeOk ? `Fast delivery available to ${pincodeLocation?.city}` : pincodeError}
             </div>
           )}
         </div>
 
         {/* Description & Details */}
-        <div className="mt-12 space-y-8 border-t border-slate-100 pt-12">
+        <div className="mt-12 space-y-8 border-t border-brand-light pt-12">
           <div>
-            <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-4">Product Description</h4>
-            <p className="text-[15px] leading-relaxed text-slate-500 whitespace-pre-wrap">
+            <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-4">Product Description</h4>
+            <p className="text-[15px] leading-relaxed text-brand-teal/70 whitespace-pre-wrap">
               {sanitizeText(product.description || '')}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-2">Ref. Number</h4>
-              <p className="text-sm text-slate-500">{product.hsnSac || 'AB-2026-001'}</p>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-2">Ref. Number</h4>
+              <p className="text-sm text-brand-teal/60">{product.hsnSac || 'AB-2026-001'}</p>
             </div>
             <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-slate-900 mb-2">Material</h4>
-              <p className="text-sm text-slate-500">Premium Handcrafted Leather</p>
+              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-2">Material</h4>
+              <p className="text-sm text-brand-teal/60">Premium Handcrafted Leather</p>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Full-Screen Image Lightbox */}
       {isLightboxOpen && (

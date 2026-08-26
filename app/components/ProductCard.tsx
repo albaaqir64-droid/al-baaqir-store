@@ -64,7 +64,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Brand Discount Pill */}
         {product.discount && (
-          <div className="absolute left-4 top-4 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold tracking-widest text-slate-900 uppercase shadow-sm">
+          <div className="absolute left-4 top-4 rounded-full bg-brand-green px-3 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow-sm">
             {product.discount} OFF
           </div>
         )}
@@ -93,14 +93,14 @@ export default function ProductCard({ product }: { product: Product }) {
 
       <div className="p-6">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-light">
             {product.hsnSac || 'Collection'}
           </p>
-          <h3 className="text-lg font-semibold tracking-tight text-slate-900 leading-tight">
+          <h3 className="text-lg font-semibold tracking-tight text-brand-dark leading-tight">
             {product.name}
           </h3>
           {product.description && (
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-brand-teal">
               {sanitizeText(product.description)}
             </p>
           )}
@@ -108,11 +108,11 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <div className="mt-6 flex items-end justify-between">
           <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-slate-900">
+            <span className="text-xl font-bold tracking-tight text-brand-dark">
               {product.price}
             </span>
             {product.originalPriceNum && product.discountPercent && (
-              <span className="text-xs font-medium text-slate-400 line-through">
+              <span className="text-xs font-medium text-brand-teal/60 line-through">
                 {formatCurrency(product.originalPriceNum)}
               </span>
             )}
@@ -136,7 +136,7 @@ export default function ProductCard({ product }: { product: Product }) {
               }, 1);
               router.push('/cart');
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-slate-900 transition-all duration-300 hover:bg-orange-500 hover:text-white hover:scale-110 active:scale-95 shadow-md shadow-emerald-500/20"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-teal text-white transition-all duration-300 hover:bg-brand-green hover:scale-110 active:scale-95 shadow-md shadow-brand-teal/20"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
           </button>

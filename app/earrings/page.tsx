@@ -28,13 +28,13 @@ export default async function Page() {
   const products = data.map(toCard);
 
   return (
-    <div className="min-h-screen brand-page text-slate-900">
+    <div className="min-h-screen brand-page text-brand-dark">
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-12">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-emerald-500">Earrings</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">Light-catching jewelry for every outfit</h1>
-          <p className="mt-3 text-lg text-slate-600 max-w-2xl">Explore polished earrings that add style to both everyday and special moments.</p>
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-green">Earrings</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-brand-dark">Light-catching jewelry for every outfit</h1>
+          <p className="mt-3 text-lg text-brand-teal max-w-2xl">Explore polished earrings that add style to both everyday and special moments.</p>
         </div>
 
         {products.length > 0 ? (
@@ -44,7 +44,7 @@ export default async function Page() {
             ))}
           </div>
         ) : (
-          <div className="flex h-64 flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-emerald-100 bg-white/50 text-slate-500">
+          <div className="flex h-64 flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-brand-light bg-white/50 text-brand-teal">
             <p>No products found in this category.</p>
           </div>
         )}
@@ -52,7 +52,7 @@ export default async function Page() {
         <div className="mt-20 text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-teal hover:text-brand-green transition-colors"
           >
             <span>←</span> Back to Home
           </Link>
