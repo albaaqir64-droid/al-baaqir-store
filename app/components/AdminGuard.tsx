@@ -14,56 +14,63 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let mounted = true;
 
-    // Start sync with Firebase Auth immediately
+    // Immediate check to avoid flash of loading state if already authenticated locally
+    if (isAdminAuthenticated()) {
+      setAuthorized(true);
+      setCheckingAuth(false);
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!mounted) return;
 
       if (user) {
         setAuthorized(true);
+        setCheckingAuth(false);
       } else if (isAdminAuthenticated()) {
-        // Local session exists but Firebase doesn't, sync it
+        // Sync local session to Firebase Auth
         try {
           const { signInAnonymously } = await import("firebase/auth");
           await signInAnonymously(auth);
+          if (mounted) {
+            setAuthorized(true);
+            setCheckingAuth(false);
+          }
         } catch (e) {
           console.error("AdminGuard: Firebase auto-sync failed", e);
+          if (mounted) {
+            setCheckingAuth(false);
+          }
         }
       } else {
         setAuthorized(false);
-        if (!checkingAuth) {
-          router.replace("/admin/login");
-        }
+        setCheckingAuth(false);
+        router.replace("/admin/login");
       }
-      setCheckingAuth(false);
     });
-
-    // Fallback: If local session is active, show UI but continue auth sync in background
-    if (isAdminAuthenticated()) {
-      setAuthorized(true);
-      // We don't set checkingAuth false here yet to ensure Firebase is ready if possible
-      // but we can if we want "instant" feel. Let's wait a bit for Firebase.
-    }
 
     return () => {
       mounted = false;
       unsubscribe();
     };
-  }, [router, checkingAuth]);
+  }, [router]);
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-emerald-50 text-emerald-900 grid place-items-center px-6">
-        <div className="animate-pulse text-xl font-semibold">Verifying session...</div>
+      <div className="min-h-screen bg-brand-off-white text-brand-dark grid place-items-center px-6">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-teal border-t-transparent" />
+          <p className="text-xl font-semibold animate-pulse">Verifying session...</p>
+        </div>
       </div>
     );
   }
 
   if (!authorized) {
     return (
-      <div className="min-h-screen bg-emerald-50 text-emerald-900 grid place-items-center px-6">
-        <div className="max-w-md rounded-3xl border border-emerald-200 bg-white p-8 shadow-2xl">
+      <div className="min-h-screen bg-brand-off-white text-brand-dark grid place-items-center px-6">
+        <div className="max-w-md rounded-[32px] border border-brand-light bg-white p-8 shadow-2xl text-center">
           <h1 className="text-2xl font-semibold">Admin access required</h1>
-          <p className="mt-3 text-emerald-900">Redirecting you to the login page...</p>
+          <p className="mt-3 text-brand-teal">Please sign in to continue.</p>
         </div>
       </div>
     );

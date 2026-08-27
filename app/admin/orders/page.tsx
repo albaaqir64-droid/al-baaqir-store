@@ -38,9 +38,18 @@ export default function OrdersAdminPage() {
 
   const loadOrders = async () => {
     setLoading(true);
-    const results = await fetchOrders({ search: search || undefined, status: statusFilter || undefined });
-    setOrders(results);
-    setLoading(false);
+    try {
+      const results = await fetchOrders({
+        search: search || undefined,
+        status: statusFilter || undefined
+      });
+      setOrders(results || []);
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -199,7 +208,7 @@ export default function OrdersAdminPage() {
                   <p className="text-sm text-brand-light/70">{label}</p>
                   <p className="mt-3 text-3xl font-semibold text-white">
                     {label === 'Total orders' && orders.length}
-                    {label === 'Revenue' && `₹${orders.reduce((sum, order) => sum + order.total, 0)}`}
+                    {label === 'Revenue' && `₹${orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0).toLocaleString('en-IN')}`}
                     {label === 'Pending' && orders.filter((order) => order.status === 'pending').length}
                     {label === 'Delivered' && orders.filter((order) => order.status === 'delivered').length}
                     {label === 'Cancelled' && orders.filter((order) => order.status === 'cancelled').length}
@@ -262,8 +271,14 @@ export default function OrdersAdminPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-4 font-semibold text-brand-dark">₹{order.total}</td>
-                        <td className="px-4 py-4 text-brand-teal">{order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : "-"}</td>
+                        <td className="px-4 py-4 font-semibold text-brand-dark">₹{(Number(order.total) || 0).toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-4 text-brand-teal">
+                          {order.createdAt?.toDate
+                            ? new Date(order.createdAt.toDate()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                            : order.createdAt instanceof Date
+                              ? order.createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                              : "-"}
+                        </td>
                         <td className="px-4 py-4">
                           <button
                             onClick={() => {
