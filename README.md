@@ -69,7 +69,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
    - `SHIPROCKET_EMAIL`: The email used for Shiprocket login.
    - `SHIPROCKET_PASSWORD`: The password used for Shiprocket login.
 3. **Pickup Location**: The integration defaults to a pickup location named "Home". Ensure this exists in your Shiprocket panel under Settings -> Pickup Locations.
-4. **Webhooks**: To enable automated RTO and Status updates, configure your webhook URL in Shiprocket to: `https://albaaqir.com/api/shiprocket/webhook`.
+4. **Webhooks**: To enable automated RTO and Status updates, configure your webhook URL in Shiprocket to: `https://www.albaaqir.com/api/shiprocket/webhook`.
 
 ### Features
 1. **Professional Seller Panel**: Live dashboard featuring real-time sales stats, order health tracking, and an automated action center.

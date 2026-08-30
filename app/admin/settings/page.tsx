@@ -267,16 +267,16 @@ export default function SettingsPage() {
                               </p>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="text-xs font-bold text-slate-900">#{log.shiprocketOrderId || "N/A"}</p>
-                              <p className="text-[10px] text-slate-400">{log.shipmentId || "No Shipment ID"}</p>
+                              <p className="text-xs font-bold text-slate-900">#{log.channelOrderId || log.shiprocketOrderId || "N/A"}</p>
+                              <p className="text-[10px] text-slate-400">{log.awb || "No AWB"}</p>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                log.newStatus?.includes('delivered') ? 'bg-emerald-50 text-emerald-600' :
-                                log.newStatus?.includes('rto') || log.newStatus?.includes('cancel') ? 'bg-rose-50 text-rose-600' :
+                                log.currentStatus?.includes('delivered') ? 'bg-emerald-50 text-emerald-600' :
+                                log.currentStatus?.includes('rto') || log.currentStatus?.includes('cancel') || log.currentStatus?.includes('return') ? 'bg-rose-50 text-rose-600' :
                                 'bg-blue-50 text-blue-600'
                               }`}>
-                                {log.newStatus || "UNKNOWN"}
+                                {log.currentStatus || "UNKNOWN"}
                               </span>
                             </td>
                             <td className="px-6 py-4">
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                                 )}
                                 <span className="text-[10px] font-bold text-slate-600">{log.status}</span>
                               </div>
-                              {log.restockResult && (
+                              {log.restockDone && (
                                 <p className="text-[9px] text-emerald-600 font-bold mt-0.5">Inventory Restocked</p>
                               )}
                             </td>

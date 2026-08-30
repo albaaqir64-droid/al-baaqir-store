@@ -6,172 +6,140 @@ import { updateProductStockAdmin } from "@/app/lib/inventory.server";
 export const runtime = "nodejs";
 
 /**
- * Connectivity Check
+ * GET: Health Check
  */
 export async function GET() {
   return apiJson({
     status: "active",
-    message: "Shiprocket Webhook Endpoint is online and accessible.",
-    endpoint: "https://albaaqir.com/api/shiprocket/webhook"
+    message: "Shiprocket Webhook Endpoint is online. IMPORTANT: Use the WWW version of this URL in Shiprocket.",
+    endpoint: "https://www.albaaqir.com/api/shiprocket/webhook"
   });
 }
 
 /**
- * Shiprocket Webhook Handler
- * Handles real-time status updates and tracking scans from Shiprocket.
+ * POST: Actual Webhook Processing
  */
 export async function POST(request: Request) {
-  let db;
-  let logRef;
+  const db = getFirestore(getAdminApp());
+  const logRef = db.collection("shiprocket_webhook_logs").doc();
   const startTime = Date.now();
 
   try {
-    // 1. Lenient JSON Parsing (Shiprocket test button might not send perfect headers)
-    let data: any = {};
-    try {
-      const text = await request.text();
-      if (text) {
-        data = JSON.parse(text);
-      }
-    } catch (e) {
-      console.error("[Webhook] JSON Parse Error:", e);
-      return apiJson({ ok: false, message: "Invalid JSON" }, 400);
+    const data = await request.json();
+
+    if (!data || typeof data !== 'object') {
+      return apiJson({ success: false, error: "Invalid JSON payload" }, 400);
     }
 
-    // 2. Initialize Firebase inside try block
-    db = getFirestore(getAdminApp());
-    logRef = db.collection("shiprocket_webhook_logs").doc();
-
-    // 3. Extract fields based on Shiprocket Webhook Format
     const awb = String(data.awb || "");
     const shiprocketOrderId = String(data.order_id || "");
     const channelOrderId = String(data.channel_order_id || "");
+    const shipmentId = String(data.shipment_id || "");
     const currentStatus = String(data.current_status || data.shipment_status || "").toLowerCase();
     const statusId = String(data.current_status_id || data.shipment_status_id || "");
     const timestamp = data.current_timestamp || data.timestamp || new Date().toISOString();
     const courier = String(data.courier_name || "");
+    const channel = String(data.channel || "");
     const scans = Array.isArray(data.scans) ? data.scans : [];
 
-    // 4. Handle Test Payload / Validation
-    // If it's a test from Shiprocket, they might use dummy values or missing fields
-    const isTest = data.is_test === 1 || data.is_test === true || (!awb && !shiprocketOrderId && currentStatus === "delivered");
-
-    if (isTest) {
-      await logRef.set({
-        timestamp: FieldValue.serverTimestamp(),
-        payload: data,
-        status: "TEST_SUCCESS",
-        message: "Test webhook received successfully"
-      });
-      return apiJson({ success: true, message: "Test webhook received" });
-    }
-
-    if ((!shiprocketOrderId && !awb && !channelOrderId) || !currentStatus) {
-      await logRef.set({
-        timestamp: FieldValue.serverTimestamp(),
-        payload: data,
-        error: "Missing identification fields (order_id/awb) or status",
-        status: "SKIPPED"
-      });
-      // Returning 200 even for skipped to keep Shiprocket happy during setup
-      return apiJson({ ok: true, message: "Data skipped - insufficient fields" });
-    }
-
-    // 5. Logging the event for History
+    // 1. Initial Logging (Always log incoming events)
     await logRef.set({
       timestamp: FieldValue.serverTimestamp(),
+      awb,
       shiprocketOrderId,
       channelOrderId,
-      awb,
+      shipmentId,
       currentStatus,
       statusId,
+      courier,
+      channel,
       payload: data,
-      status: "PROCESSING"
+      status: "RECEIVED"
     });
 
-    // 6. Duplicate Event Protection (Idempotency)
-    const eventSignature = `${awb}_${statusId || currentStatus}_${timestamp}`;
+    // 2. Identification Check
+    if (!awb && !shiprocketOrderId && !channelOrderId && !shipmentId) {
+      await logRef.update({ status: "SKIPPED", error: "No order identifier found (awb/order_id/channel_order_id/shipment_id)" });
+      return apiJson({ success: true, processed: false, message: "Insufficient data to match order" });
+    }
+
+    // 3. Duplicate Protection
+    const eventSignature = `${awb || 'noawb'}_${statusId || currentStatus}_${timestamp}`;
     const eventRef = db.collection("shiprocket_processed_events").doc(eventSignature);
     const eventDoc = await eventRef.get();
 
     if (eventDoc.exists) {
-      await logRef.update({
-        status: "DUPLICATE",
-        processingTime: Date.now() - startTime
-      });
-      return apiJson({ success: true, message: "Event already processed" });
+      await logRef.update({ status: "DUPLICATE", processingTime: Date.now() - startTime });
+      return apiJson({ success: true, processed: true, message: "Duplicate event already processed" });
     }
 
-    // 7. Order Matching
+    // 4. Order Matching Logic (Sequential Attempt)
     const ordersRef = db.collection("orders");
     let orderDoc = null;
 
-    const matchId = channelOrderId || shiprocketOrderId;
-    if (matchId) {
-      const q = ordersRef.where("invoiceNumber", "==", matchId).limit(1);
-      const snapshot = await q.get();
-      if (!snapshot.empty) orderDoc = snapshot.docs[0];
+    // Step A: Match by Invoice Number (This is what we send to Shiprocket as order_id)
+    if (channelOrderId) {
+      const q = ordersRef.where("invoiceNumber", "==", channelOrderId).limit(1);
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
     }
 
+    // Step B: Match by Shiprocket's Internal Order ID
+    if (!orderDoc && shiprocketOrderId) {
+      const q = ordersRef.where("shiprocketOrderId", "==", shiprocketOrderId).limit(1);
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
+    }
+
+    // Step C: Match by Shipment ID
+    if (!orderDoc && shipmentId) {
+      const q = ordersRef.where("shiprocketShipmentId", "==", shipmentId).limit(1);
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
+    }
+
+    // Step D: Match by AWB
     if (!orderDoc && awb) {
       const q = ordersRef.where("shiprocketAwb", "==", awb).limit(1);
-      const snapshot = await q.get();
-      if (!snapshot.empty) orderDoc = snapshot.docs[0];
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
     }
 
     if (!orderDoc) {
-      await logRef.update({
-        status: "NOT_FOUND",
-        error: `Order not found for ID: ${matchId} or AWB: ${awb}`,
-        processingTime: Date.now() - startTime
-      });
-      // Return 200 so Shiprocket doesn't retry for non-existent orders (e.g. manual Shiprocket orders)
-      return apiJson({ success: true, message: "Order not found in local DB" });
+      await logRef.update({ status: "NOT_FOUND", message: "No matching order found in local database", processingTime: Date.now() - startTime });
+      return apiJson({ success: true, processed: false, message: "Order not found in local DB" });
     }
 
     const orderData = orderDoc.data();
     const orderId = orderDoc.id;
 
-    // 8. Status Mapping & Restock Logic
+    // 5. Status Mapping
     let internalStatus = orderData.status;
     let shouldRestock = false;
 
-    if (currentStatus.includes("delivered") && !currentStatus.includes("rto")) {
+    if (currentStatus.includes("delivered")) {
       internalStatus = "delivered";
-    } else if (
-      currentStatus.includes("rto") ||
-      currentStatus.includes("returned") ||
-      currentStatus.includes("return") ||
-      statusId === "13" || // RTO Initiated
-      statusId === "17"    // RTO Delivered
-    ) {
+    } else if (currentStatus.includes("rto") || currentStatus.includes("return") || ["13", "17"].includes(statusId)) {
       if (internalStatus !== "returned" && !orderData.inventoryRestocked) {
         internalStatus = "returned";
         shouldRestock = true;
       }
-    } else if (
-      currentStatus.includes("shipped") ||
-      currentStatus.includes("transit") ||
-      currentStatus.includes("pick") ||
-      currentStatus.includes("out for delivery") ||
-      ["6", "18", "19", "7"].includes(statusId)
-    ) {
+    } else if (currentStatus.includes("shipped") || currentStatus.includes("transit") || currentStatus.includes("pick") || currentStatus.includes("out for delivery")) {
       if (["pending", "packed", "shipped"].includes(internalStatus)) {
         internalStatus = "shipped";
       }
-    } else if (currentStatus.includes("canceled") || currentStatus.includes("cancelled")) {
+    } else if (currentStatus.includes("cancel")) {
       internalStatus = "cancelled";
-      if (!orderData.inventoryRestocked) {
-        shouldRestock = true;
-      }
+      if (!orderData.inventoryRestocked) shouldRestock = true;
     }
 
-    // 9. Prepare Updates
-    const updates: Record<string, any> = {
+    // 6. Database Updates
+    const updates: any = {
       shiprocketStatus: currentStatus.toUpperCase(),
       shiprocketStatusId: statusId,
       lastUpdated: FieldValue.serverTimestamp(),
       shiprocketAwb: awb || orderData.shiprocketAwb || null,
+      shiprocketOrderId: shiprocketOrderId || orderData.shiprocketOrderId || null,
       courierName: courier || orderData.courierName || null,
       trackingScans: scans
     };
@@ -181,67 +149,45 @@ export async function POST(request: Request) {
       updates.statusHistory = FieldValue.arrayUnion({
         status: internalStatus,
         changedAt: new Date().toISOString(),
-        reason: `Webhook: ${currentStatus} (Shiprocket ID: ${statusId})`
+        reason: `Shiprocket Webhook: ${currentStatus}`
       });
     }
 
     await orderDoc.ref.update(updates);
 
-    // 10. Inventory Restock
-    let restockResult = null;
+    // 7. Inventory Restock
+    let restockDone = false;
     if (shouldRestock && orderData.cartItems) {
       for (const item of orderData.cartItems) {
         if (item.id && item.quantity) {
-          try {
-            await updateProductStockAdmin(
-              item.id,
-              item.quantity,
-              `Auto-Restock (Shiprocket ${currentStatus.toUpperCase()}): ${matchId}`
-            );
-          } catch (e) {
-            console.error(`Restock failed for ${item.id}:`, e);
-          }
+          await updateProductStockAdmin(item.id, item.quantity, `RTO Restock: ${channelOrderId || orderId}`);
         }
       }
-      await orderDoc.ref.update({
-        inventoryRestocked: true,
-        restockedAt: FieldValue.serverTimestamp()
-      });
-      restockResult = "COMPLETED";
+      await orderDoc.ref.update({ inventoryRestocked: true, restockedAt: FieldValue.serverTimestamp() });
+      restockDone = true;
     }
 
-    // Mark event as processed
-    await eventRef.set({
-      processedAt: FieldValue.serverTimestamp(),
-      awb,
-      status: currentStatus,
-      statusId,
-      timestamp,
-      orderId: orderId
-    });
+    // Mark event processed
+    await eventRef.set({ processedAt: FieldValue.serverTimestamp(), signature: eventSignature });
 
     await logRef.update({
       status: "SUCCESS",
-      orderId: orderId,
-      internalStatus: internalStatus,
-      restockResult: restockResult,
+      orderId,
+      internalStatus,
+      restockDone,
       processingTime: Date.now() - startTime
     });
 
-    return apiJson({ success: true, orderId });
+    return apiJson({ success: true, processed: true, orderId });
 
   } catch (error) {
     console.error("[Shiprocket-Webhook] Error:", error);
-    if (logRef) {
-      await logRef.set({
-        timestamp: FieldValue.serverTimestamp(),
-        error: String(error),
-        status: "CRITICAL_FAILURE"
-      }, { merge: true }).catch(() => {});
-    }
+    await logRef.set({
+      timestamp: FieldValue.serverTimestamp(),
+      error: String(error),
+      status: "ERROR"
+    }, { merge: true });
 
-    // Always return 200 during testing/setup to avoid Shiprocket "unable to send request" errors
-    // unless it's a real code failure we want to know about.
-    return apiJson({ success: false, error: "Processed with errors" }, 200);
+    return apiJson({ success: false, error: "Internal processing error" }, 500);
   }
 }
