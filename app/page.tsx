@@ -7,6 +7,8 @@ import Image from "next/image";
 import { fetchNewArrivals, fetchProducts } from "./lib/products";
 import { formatCurrency } from "./lib/utils";
 
+export const dynamic = "force-dynamic";
+
 const categories = [
   {
     title: "Belts",

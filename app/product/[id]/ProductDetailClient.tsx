@@ -209,6 +209,10 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
           <div className="space-y-3 pt-4 border-t border-[#e8e2d9]">
             <button
               onClick={() => {
+                if (!user || user.isAnonymous) {
+                  router.push(`/account/login?callback=/product/${product.id}`);
+                  return;
+                }
                 addCartItem({
                   id: product.id,
                   name: product.name,

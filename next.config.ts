@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  staticPageGenerationTimeout: 1200,
   images: {
     remotePatterns: [
       {

@@ -68,7 +68,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 2. **Environment Variables**: Set the following in Vercel:
    - `SHIPROCKET_EMAIL`: The email used for Shiprocket login.
    - `SHIPROCKET_PASSWORD`: The password used for Shiprocket login.
-3. **Pickup Location**: The integration defaults to a pickup location named "Primary". Ensure this exists in your Shiprocket panel under Settings -> Pickup Locations.
+3. **Pickup Location**: The integration defaults to a pickup location named "Home". Ensure this exists in your Shiprocket panel under Settings -> Pickup Locations.
+4. **Webhooks**: To enable automated RTO and Status updates, configure your webhook URL in Shiprocket to: `https://albaaqir.com/api/shiprocket/webhook`.
 
 ### Features
 1. **Professional Seller Panel**: Live dashboard featuring real-time sales stats, order health tracking, and an automated action center.
@@ -77,10 +78,12 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
    - Real-time AWB tracking via secure server-side proxy.
    - Bulk Manifest generation and batch label printing.
    - Live Wallet balance tracking with auto-recharge alerts.
+   - **Automated RTO & Returns**: Real-time status sync via Webhooks with automatic inventory restock logic.
 4. **Inventory Auditing**: Professional inventory management with inline stock editing and reason-based auditing (Damaged, Restock, etc.).
 5. **Customer Insights**: Live Firestore-backed customer database with purchase history and VIP status tiering.
 6. **Online Payment Discount**: Automatically offers a 10% discount when selecting Razorpay at checkout.
 7. **Inventory Sync**: Real-time stock deduction for both main products and specific variants during checkout.
+8. **Mandatory Customer Login**: Secure checkout flow requiring users to sign in before adding items to the bag or placing orders, ensuring accurate order tracking and customer history.
 
 ### Firestore Indexes
    - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)

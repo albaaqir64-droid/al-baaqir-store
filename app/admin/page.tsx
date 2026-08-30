@@ -39,6 +39,7 @@ export default function Dashboard() {
     const shipped = orders.filter((o) => o.status === "shipped").length;
     const delivered = orders.filter((o) => o.status === "delivered").length;
     const cancelled = orders.filter((o) => o.status === "cancelled").length;
+    const returned = orders.filter((o) => o.status === "returned").length;
 
     // Time-based calculations
     const now = new Date();
@@ -83,6 +84,7 @@ export default function Dashboard() {
       shipped,
       delivered,
       cancelled,
+      returned,
       salesGrowth: Number(salesGrowth),
       orderGrowth: Number(orderGrowth),
       shiprocketFailures: orders.filter(o => o.shiprocketStatus === "FAILED").length
@@ -174,7 +176,7 @@ export default function Dashboard() {
               <StatusMiniCard label="Ready to Ship" count={stats.packed} color="sky" />
               <StatusMiniCard label="Shipped" count={stats.shipped} color="indigo" />
               <StatusMiniCard label="Cancelled" count={stats.cancelled} color="rose" />
-              <StatusMiniCard label="RTO" count={0} color="orange" />
+              <StatusMiniCard label="RTO / Returned" count={stats.returned} color="orange" />
             </div>
           </div>
 
@@ -349,6 +351,7 @@ function StatusBadge({ status }: { status: string }) {
     shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-700" },
     delivered: { label: "Delivered", color: "bg-emerald-100 text-emerald-700" },
     cancelled: { label: "Cancelled", color: "bg-rose-100 text-rose-700" },
+    returned: { label: "Returned/RTO", color: "bg-orange-100 text-orange-700" },
   };
   const { label, color } = config[status] || { label: status, color: "bg-slate-100 text-slate-700" };
   return (

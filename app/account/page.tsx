@@ -6,6 +6,8 @@ import CustomerGuard from "../components/CustomerGuard";
 import { logoutCustomer } from "../lib/auth";
 import { useRouter } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default function AccountDashboard() {
   const { profile, loading } = useAuth();
   const router = useRouter();

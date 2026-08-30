@@ -4,6 +4,8 @@ import Link from 'next/link';
 import ProductDetailClient from "./ProductDetailClient";
 import { fetchProductById } from "../../lib/products";
 
+export const dynamic = "force-dynamic";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Props = {
   params: Promise<{ id?: string | string[] }>;

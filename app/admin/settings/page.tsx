@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Settings,
   User,
@@ -12,20 +12,46 @@ import {
   Save,
   Globe,
   Mail,
-  Smartphone
+  Smartphone,
+  History,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
+import { readApiJson } from "../../lib/api/client";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   const TABS = [
     { id: "general", label: "Store Info", icon: Store },
     { id: "account", label: "Account", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "shipping", label: "Shipping", icon: Truck },
+    { id: "logs", label: "Webhook Logs", icon: History },
     { id: "payments", label: "Payments", icon: CreditCard },
     { id: "security", label: "Security", icon: Lock },
   ];
+
+  async function fetchLogs() {
+    setLoadingLogs(true);
+    try {
+      const res = await fetch("/api/admin/webhook-logs");
+      const parsed = await readApiJson<{ logs: any[] }>(res);
+      if (parsed.ok && parsed.data) setLogs(parsed.data.logs);
+    } catch (err) {
+      console.error("Logs fetch failed:", err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchLogs();
+    }
+  }, [activeTab]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -158,6 +184,19 @@ export default function SettingsPage() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Webhook URL (Production)</label>
+                    <div className="flex gap-2">
+                      <input type="text" readOnly value="https://albaaqir.com/api/shiprocket/webhook" className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                      <button
+                        onClick={() => navigator.clipboard.writeText("https://albaaqir.com/api/shiprocket/webhook")}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 italic">Configure this in Shiprocket Panel → Settings → API → Webhooks</p>
+                  </div>
+                  <div className="space-y-2 pt-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">API Email</label>
                     <input type="email" defaultValue="logistics@albaaqir.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
                   </div>
@@ -180,6 +219,95 @@ export default function SettingsPage() {
                 </div>
               </section>
              </div>
+          )}
+
+          {activeTab === "logs" && (
+            <div className="space-y-6">
+              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="font-bold text-slate-900">Shiprocket Webhook History</h2>
+                    <p className="text-xs text-slate-500 mt-1">Real-time status updates received from Shiprocket.</p>
+                  </div>
+                  <button
+                    onClick={fetchLogs}
+                    className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"
+                    disabled={loadingLogs}
+                  >
+                    <History size={18} className={loadingLogs ? "animate-spin" : ""} />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Time</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Order ID</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Shiprocket Status</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Result</th>
+                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {logs.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-sm italic">
+                            {loadingLogs ? "Loading events..." : "No webhook events recorded yet."}
+                          </td>
+                        </tr>
+                      ) : (
+                        logs.map((log) => (
+                          <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="text-xs font-medium text-slate-900">
+                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              <p className="text-[10px] text-slate-400">
+                                {new Date(log.timestamp).toLocaleDateString()}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-xs font-bold text-slate-900">#{log.shiprocketOrderId || "N/A"}</p>
+                              <p className="text-[10px] text-slate-400">{log.shipmentId || "No Shipment ID"}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                                log.newStatus?.includes('delivered') ? 'bg-emerald-50 text-emerald-600' :
+                                log.newStatus?.includes('rto') || log.newStatus?.includes('cancel') ? 'bg-rose-50 text-rose-600' :
+                                'bg-blue-50 text-blue-600'
+                              }`}>
+                                {log.newStatus || "UNKNOWN"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                {log.status === "SUCCESS" ? (
+                                  <CheckCircle2 size={14} className="text-emerald-500" />
+                                ) : (
+                                  <AlertCircle size={14} className={log.status === "DUPLICATE" ? "text-amber-500" : "text-rose-500"} />
+                                )}
+                                <span className="text-[10px] font-bold text-slate-600">{log.status}</span>
+                              </div>
+                              {log.restockResult && (
+                                <p className="text-[9px] text-emerald-600 font-bold mt-0.5">Inventory Restocked</p>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                onClick={() => alert(JSON.stringify(log.payload, null, 2))}
+                                className="text-[10px] font-bold text-slate-400 hover:text-slate-900"
+                              >
+                                Raw Data
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
           )}
         </div>
       </div>

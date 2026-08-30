@@ -152,9 +152,34 @@ export async function createShiprocketOrder(payload: ShiprocketOrderPayload) {
     // Shiprocket status_code 1 means success. Sometimes it returns 200 with errors in the body.
     if (!response.ok || (result.status_code !== undefined && result.status_code !== 1)) {
       console.error("Shiprocket Order Creation Error:", result);
+
+      // Extract a readable error message from Shiprocket's response
+      let errorMsg = "Unknown Shiprocket error";
+      if (result.message) {
+        errorMsg = result.message;
+      } else if (result.errors) {
+        if (typeof result.errors === 'string') {
+          errorMsg = result.errors;
+        } else if (typeof result.errors === 'object') {
+          // Flatten errors object: {"billing_phone": ["invalid"]} -> "billing_phone: invalid"
+          errorMsg = Object.entries(result.errors)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ');
+        }
+      }
+
       return {
         success: false,
-        error: result.errors || result.message || "Unknown Shiprocket error",
+        error: errorMsg,
+        status: response.status,
+        status_code: result.status_code,
+      };
+    }
+
+    if (!result.order_id) {
+      return {
+        success: false,
+        error: "Shiprocket API indicated success but failed to return an order_id.",
         status: response.status,
         status_code: result.status_code,
       };
@@ -369,7 +394,7 @@ export async function syncOrderToShiprocket(orderId: string, orderData: any) {
     const payload: ShiprocketOrderPayload = {
       order_id: srOrderId,
       order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
+      pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Home",
       billing_customer_name: (orderData.customerName || orderData.shipping?.name || "Customer").split(' ')[0],
       billing_last_name: (orderData.customerName || orderData.shipping?.name || "Customer").split(' ').slice(1).join(' ') || "User",
       billing_address: orderData.shipping?.address || "Address missing",
@@ -406,7 +431,11 @@ export async function syncOrderToShiprocket(orderId: string, orderData: any) {
     const result = await createShiprocketOrder(payload);
 
     if (!result.success) {
-      const errorMsg = typeof result.error === "object" ? JSON.stringify(result.error) : String(result.error);
+      const shiprocketError = (result as any).error;
+      const errorMsg = typeof shiprocketError === "object"
+        ? JSON.stringify(shiprocketError)
+        : String(shiprocketError || "Unknown Shiprocket error");
+
       return {
         shiprocketStatus: "FAILED",
         shiprocketError: errorMsg,
