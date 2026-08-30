@@ -152,8 +152,18 @@ export async function POST(req: Request) {
     // --- SHIPROCKET INTEGRATION ---
     try {
       const orderDoc = await orderRef.get();
-      const shiprocketResult = await syncOrderToShiprocket(orderId, orderDoc.data());
-      await orderRef.update(shiprocketResult);
+      const orderData = orderDoc.data();
+
+      if (orderData && !orderData.shiprocketOrderId) {
+        const shiprocketResult = await syncOrderToShiprocket(orderId, orderData);
+        await orderRef.update(shiprocketResult);
+
+        if (shiprocketResult.shiprocketStatus === "FAILED") {
+          console.error(`[Razorpay-Verify] Shiprocket Sync FAILED for ${orderId}:`, shiprocketResult.shiprocketError);
+        } else {
+          console.log(`[Razorpay-Verify] Shiprocket Sync SUCCESS for ${orderId}. SR Order ID: ${shiprocketResult.shiprocketOrderId}`);
+        }
+      }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
       await orderRef.update({

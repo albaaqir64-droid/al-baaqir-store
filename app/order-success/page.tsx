@@ -5,6 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { fetchOrderById, OrderRecord } from "../lib/orders";
 import { readApiJson } from "../lib/api/client";
 import Link from "next/link";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { formatCurrency, sanitizeText } from "../lib/utils";
 
 function OrderSuccessPageContent() {
   const [order, setOrder] = useState<OrderRecord | null>(null);
@@ -103,130 +106,131 @@ function OrderSuccessPageContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#F8FAFA] px-6 py-24 text-brand-dark">
-        <div className="mx-auto max-w-3xl rounded-[40px] border border-brand-light/30 bg-white p-12 shadow-sm">
-          <div className="h-72 animate-pulse rounded-[32px] bg-brand-light/10" />
-        </div>
-      </main>
+      <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
+        <Header />
+        <main className="mx-auto max-w-[1200px] px-5 py-24">
+          <div className="border border-[#e8e2d9] bg-white p-12 text-center h-[400px] flex flex-col items-center justify-center">
+             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+          </div>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   if (error || !order) {
     return (
-      <main className="min-h-screen bg-[#F8FAFA] px-6 py-24 text-brand-dark">
-        <div className="mx-auto max-w-3xl rounded-[40px] border border-brand-light/30 bg-white p-12 text-center shadow-xl shadow-brand-dark/5">
-          <h1 className="text-2xl font-bold">Unable to load order</h1>
-          <p className="mt-4 text-brand-dark/70">{error || "Please check your order link and try again."}</p>
-          <Link href="/" className="mt-8 inline-flex rounded-full bg-brand-teal px-8 py-4 text-[15px] font-bold text-white shadow-lg shadow-brand-teal/20 transition-all hover:bg-brand-green hover:scale-105">
-            Continue Shopping
-          </Link>
-        </div>
-      </main>
+      <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
+        <Header />
+        <main className="mx-auto max-w-[1200px] px-5 py-24">
+          <div className="border border-[#e8e2d9] bg-white p-12 text-center">
+            <h1 className="text-2xl serif font-medium">Unable to load order</h1>
+            <p className="mt-4 text-[#777]">{error || "Please check your order link and try again."}</p>
+            <Link href="/" className="luxury-button inline-block mt-8 uppercase text-[12px]">
+              Continue Shopping
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFA] selection:bg-brand-teal selection:text-white px-6 py-20">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <div className="rounded-[40px] border border-brand-light/30 bg-white p-10 shadow-lg shadow-brand-dark/5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">Order Placed Successfully</span>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-brand-dark">Thank you, {order.customerName}.</h1>
-          <p className="mt-3 max-w-2xl text-lg text-brand-dark/70">Your order has been received and is being processed. We&apos;ll notify you when it&apos;s on its way.</p>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-[32px] border border-brand-light/20 bg-[#F8FAFA] p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark/40">Order ID</p>
-              <p className="mt-2 text-xl font-bold text-brand-dark">{order.id.toUpperCase()}</p>
-            </div>
-            <div className="rounded-[32px] border border-brand-light/20 bg-[#F8FAFA] p-6 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark/40">Invoice Number</p>
-              <p className="mt-2 text-xl font-bold text-brand-dark">{order.invoiceNumber || 'Pending'}</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
+      <Header />
+      <main className="mx-auto max-w-[1200px] px-5 py-20">
+        <div className="mb-12">
+          <div className="eyebrow">Confirmation</div>
+          <h1 className="text-[34px] md:text-[42px] serif font-medium mt-2">Thank you, {order.customerName.split(' ')[0]}.</h1>
+          <p className="mt-4 text-[#777] max-w-[600px]">Your order has been received and is being processed. A confirmation email and tracking details will be sent shortly.</p>
         </div>
 
-        <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-8 rounded-[40px] border border-brand-light/20 bg-white p-8 shadow-xl shadow-brand-dark/5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-brand-dark">Order Details</h2>
-                <p className="mt-1 text-brand-dark/50">A summary of your purchase.</p>
-              </div>
-              <span className="rounded-full bg-brand-light/20 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-brand-teal">
-                {order.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online"}
-              </span>
-            </div>
+        <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr]">
+          <section className="space-y-12">
+            <div className="border border-[#e8e2d9] bg-white p-8">
+              <h2 className="text-[25px] serif font-medium border-b border-[#e8e2d9] pb-4 mb-8">Order Details</h2>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-brand-light/10 bg-[#F8FAFA] p-5">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark/40">Customer</p>
-                <p className="mt-2 font-bold text-brand-dark">{order.customerName}</p>
-                <p className="mt-1 text-sm text-brand-dark/50">{order.phone}</p>
+              <div className="grid gap-8 sm:grid-cols-2 mb-12">
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#888] mb-1">Order ID</h4>
+                  <p className="font-bold text-[#151515]">#{order.invoiceNumber || order.id.slice(0, 8).toUpperCase()}</p>
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#888] mb-1">Payment Method</h4>
+                  <p className="font-bold text-[#151515] uppercase tracking-wider text-[12px]">{order.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online"}</p>
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#888] mb-1">Customer</h4>
+                  <p className="font-bold text-[#151515]">{order.customerName}</p>
+                  <p className="text-[13px] text-[#777]">{order.phone}</p>
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#888] mb-1">Shipping Address</h4>
+                  <p className="text-[13px] font-medium text-[#151515] leading-relaxed">
+                    {order.shipping.address}<br />
+                    {order.shipping.city}, {order.shipping.state} {order.shipping.pincode}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-[24px] border border-brand-light/10 bg-[#F8FAFA] p-5">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark/40">Delivery Address</p>
-                <p className="mt-2 text-sm font-medium text-brand-dark leading-relaxed">
-                  {order.shipping.address}<br />
-                  {order.shipping.city}, {order.shipping.state} {order.shipping.pincode}
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-brand-dark">Items</h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#151515] mb-4">Items Ordered</h4>
                 {order.cartItems.map((item) => (
-                  <div key={item.id} className="group flex items-center gap-4 rounded-[24px] border border-brand-light/10 bg-white p-4 transition-all hover:border-brand-teal">
-                    <div className="h-20 w-20 overflow-hidden rounded-2xl bg-brand-light/5">
+                  <div key={item.id} className="flex items-center gap-4 border-b border-[#f0f0f0] pb-4 last:border-0">
+                    <div className="h-20 w-20 bg-[#eee] overflow-hidden">
                       <img
                         src={item.image || '/images/products/placeholder.svg'}
                         alt={item.name}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        className="h-full w-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-brand-dark truncate">{item.name}</p>
-                      <p className="mt-1 text-sm font-medium text-brand-dark/50">Qty {item.quantity}</p>
+                      <p className="font-bold text-[#151515]">{sanitizeText(item.name)}</p>
+                      <p className="text-[12px] text-[#888]">Quantity {item.quantity}</p>
                     </div>
-                    <p className="font-bold text-brand-dark">₹{item.price.toLocaleString('en-IN')}</p>
+                    <p className="font-bold text-[#151515]">{formatCurrency(item.price)}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          <aside className="space-y-6">
-            <div className="rounded-[40px] bg-white p-8 border border-brand-light/30 shadow-lg shadow-brand-dark/5">
-              <h2 className="text-2xl font-bold text-brand-dark">Summary</h2>
-              <div className="mt-8 space-y-4">
-                <div className="flex justify-between text-[15px] font-medium text-brand-dark/70">
-                  <span>Subtotal</span>
-                  <span>₹{order.subtotal.toLocaleString('en-IN')}</span>
+          <aside className="space-y-8">
+            <div className="border border-[#e8e2d9] bg-white p-8">
+              <h2 className="text-[25px] serif font-medium border-b border-[#e8e2d9] pb-4 mb-6">Summary</h2>
+              <div className="space-y-4 text-[14px]">
+                <div className="flex justify-between">
+                  <span className="text-[#777]">Subtotal</span>
+                  <span className="font-bold">{formatCurrency(order.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-[15px] font-medium text-brand-dark/70">
-                  <span>Shipping</span>
-                  <span className="text-brand-green font-bold uppercase tracking-widest text-[11px]">
-                    {order.shippingCharge === 0 ? "FREE" : `₹${order.shippingCharge.toLocaleString('en-IN')}`}
+                <div className="flex justify-between">
+                  <span className="text-[#777]">Shipping</span>
+                  <span className="text-brand-green font-bold uppercase text-[11px] tracking-widest">
+                    {order.shippingCharge === 0 ? "FREE" : formatCurrency(order.shippingCharge)}
                   </span>
                 </div>
-                <div className="mt-4 border-t border-brand-light/30 pt-4 flex justify-between text-xl font-bold text-brand-dark">
+                {order.discount > 0 && (
+                   <div className="flex justify-between text-brand-green font-bold">
+                    <span>Discount</span>
+                    <span>-{formatCurrency(order.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[19px] font-bold pt-4 border-t border-[#e8e2d9]">
                   <span>Total</span>
-                  <span>₹{order.total.toLocaleString('en-IN')}</span>
+                  <span>{formatCurrency(order.total)}</span>
                 </div>
               </div>
 
-              {/* Invoice Section */}
-              <div className="mt-12 pt-8 border-t border-brand-light/30">
+              <div className="mt-10">
                 {invoiceError && (
-                  <div className="mb-4 rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-600 border border-rose-100">
-                    {invoiceError}
-                  </div>
+                  <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-rose-600">{invoiceError}</p>
                 )}
                 {invoiceUrl ? (
                   <button
                     onClick={downloadInvoice}
-                    className="w-full rounded-full bg-brand-teal py-4 text-[15px] font-bold text-white shadow-md shadow-brand-teal/10 transition-all hover:bg-brand-green"
+                    className="w-full bg-[#111] text-white py-4 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-[#333]"
                   >
                     Download Invoice
                   </button>
@@ -234,7 +238,7 @@ function OrderSuccessPageContent() {
                   <button
                     onClick={generateInvoice}
                     disabled={generatingInvoice}
-                    className="w-full rounded-full bg-brand-teal py-4 text-[15px] font-bold text-white shadow-md shadow-brand-teal/10 transition-all hover:bg-brand-green disabled:opacity-50"
+                    className="w-full bg-[#111] text-white py-4 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-[#333] disabled:opacity-50"
                   >
                     {generatingInvoice ? "Generating..." : "Generate Invoice"}
                   </button>
@@ -243,17 +247,18 @@ function OrderSuccessPageContent() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <Link href="/account/orders" className="flex w-full items-center justify-center rounded-full bg-brand-dark py-4 text-[15px] font-bold text-white transition-all hover:bg-brand-teal">
+              <Link href="/account/orders" className="luxury-button text-center uppercase text-[12px]">
                 View My Orders
               </Link>
-              <Link href="/" className="flex w-full items-center justify-center rounded-full border border-brand-light/30 bg-white py-4 text-[15px] font-bold text-brand-dark transition-all hover:bg-brand-light/5">
+              <Link href="/" className="w-full border border-[#111] text-[#111] text-center py-4 text-[12px] font-bold uppercase tracking-widest hover:bg-[#faf8f4] transition-colors">
                 Back to Home
               </Link>
             </div>
           </aside>
-        </section>
-      </div>
-    </main>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
@@ -261,11 +266,9 @@ export default function OrderSuccessPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#F8FAFA] px-6 py-24 text-brand-dark">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-brand-light/30 bg-white p-12 shadow-lg shadow-brand-dark/5">
-            <div className="h-72 animate-pulse rounded-3xl bg-brand-light/10" />
-          </div>
-        </main>
+        <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+        </div>
       }
     >
       <OrderSuccessPageContent />

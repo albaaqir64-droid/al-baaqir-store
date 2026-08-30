@@ -11,6 +11,12 @@ export type SanitizedOrderItem = {
   gstRate?: number;
   selectedSize?: string;
   selectedColor?: string;
+  dimensions?: {
+    length?: number;
+    breadth?: number;
+    height?: number;
+  };
+  weight?: number;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -53,6 +59,12 @@ export function sanitizeCartItem(item: any): SanitizedOrderItem {
     gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
     selectedSize: item?.selectedSize || undefined,
     selectedColor: item?.selectedColor || undefined,
+    dimensions: item?.dimensions ? {
+      length: Number(item.dimensions.length) || 0,
+      breadth: Number(item.dimensions.breadth) || 0,
+      height: Number(item.dimensions.height) || 0,
+    } : undefined,
+    weight: item?.weight !== undefined ? Number(item.weight) : undefined,
   });
 }
 

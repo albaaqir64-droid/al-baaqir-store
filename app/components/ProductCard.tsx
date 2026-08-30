@@ -8,6 +8,8 @@ import { addCartItem } from "../lib/cart";
 import { isWishlisted, toggleWishlistItem } from "../lib/wishlist";
 import { formatCurrency, sanitizeText } from "../lib/utils";
 
+import { useAuth } from "../hooks/useAuth";
+
 type Product = {
   id: string;
   name: string;
@@ -23,6 +25,7 @@ type Product = {
 
 export default function ProductCard({ product }: { product: Product }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [wish, setWish] = useState(false);
 
   useEffect(() => {
@@ -46,15 +49,15 @@ export default function ProductCard({ product }: { product: Product }) {
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') goToProduct();
       }}
-      className="group relative overflow-hidden rounded-[32px] bg-white transition-all duration-500 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)]"
+      className="luxury-card group relative"
     >
-      {/* Image Container - Fixed 1:1 Aspect Ratio */}
-      <div className="relative aspect-square overflow-hidden bg-[#F5F5F7]">
-        <Image
+      {/* Image Container */}
+      <div className="relative aspect-[1/1.05] overflow-hidden bg-[#eee] flex items-center justify-center">
+         <Image
           src={product.image || '/images/products/placeholder.svg'}
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(event) => {
             const target = event.target as HTMLImageElement;
             target.src = '/images/products/placeholder.svg';
@@ -62,14 +65,12 @@ export default function ProductCard({ product }: { product: Product }) {
           loading="lazy"
         />
 
-        {/* Brand Discount Pill */}
-        {product.discount && (
-          <div className="absolute left-4 top-4 rounded-full bg-brand-green px-3 py-1 text-[10px] font-bold tracking-widest text-white uppercase shadow-sm">
-            {product.discount} OFF
-          </div>
-        )}
+        {/* Status Badge */}
+        <div className="absolute left-[10px] top-[10px] bg-[#111] text-white px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider">
+          {product.discount ? `${product.discount} OFF` : 'NEW'}
+        </div>
 
-        {/* Wishlist Button Overlay */}
+        {/* Wishlist Button */}
         <button
           type="button"
           onClick={(e) => {
@@ -83,64 +84,60 @@ export default function ProductCard({ product }: { product: Product }) {
             });
             setWish(nextWishlist.some((item) => item.id === product.id));
           }}
-          className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md transition-all duration-300 hover:bg-white ${
-            wish ? 'text-rose-500' : 'text-slate-400 hover:text-slate-900'
+          className={`absolute right-[10px] top-[10px] flex h-8 w-8 items-center justify-center border transition-colors ${
+            wish ? 'text-rose-500 bg-white border-white' : 'text-[#111] bg-white/90 border-transparent hover:text-brand-gold'
           }`}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill={wish ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={wish ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
         </button>
       </div>
 
-      <div className="p-6">
-        <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-light">
-            {product.hsnSac || 'Collection'}
-          </p>
-          <h3 className="text-lg font-semibold tracking-tight text-brand-dark leading-tight">
-            {product.name}
-          </h3>
-          {product.description && (
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-brand-teal">
-              {sanitizeText(product.description)}
-            </p>
+      <div className="p-[15px]">
+        <small className="text-[#888] uppercase text-[10px] tracking-widest font-bold">
+          {product.hsnSac || 'Collection'}
+        </small>
+        <h3 className="serif text-[19px] font-medium my-2 text-[#111]">
+          {product.name}
+        </h3>
+
+        <div className="flex items-center gap-2 mb-3">
+          <span className="font-bold text-[#111]">
+            {product.price}
+          </span>
+          {product.originalPriceNum && product.discountPercent && (
+            <span className="text-[#aaa] line-through text-sm font-normal">
+              {formatCurrency(product.originalPriceNum)}
+            </span>
           )}
         </div>
 
-        <div className="mt-6 flex items-end justify-between">
-          <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-brand-dark">
-              {product.price}
-            </span>
-            {product.originalPriceNum && product.discountPercent && (
-              <span className="text-xs font-medium text-brand-teal/60 line-through">
-                {formatCurrency(product.originalPriceNum)}
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const priceNum = Number.parseFloat(product.price.replace(/[^\d.]/g, "")) || 0;
-              addCartItem({
-                id: product.id,
-                name: product.name,
-                price: priceNum,
-                originalPrice: product.originalPriceNum,
-                discountPercent: product.discountPercent,
-                image: product.image,
-                productUrl: `/product/${product.id}`,
-                hsnSac: product.hsnSac,
-                gstRate: product.gstRate,
-              }, 1);
-              router.push('/cart');
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-teal text-white transition-all duration-300 hover:bg-brand-green hover:scale-110 active:scale-95 shadow-md shadow-brand-teal/20"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!user || user.isAnonymous) {
+              const currentPath = window.location.pathname + window.location.search;
+              router.push(`/account/login?callback=${encodeURIComponent(currentPath)}`);
+              return;
+            }
+            const priceNum = Number.parseFloat(product.price.replace(/[^\d.]/g, "")) || 0;
+            addCartItem({
+              id: product.id,
+              name: product.name,
+              price: priceNum,
+              originalPrice: product.originalPriceNum,
+              discountPercent: product.discountPercent,
+              image: product.image,
+              productUrl: `/product/${product.id}`,
+              hsnSac: product.hsnSac,
+              gstRate: product.gstRate,
+            }, 1);
+            router.push('/cart');
+          }}
+          className="w-full mt-3 py-[11px] bg-[#111] text-white text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-[#333]"
+        >
+          ADD TO BAG
+        </button>
       </div>
     </article>
   );

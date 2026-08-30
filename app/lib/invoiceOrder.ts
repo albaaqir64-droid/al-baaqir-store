@@ -15,7 +15,7 @@ export function toOrderRecord(id: string, data: Record<string, unknown>): OrderR
     id,
     customerName: String(data.customerName ?? ""), phone: String(data.phone ?? ""), email: String(data.email ?? ""),
     customerGSTIN: GSTIN_PATTERN.test(customerGSTIN) ? customerGSTIN : "", paymentMethod: String(data.paymentMethod ?? "cod"),
-    subtotal: asFiniteNumber(data.subtotal), shippingCharge: asFiniteNumber(data.shippingCharge), total: asFiniteNumber(data.total),
+    subtotal: asFiniteNumber(data.subtotal), shippingCharge: asFiniteNumber(data.shippingCharge), discount: asFiniteNumber(data.discount), total: asFiniteNumber(data.total),
     status: String(data.status ?? "pending") as OrderStatus, createdAt: data.createdAt ?? null, lastUpdated: data.lastUpdated ?? null,
     invoiceNumber: String(data.invoiceNumber ?? ""), invoiceUrl: typeof data.invoiceUrl === "string" ? data.invoiceUrl : undefined,
     invoiceGeneratedAt: data.invoiceGeneratedAt,

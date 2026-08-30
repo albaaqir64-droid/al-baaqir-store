@@ -50,28 +50,27 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-off-white selection:bg-brand-teal selection:text-white">
+    <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
       <Header />
-      <main className="mx-auto max-w-7xl px-6 py-20">
+      <main className="mx-auto max-w-[1200px] px-5 py-20">
         <div className="mb-12">
-          <h1 className="text-4xl font-semibold tracking-tight text-brand-dark">Your Bag</h1>
-          <p className="mt-4 text-lg text-brand-teal/70">Review your curated essentials.</p>
+          <div className="eyebrow">Your Bag</div>
+          <h1 className="text-[34px] md:text-[42px] serif font-medium mt-2">Shopping cart</h1>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-[40px] bg-white p-16 text-center border border-brand-light shadow-xl">
-            <h2 className="text-2xl font-semibold text-brand-dark">Your bag is empty</h2>
-            <p className="mt-4 text-brand-teal/70">Discover something new and build your collection.</p>
-            <Link href="/" className="mt-8 inline-block rounded-full bg-brand-teal px-8 py-4 text-[15px] font-bold text-white transition-all hover:bg-brand-green hover:scale-105 active:scale-95 shadow-lg">
+          <div className="bg-white p-12 text-center border border-[#e8e2d9]">
+            <p className="text-[#777] mb-8">Your bag is empty. Add something beautiful.</p>
+            <Link href="/" className="luxury-button inline-block uppercase text-[12px]">
               Continue Shopping
             </Link>
           </div>
         ) : (
           <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
-            <section className="space-y-8">
+            <section className="space-y-0">
               {items.map((item) => (
-                <div key={item.id} className="flex gap-6 border-b border-brand-light pb-8">
-                  <div className="relative aspect-square w-32 overflow-hidden rounded-2xl bg-white border border-brand-light">
+                <div key={item.id} className="flex gap-4 border-b border-[#e8e2d9] py-[14px] items-center">
+                  <div className="relative aspect-square w-[65px] bg-[#eee] flex items-center justify-center">
                     <img
                       src={item.image || '/images/products/placeholder.svg'}
                       alt={item.name}
@@ -80,51 +79,43 @@ export default function Page() {
                     />
                   </div>
 
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <Link href={item.productUrl} className="text-xl font-semibold text-brand-dark hover:text-brand-teal transition-colors">
-                          {sanitizeText(item.name)}
-                        </Link>
-                        {item.hsnSac && (
-                          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-brand-teal/40">{item.hsnSac}</p>
-                        )}
-                      </div>
-                      <p className="text-xl font-semibold text-brand-dark">{formatCurrency(item.price * item.qty)}</p>
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-between">
-                      <div className="flex items-center rounded-full border border-brand-light p-1 bg-white">
+                  <div className="flex flex-1 justify-between items-center">
+                    <div>
+                      <Link href={item.productUrl} className="font-bold text-[#151515] hover:text-brand-gold transition-colors">
+                        {sanitizeText(item.name)}
+                      </Link>
+                      <div className="text-[14px] text-[#151515] mt-1">{formatCurrency(item.price)}</div>
+                      <div className="flex items-center mt-2 border border-[#ccc] w-fit">
                         <button
                           onClick={() => void updateQty(item.id, item.qty - 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-brand-dark hover:bg-brand-off-white transition-colors"
+                          className="w-[25px] h-[25px] flex items-center justify-center bg-white border-r border-[#ccc] hover:bg-[#eee]"
                         >
                           −
                         </button>
-                        <span className="w-10 text-center text-sm font-bold">{item.qty}</span>
+                        <span className="px-3 text-[13px]">{item.qty}</span>
                         <button
                           onClick={() => void updateQty(item.id, item.qty + 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-brand-dark hover:bg-brand-off-white transition-colors"
+                          className="w-[25px] h-[25px] flex items-center justify-center bg-white border-l border-[#ccc] hover:bg-[#eee]"
                         >
                           +
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-sm font-semibold text-rose-600 hover:text-rose-700 transition-colors"
-                      >
-                        Remove
-                      </button>
                     </div>
+
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="text-[20px] text-[#151515] hover:text-[#777]"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
               ))}
 
-              <div className="pt-4">
+              <div className="pt-8">
                 <button
                   onClick={() => { clearCart(); setItems([]); }}
-                  className="text-sm font-semibold text-brand-teal/40 hover:text-brand-dark transition-colors"
+                  className="text-[12px] uppercase font-bold tracking-widest text-[#777] hover:text-[#151515] transition-colors"
                 >
                   Clear all items
                 </button>
@@ -132,36 +123,26 @@ export default function Page() {
             </section>
 
             <aside>
-              <div className="sticky top-24 rounded-[32px] bg-brand-dark p-8 border border-brand-teal shadow-2xl text-white">
-                <h2 className="text-2xl font-semibold text-white">Summary</h2>
+              <div className="border border-[#e8e2d9] p-8 bg-white">
+                <h2 className="text-[25px] serif font-medium border-b border-[#e8e2d9] pb-4">Summary</h2>
 
-                <div className="mt-8 space-y-4">
-                  <div className="flex justify-between text-[15px] font-medium text-brand-light">
-                    <span>Subtotal</span>
+                <div className="mt-6 space-y-4">
+                  <div className="flex justify-between text-[15px] font-bold">
+                    <span>Total:</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-[15px] font-medium text-brand-light">
-                    <span>Shipping</span>
-                    <span className="text-brand-green font-bold uppercase tracking-widest text-[11px]">
-                      {subtotal >= 10000 ? 'FREE' : 'Calculated at next step'}
-                    </span>
-                  </div>
-                  <div className="mt-4 border-t border-brand-teal pt-4 flex justify-between text-xl font-semibold text-white">
-                    <span>Total</span>
-                    <span>{formatCurrency(subtotal)}</span>
-                  </div>
+                  <p className="text-[#777] text-[12px]">Shipping calculated at checkout.</p>
                 </div>
 
                 <Link
                   href="/checkout"
-                  className="mt-8 block w-full rounded-full bg-brand-teal py-4 text-center text-[15px] font-bold text-white transition-all hover:bg-brand-green hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-teal/20"
+                  className="mt-6 block w-full bg-[#111] text-white text-center py-4 text-[12px] font-bold uppercase tracking-widest hover:bg-[#333] transition-colors"
                 >
-                  Checkout
+                  PROCEED TO CHECKOUT
                 </Link>
 
-
                 {stockMessage && (
-                  <p className="mt-4 text-center text-sm font-medium text-rose-600">{stockMessage}</p>
+                  <p className="mt-4 text-center text-[12px] font-medium text-rose-600">{stockMessage}</p>
                 )}
               </div>
             </aside>

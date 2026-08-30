@@ -18,6 +18,12 @@ export type CartItem = {
   stock?: number;
   selectedSize?: string;
   selectedColor?: string;
+  dimensions?: {
+    length?: number;
+    breadth?: number;
+    height?: number;
+  };
+  weight?: number;
 };
 
 const CART_KEY = 'albaaqir_cart';
@@ -50,6 +56,12 @@ export function sanitizeCartItem(item: any): CartItem {
     stock: Number.isFinite(Number(item?.stock)) ? Math.max(0, Math.floor(Number(item.stock))) : undefined,
     selectedSize: item?.selectedSize || undefined,
     selectedColor: item?.selectedColor || undefined,
+    dimensions: item?.dimensions ? {
+      length: Number(item.dimensions.length) || 0,
+      breadth: Number(item.dimensions.breadth) || 0,
+      height: Number(item.dimensions.height) || 0,
+    } : undefined,
+    weight: item?.weight !== undefined ? Number(item.weight) : undefined,
   };
 }
 
@@ -161,6 +173,12 @@ function serializeCartItem(item: CartItem): Record<string, any> {
     discountPercent,
     selectedSize: item.selectedSize || null,
     selectedColor: item.selectedColor || null,
+    dimensions: item.dimensions ? {
+      length: Number(item.dimensions.length) || null,
+      breadth: Number(item.dimensions.breadth) || null,
+      height: Number(item.dimensions.height) || null,
+    } : null,
+    weight: item.weight !== undefined ? Number(item.weight) : null,
   };
 }
 

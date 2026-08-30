@@ -3,6 +3,7 @@ import Footer from "./components/Footer";
 import ProductCard from "./components/ProductCard";
 import Newsletter from "./components/Newsletter";
 import Link from "next/link";
+import Image from "next/image";
 import { fetchNewArrivals, fetchProducts } from "./lib/products";
 import { formatCurrency } from "./lib/utils";
 
@@ -50,11 +51,13 @@ function getProductImage(product: { mainImage?: string; images?: string[]; galle
 }
 
 export default async function Home() {
-  const newArrivals = await fetchNewArrivals(4);
+  const newArrivals = await fetchNewArrivals(8);
   const activeProducts = await fetchProducts();
 
-  // Filter only products marked as featured in the admin panel
-  const featuredProducts = activeProducts.filter(p => p.featured).slice(0, 4);
+  // Filter products marked as featured
+  const featuredProducts = activeProducts.filter(p => p.featured);
+  // Get all active products for the shop section
+  const allShopProducts = activeProducts.slice(0, 12);
 
   const categoryProducts = new Map(
     categories.map((category) => {
@@ -68,178 +71,101 @@ export default async function Home() {
   const activeCategoryList = categories.filter(cat => categoryProducts.get(cat.category));
 
   return (
-    <div className="min-h-screen bg-brand-off-white text-brand-dark font-sans selection:bg-brand-teal selection:text-white">
+    <div className="min-h-screen bg-brand-off-white text-brand-dark font-sans selection:bg-brand-gold selection:text-white">
       <Header />
 
       <main>
-        {/* Premium Luxury Hero Section */}
-        <section className="relative flex w-full min-h-[500px] h-[600px] sm:h-[700px] lg:h-[800px] items-center overflow-hidden bg-brand-dark">
-          {/* Background Image - Using a standard img tag with absolute positioning */}
-          <img
-            src="/images/hero-banner.png"
-            alt="Al Baaqir Luxury Watch Banner"
-            className="absolute inset-0 z-0 h-full w-full object-cover object-center"
-            style={{ opacity: 1, visibility: 'visible' }}
-          />
-
-          {/* Cinematic Overlays for Text Readability */}
-          {/* Subtle gradient from left to ensure text is readable without obscuring the image details */}
-          <div className="absolute inset-0 z-[1] bg-black/30" />
-          <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/80 via-black/40 to-transparent hidden md:block" />
-          <div className="absolute inset-0 z-[3] bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-          {/* Hero Content */}
-          <div className="relative z-10 mx-auto w-full max-w-7xl px-6">
-            <div className="max-w-3xl text-left">
-              <span className="mb-4 inline-block text-[13px] font-bold uppercase tracking-[0.4em] text-brand-light animate-in fade-in slide-in-from-left-4 duration-1000">
-                Premium Precision. Timeless Elegance.
-              </span>
-
-              <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-7xl lg:text-8xl animate-in fade-in slide-in-from-left-6 duration-1000 fill-mode-both">
-                DEFINE YOUR <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-light via-brand-green to-brand-light">STYLE.</span>
-              </h1>
-
-              <p className="mt-8 max-w-lg text-base sm:text-lg leading-relaxed text-brand-off-white/80 animate-in fade-in slide-in-from-left-8 duration-1000 fill-mode-both">
-                Crafted for those who value every second. Discover the Al Baaqir watch collection—where luxury meets precision.
-              </p>
-
-              <div className="mt-12 flex flex-wrap items-center gap-8 animate-in fade-in slide-in-from-left-10 duration-1000 fill-mode-both">
-                <Link
-                  href="/watches"
-                  className="rounded-full bg-brand-teal px-8 py-4 sm:px-10 sm:py-5 text-[14px] sm:text-[15px] font-bold text-white transition-all hover:bg-brand-green hover:scale-105 active:scale-95 shadow-2xl shadow-brand-teal/20"
-                >
-                  SHOP NOW
-                </Link>
-
-                <div className="hidden sm:flex items-center gap-4 text-brand-light/60 text-sm font-medium">
-                  <div className="h-px w-8 bg-brand-teal/50" />
-                  Free Shipping on All Orders
-                </div>
-              </div>
-
-              {/* Luxury Feature Indicators */}
-              <div className="mt-16 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 opacity-70 animate-in fade-in duration-1000 delay-500">
-                 <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white">
-                   <div className="h-1.5 w-1.5 rounded-full bg-brand-green" /> Premium Quality
-                 </div>
-                 <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white">
-                   <div className="h-1.5 w-1.5 rounded-full bg-brand-green" /> Accurate Timing
-                 </div>
-                 <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white">
-                   <div className="h-1.5 w-1.5 rounded-full bg-brand-green" /> Genuine Leather
-                 </div>
-                 <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white">
-                   <div className="h-1.5 w-1.5 rounded-full bg-brand-green" /> Water Resistant
-                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Categories - Sleek Grid */}
-        <section className="py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-16">
-              <h2 className="text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">Shop by Category</h2>
-              <p className="mt-4 text-lg text-brand-teal/70">Find exactly what you&apos;re looking for.</p>
-            </div>
-
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {activeCategoryList.map((category) => {
-                const product = categoryProducts.get(category.category);
-                return (
-                  <Link
-                    key={category.title}
-                    href={category.href}
-                    className="group relative aspect-[4/5] overflow-hidden rounded-[32px] bg-brand-light/10"
-                  >
-                    {product && getProductImage(product) && (
-                      <img
-                        src={getProductImage(product)}
-                        alt={category.title}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent p-8 flex flex-col justify-end">
-                      <h3 className="text-2xl font-bold text-white">{category.title}</h3>
-                      <p className="mt-2 text-sm text-brand-off-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        {category.subtitle}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Collection - Brand Themed */}
-        <section className="bg-brand-light/5 py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Selected</span>
-                <h2 className="mt-2 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">Curated Essentials</h2>
-              </div>
-              <Link href="/featured" className="text-[15px] font-bold text-brand-teal hover:text-brand-green transition-colors">
-                View All Featured Items →
-              </Link>
-            </div>
-
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={{
-                    id: product.id,
-                    name: product.name,
-                    price: product.discountPercent
-                      ? formatCurrency(Math.round(Number(product.price || 0) * (1 - Number(product.discountPercent || 0) / 100)))
-                      : formatCurrency(Number(product.price || 0)),
-                    originalPriceNum: product.price,
-                    discountPercent: product.discountPercent,
-                    image: getProductImage(product),
-                    description: product.description,
-                    discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
-                    hsnSac: product.hsnSac,
-                    gstRate: product.gstRate,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Brand Philosophy - Apple Style Typography */}
-        <section className="py-24 sm:py-32">
-          <div className="mx-auto max-w-4xl px-6 text-center">
-            <h2 className="text-4xl font-bold tracking-tight text-brand-dark sm:text-5xl leading-tight">
-              Quality you can feel. <br />
-              Craftsmanship you can trust.
-            </h2>
-            <p className="mt-12 text-xl leading-relaxed text-brand-teal/80">
-              At Al Baaqir, we believe that luxury is found in the details. Our commitment to premium materials and artisan finishing ensures that every piece isn&apos;t just an accessory—it&apos;s a companion for life.
+        {/* Luxury Hero Section */}
+        <section className="max-w-[1200px] mx-auto px-5 py-6 md:py-10 grid grid-cols-1 md:grid-cols-2 gap-[25px] items-center">
+          <div>
+            <div className="eyebrow mb-4">The new Indian lifestyle</div>
+            <h1 className="text-[clamp(40px,7vw,88px)] leading-[0.9] serif my-[18px]">
+              Carry your<br /><i>story.</i>
+            </h1>
+            <p className="text-[#777] leading-[1.8] max-w-[520px] mb-8 text-[15px] md:text-base">
+              Premium everyday bags and accessories with Indian character, modern utility and a clean luxury feel.
             </p>
-            <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-12">
-              <div>
-                <div className="text-3xl font-bold text-brand-dark">100%</div>
-                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-brand-light">Genuine Leather</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-brand-dark">Artisan</div>
-                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-brand-light">Handcrafted</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-brand-dark">Lifetime</div>
-                <div className="mt-2 text-sm font-medium uppercase tracking-widest text-brand-light">Durability</div>
-              </div>
+            <Link href="/#shop" className="luxury-button inline-block uppercase text-[12px]">
+              SHOP COLLECTION
+            </Link>
+          </div>
+          <div className="h-[350px] md:h-[530px] rounded-[5px] bg-[#f0ede8] relative overflow-hidden group border border-brand-line">
+            <Image
+              src="/images/hero banner .png"
+              alt="AL BAAQIR Luxury Collection"
+              fill
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
+              priority
+            />
+            <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
+            <div className="absolute bottom-[25px] w-full text-center text-white/70 text-[17px] tracking-[0.3em] font-bold serif drop-shadow-lg">AL BAAQIR</div>
+          </div>
+        </section>
+
+        {/* Collection Section */}
+        <section className="max-w-[1200px] mx-auto px-5 py-8 md:py-12" id="shop">
+          <div className="flex justify-between items-end mb-8 md:mb-10">
+            <div>
+              <div className="eyebrow">Curated for you</div>
+              <h2 className="text-[32px] md:text-[42px] serif mt-2 font-medium">New collection</h2>
+            </div>
+            <p className="text-[#777] hidden sm:block">Style × Utility × Character</p>
+          </div>
+
+          <div className="grid gap-[17px] grid-cols-2 lg:grid-cols-4">
+            {allShopProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price: product.discountPercent
+                    ? formatCurrency(Math.round(Number(product.price || 0) * (1 - Number(product.discountPercent || 0) / 100)))
+                    : formatCurrency(Number(product.price || 0)),
+                  originalPriceNum: product.price,
+                  discountPercent: product.discountPercent,
+                  image: getProductImage(product),
+                  description: product.description,
+                  discount: product.discountPercent ? `${product.discountPercent}%` : undefined,
+                  hsnSac: product.hsnSac,
+                  gstRate: product.gstRate,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="max-w-[1200px] mx-auto px-5 py-12" id="story">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[14px]">
+            <div className="bg-[#171717] text-white p-8">
+              <b className="block text-2xl serif mb-2 font-medium">01 — Indian soul</b>
+              <span className="text-[#bbb] text-[13px] leading-relaxed">Prints, textures and details inspired by India, reimagined for modern wardrobes.</span>
+            </div>
+            <div className="bg-[#171717] text-white p-8">
+              <b className="block text-2xl serif mb-2 font-medium">02 — Built for life</b>
+              <span className="text-[#bbb] text-[13px] leading-relaxed">Thoughtful compartments, strong materials and everyday functionality.</span>
+            </div>
+            <div className="bg-[#171717] text-white p-8">
+              <b className="block text-2xl serif mb-2 font-medium">03 — Premium experience</b>
+              <span className="text-[#bbb] text-[13px] leading-relaxed">Fast browsing, cart, checkout and Shiprocket tracking in one clean experience.</span>
             </div>
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-12">
-          <div className="rounded-[40px] bg-brand-dark p-8 sm:p-16 text-brand-off-white">
+        {/* Promo Banner */}
+        <section className="max-w-[1200px] mx-auto px-5 py-12">
+          <div className="bg-[#d9c5a6] p-10 md:p-[45px] flex flex-col md:flex-row justify-between items-center gap-5">
+            <div>
+              <h2 className="text-[34px] md:text-[42px] serif mb-2 font-medium">10% off your first order.</h2>
+              <div className="text-brand-dark/70">Join the AL BAAQIR list for launches and offers.</div>
+            </div>
+            <button className="luxury-button uppercase text-[12px] min-w-[150px]">JOIN NOW</button>
+          </div>
+        </section>
+
+        <section className="max-w-[1200px] mx-auto px-5 py-12">
+          <div className="bg-[#111] p-8 md:p-16 text-white text-center">
             <Newsletter />
           </div>
         </section>

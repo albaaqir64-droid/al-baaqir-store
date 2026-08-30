@@ -1,18 +1,23 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import AdminGuard from "../components/AdminGuard";
+import Link from "next/link";
+import {
+  ShoppingBag,
+  Package,
+  IndianRupee,
+  Clock,
+  Truck,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  ChevronRight,
+  ArrowUpRight,
+  RefreshCw
+} from "lucide-react";
 import { fetchOrders, OrderRecord } from "../lib/orders";
 import { readApiJson } from "../lib/api/client";
-
-const NAV_LINKS = [
-  { label: "Dashboard", href: "/admin" },
-  { label: "Products", href: "/admin/products" },
-  { label: "Orders", href: "/admin/orders" },
-  { label: "Inventory", href: "/admin/inventory" },
-];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -22,167 +27,352 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-export default function AdminPage() {
+export default function Dashboard() {
   const [productCount, setProductCount] = useState(0);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const totalRevenue = useMemo(
-    () => orders.reduce((sum, order) => sum + (order.total ?? 0), 0),
-    [orders]
-  );
+  const stats = useMemo(() => {
+    const totalSales = orders.reduce((sum, order) => sum + (order.total ?? 0), 0);
+    const pending = orders.filter((o) => o.status === "pending").length;
+    const packed = orders.filter((o) => o.status === "packed").length;
+    const shipped = orders.filter((o) => o.status === "shipped").length;
+    const delivered = orders.filter((o) => o.status === "delivered").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
 
-  const pendingOrders = useMemo(
-    () => orders.filter((order) => order.status === "pending").length,
-    [orders]
-  );
+    // Time-based calculations
+    const now = new Date();
+    const today = now.toLocaleDateString();
 
-  async function loadProductCount() {
-    try {
-      const response = await fetch("/api/products");
-      const parsed = await readApiJson<unknown[]>(response);
-      setProductCount(parsed.ok && Array.isArray(parsed.data) ? parsed.data.length : 0);
-    } catch (error) {
-      console.error("Failed to load product count:", error);
-      setProductCount(0);
-    }
-  }
-  async function loadOrders() {
-    try {
-      const data = await fetchOrders();
-      setOrders(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to load orders:", error);
-      setOrders([]);
-    }
-  }
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 7);
 
-  async function loadDashboard() {
+    const prevSevenDaysAgo = new Date();
+    prevSevenDaysAgo.setDate(now.getDate() - 14);
+
+    const thisWeekOrders = orders.filter(o => {
+      const date = o.createdAt?.toDate ? new Date(o.createdAt.toDate()) : new Date(o.createdAt);
+      return date >= sevenDaysAgo;
+    });
+
+    const lastWeekOrders = orders.filter(o => {
+      const date = o.createdAt?.toDate ? new Date(o.createdAt.toDate()) : new Date(o.createdAt);
+      return date >= prevSevenDaysAgo && date < sevenDaysAgo;
+    });
+
+    const thisWeekSales = thisWeekOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+    const lastWeekSales = lastWeekOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+
+    // Growth Calculation
+    const salesGrowth = lastWeekSales === 0 ? 100 : (((thisWeekSales - lastWeekSales) / lastWeekSales) * 100).toFixed(1);
+    const orderGrowth = lastWeekOrders.length === 0 ? 100 : (((thisWeekOrders.length - lastWeekOrders.length) / lastWeekOrders.length) * 100).toFixed(1);
+
+    const todayOrders = orders.filter(o => {
+      const date = o.createdAt?.toDate ? new Date(o.createdAt.toDate()) : new Date(o.createdAt);
+      return date.toLocaleDateString() === today;
+    });
+    const todaySales = todayOrders.reduce((sum, order) => sum + (order.total ?? 0), 0);
+
+    return {
+      totalSales,
+      totalOrders: orders.length,
+      todayOrders: todayOrders.length,
+      todaySales,
+      pending,
+      packed,
+      shipped,
+      delivered,
+      cancelled,
+      salesGrowth: Number(salesGrowth),
+      orderGrowth: Number(orderGrowth),
+      shiprocketFailures: orders.filter(o => o.shiprocketStatus === "FAILED").length
+    };
+  }, [orders]);
+
+  async function loadData() {
     setLoading(true);
-    await Promise.all([loadProductCount(), loadOrders()]);
-    setLoading(false);
+    try {
+      const [prodRes, ordersData] = await Promise.all([
+        fetch("/api/products"),
+        fetchOrders()
+      ]);
+      const prodParsed = await readApiJson<unknown[]>(prodRes);
+      setProductCount(prodParsed.ok && Array.isArray(prodParsed.data) ? prodParsed.data.length : 0);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+    } catch (error) {
+      console.error("Dashboard load failed:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
-    void loadDashboard();
+    void loadData();
   }, []);
 
   return (
-    <AdminGuard>
-      <main className="admin-theme min-h-screen bg-brand-off-white text-brand-dark">
-        <div className="mx-auto grid min-h-screen max-w-[1900px] grid-cols-1 gap-6 px-4 py-6 xl:grid-cols-[280px_1fr]">
-          <aside className="rounded-[32px] border border-brand-light bg-white p-6 shadow-2xl backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="grid h-14 w-14 place-items-center rounded-3xl bg-brand-teal text-2xl font-semibold text-white shadow-inner">AB</div>
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-brand-green">Al Baaqir</p>
-                <h2 className="text-2xl font-semibold text-brand-dark">Admin HQ</h2>
-              </div>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
+          <p className="text-slate-500 text-sm mt-1">Welcome back, Md Munna. Here's what's happening today.</p>
+        </div>
+        <button
+          onClick={() => loadData()}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          Refresh Data
+        </button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          label="Total Sales"
+          value={formatCurrency(stats.totalSales)}
+          subValue={`+${formatCurrency(stats.todaySales)} today`}
+          icon={IndianRupee}
+          trend={stats.salesGrowth >= 0 ? `+${stats.salesGrowth}%` : `${stats.salesGrowth}%`}
+          color="blue"
+        />
+        <StatCard
+          label="Total Orders"
+          value={stats.totalOrders}
+          subValue={`${stats.todayOrders} new orders`}
+          icon={ShoppingBag}
+          trend={stats.orderGrowth >= 0 ? `+${stats.orderGrowth}%` : `${stats.orderGrowth}%`}
+          color="indigo"
+        />
+        <StatCard
+          label="Delivered"
+          value={stats.delivered}
+          subValue="Successful fulfillment"
+          icon={CheckCircle2}
+          color="emerald"
+        />
+        <StatCard
+          label="Pending Orders"
+          value={stats.pending}
+          subValue="Requires action"
+          icon={Clock}
+          color="amber"
+          alert={stats.pending > 0}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Section */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Detailed Status Breakdown */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <TrendingUp size={20} className="text-slate-400" />
+              Order Status Breakdown
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <StatusMiniCard label="Ready to Ship" count={stats.packed} color="sky" />
+              <StatusMiniCard label="Shipped" count={stats.shipped} color="indigo" />
+              <StatusMiniCard label="Cancelled" count={stats.cancelled} color="rose" />
+              <StatusMiniCard label="RTO" count={0} color="orange" />
             </div>
+          </div>
 
-            <nav className="mt-10 space-y-2 text-brand-dark">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`block rounded-3xl border px-4 py-3 transition hover:border-brand-teal/30 hover:bg-brand-light/20 ${link.href === "/admin" ? "border-brand-teal/20 bg-brand-teal text-white" : "border-brand-light bg-white text-brand-dark"}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mt-10 rounded-[28px] border border-brand-light bg-brand-off-white p-5 shadow-lg">
-              <p className="text-sm uppercase tracking-[0.3em] text-brand-teal">Team</p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-teal to-brand-green text-lg font-semibold text-white">AL</div>
-                <div>
-                  <p className="font-semibold text-brand-dark">Aaliya</p>
-                  <p className="text-sm text-brand-teal">Store manager</p>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <section className="space-y-6">
-            <div className="rounded-[32px] border border-brand-light bg-brand-dark p-6 shadow-2xl text-white backdrop-blur-sm md:flex md:items-center md:justify-between md:gap-6">
-              <div className="space-y-3">
-                <p className="text-sm uppercase tracking-[0.3em] text-brand-light">Dashboard</p>
-                <h1 className="text-4xl font-semibold">Premium store analytics</h1>
-                <p className="max-w-2xl text-brand-light/80">View core metrics and jump directly to product, order, and inventory management.</p>
-              </div>
-              <Link href="/admin/products" className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-teal">
-                Manage products
+          {/* Recent Orders Table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Recent Orders</h2>
+              <Link href="/admin/orders" className="text-slate-600 hover:text-slate-900 text-sm font-semibold flex items-center gap-1">
+                View All <ChevronRight size={16} />
               </Link>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {[
-                { label: "Total Products", value: productCount, icon: "📦", accent: "bg-brand-teal/15" },
-                { label: "Total Orders", value: orders.length, icon: "🛒", accent: "bg-brand-green/15" },
-                { label: "Revenue", value: formatCurrency(totalRevenue), icon: "₹", accent: "bg-brand-teal/15" },
-                { label: "Pending Orders", value: pendingOrders, icon: "⏳", accent: "bg-brand-light/30" },
-              ].map((card) => (
-                <div key={card.label} className="rounded-[28px] border border-brand-light bg-white px-6 py-5 shadow-xl transition hover:-translate-y-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.3em] text-brand-teal">{card.label}</p>
-                      <p className="mt-3 text-3xl font-semibold text-brand-dark">{card.value}</p>
-                    </div>
-                    <div className={`${card.accent} grid h-14 w-14 place-items-center rounded-3xl text-2xl`}>{card.icon}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-[32px] border border-brand-light bg-white p-6 shadow-2xl">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-brand-dark">Recent orders</h2>
-                  <p className="mt-2 text-brand-teal">Check recent sales and review order status at a glance.</p>
-                </div>
-                <Link href="/admin/orders" className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-teal">
-                  View all orders
-                </Link>
-              </div>
-
-              <div className="mt-6 overflow-x-auto rounded-[28px] border border-brand-light bg-brand-off-white">
-                <table className="min-w-full divide-y divide-brand-light text-left text-sm text-brand-dark">
-                  <thead className="bg-brand-off-white text-brand-teal">
-                    <tr>
-                      {['Order ID', 'Customer', 'Total', 'Status', 'Date'].map((header) => (
-                        <th key={header} className="px-5 py-4 font-semibold uppercase tracking-[0.16em]">{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-brand-light">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={5} className="px-5 py-10 text-center text-brand-teal">Loading orders...</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50/50">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Order ID</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Customer</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Amount</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td colSpan={5} className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
                       </tr>
-                    ) : orders.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-5 py-10 text-center text-brand-teal">No orders available yet.</td>
+                    ))
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">No orders found.</td></tr>
+                  ) : (
+                    orders.slice(0, 5).map((order) => (
+                      <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-xs font-bold text-slate-900">#{order.invoiceNumber || order.id.slice(-6).toUpperCase()}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-slate-900">{order.customerName}</p>
+                          <p className="text-xs text-slate-500">{order.phone}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-bold text-slate-900">{formatCurrency(order.total)}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusBadge status={order.status} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link href={`/admin/orders?id=${order.id}`} className="p-2 hover:bg-slate-100 rounded-lg inline-block transition-colors">
+                            <ArrowUpRight size={18} className="text-slate-400" />
+                          </Link>
+                        </td>
                       </tr>
-                    ) : (
-                      orders.slice(0, 5).map((order) => (
-                        <tr key={order.id} className="transition hover:bg-brand-light/20">
-                          <td className="px-5 py-4 text-brand-dark">{order.id.slice(-8).toUpperCase()}</td>
-                          <td className="px-5 py-4 text-brand-teal">{order.customerName || 'Guest'}</td>
-                          <td className="px-5 py-4 text-brand-dark">{formatCurrency(order.total)}</td>
-                          <td className="px-5 py-4 text-brand-teal capitalize">{order.status.replace(/_/g, ' ')}</td>
-                          <td className="px-5 py-4 text-brand-teal">{order.createdAt ? (order.createdAt.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : new Date(order.createdAt).toLocaleDateString()) : '-'}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          </section>
+          </div>
         </div>
-      </main>
-    </AdminGuard>
+
+        {/* Sidebar Section */}
+        <div className="space-y-8">
+          {/* Action Center */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-6">Action Center</h2>
+            <div className="space-y-4">
+              {stats.pending > 0 && (
+                <ActionItem
+                  icon={Clock}
+                  title={`${stats.pending} Pending Orders`}
+                  desc="Need confirmation or packing"
+                  color="amber"
+                />
+              )}
+              {stats.shiprocketFailures > 0 && (
+                <ActionItem
+                  icon={AlertCircle}
+                  title="Shiprocket Sync Failed"
+                  desc={`${stats.shiprocketFailures} orders failed to sync`}
+                  color="rose"
+                />
+              )}
+              <ActionItem
+                icon={Package}
+                title="Low Stock Alert"
+                desc="3 products are below threshold"
+                color="indigo"
+              />
+            </div>
+          </div>
+
+          {/* Shiprocket Widget */}
+          <div className="bg-slate-900 rounded-2xl p-6 shadow-lg shadow-slate-200 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-6">
+                <Truck size={20} className="text-sky-400" />
+                <h2 className="text-lg font-bold">Shiprocket Summary</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Synced</p>
+                  <p className="text-2xl font-bold mt-1">{orders.filter(o => o.shiprocketOrderId).length}</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Pending</p>
+                  <p className="text-2xl font-bold mt-1">{orders.filter(o => !o.shiprocketOrderId && o.status !== "cancelled").length}</p>
+                </div>
+              </div>
+              <Link href="/admin/orders" className="w-full mt-6 py-3 bg-sky-500 hover:bg-sky-400 transition-colors rounded-xl text-center text-sm font-bold block">
+                Track Shipments
+              </Link>
+            </div>
+            {/* Decoration */}
+            <div className="absolute -right-8 -bottom-8 h-32 w-32 bg-sky-500/10 rounded-full blur-3xl"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, subValue, icon: Icon, trend, color, alert }: any) {
+  const colors: any = {
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+  };
+
+  return (
+    <div className={`bg-white rounded-2xl border ${alert ? "border-amber-200 shadow-amber-50" : "border-slate-200"} p-6 shadow-sm hover:shadow-md transition-shadow`}>
+      <div className="flex items-start justify-between">
+        <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${colors[color]}`}>
+          <Icon size={24} />
+        </div>
+        {trend && (
+          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+            {trend}
+          </span>
+        )}
+      </div>
+      <div className="mt-4">
+        <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">{label}</p>
+        <h3 className="text-2xl font-bold text-slate-900 mt-1">{value}</h3>
+        <p className="text-xs text-slate-400 mt-2 font-medium">{subValue}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatusMiniCard({ label, count, color }: any) {
+  const colors: any = {
+    sky: "bg-sky-50 text-sky-700",
+    indigo: "bg-indigo-50 text-indigo-700",
+    rose: "bg-rose-50 text-rose-700",
+    orange: "bg-orange-50 text-orange-700",
+  };
+  return (
+    <div className={`${colors[color]} p-4 rounded-xl text-center`}>
+      <p className="text-2xl font-bold">{count}</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">{label}</p>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const config: any = {
+    pending: { label: "Pending", color: "bg-amber-100 text-amber-700" },
+    confirmed: { label: "Confirmed", color: "bg-blue-100 text-blue-700" },
+    packed: { label: "Packed", color: "bg-sky-100 text-sky-700" },
+    shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-700" },
+    delivered: { label: "Delivered", color: "bg-emerald-100 text-emerald-700" },
+    cancelled: { label: "Cancelled", color: "bg-rose-100 text-rose-700" },
+  };
+  const { label, color } = config[status] || { label: status, color: "bg-slate-100 text-slate-700" };
+  return (
+    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${color}`}>
+      {label}
+    </span>
+  );
+}
+
+function ActionItem({ icon: Icon, title, desc, color }: any) {
+  const colors: any = {
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    rose: "bg-rose-50 text-rose-600 border-rose-100",
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+  };
+  return (
+    <div className={`flex items-start gap-4 p-4 rounded-xl border ${colors[color]} cursor-pointer hover:scale-[1.02] transition-transform`}>
+      <div className="mt-1">
+        <Icon size={18} />
+      </div>
+      <div>
+        <p className="text-sm font-bold leading-none">{title}</p>
+        <p className="text-xs mt-1 opacity-70">{desc}</p>
+      </div>
+    </div>
   );
 }

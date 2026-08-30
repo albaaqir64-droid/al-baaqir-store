@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // In a real app, you would send this to your backend
+    // Simulate API call
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
@@ -25,101 +26,104 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="brand-page min-h-screen px-6 py-20">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-4xl font-semibold text-emerald-900">Contact Us</h1>
-        <p className="mt-4 text-lg text-emerald-900/60">
-          Have questions about our products or your order? We&apos;re here to help.
-        </p>
+    <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
+      <Header />
+      <main className="mx-auto max-w-[1200px] px-5 py-20">
+        <div className="mb-12">
+          <div className="eyebrow">Contact</div>
+          <h1 className="text-[34px] md:text-[42px] serif font-medium mt-2">Get in touch</h1>
+          <p className="mt-4 text-[#777] max-w-[500px]">
+            Have questions about our premium products or your order? Our team is here to assist you.
+          </p>
+        </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-12 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
           {/* Contact Info */}
-          <div className="space-y-8">
+          <div className="space-y-12">
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Our Location</h3>
-              <p className="mt-2 text-lg font-medium text-emerald-900">
-                123 Al Baaqir Street, <br />
-                New Delhi, India 110001
+              <h3 className="eyebrow mb-4">Our Studio</h3>
+              <p className="text-[19px] serif text-[#151515] leading-relaxed">
+                AL BAAQIR Designs,<br />
+                Crafting Luxury in India.
               </p>
             </div>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Email Us</h3>
-              <p className="mt-2 text-lg font-medium text-emerald-900">support@albaaqir.com</p>
+              <h3 className="eyebrow mb-4">Inquiries</h3>
+              <div className="space-y-2">
+                <p className="text-[17px] font-bold text-[#151515]">support@albaaqir.com</p>
+                <p className="text-[17px] font-bold text-[#151515]">+91 70413 96464</p>
+              </div>
             </div>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Call Us</h3>
-              <p className="mt-2 text-lg font-medium text-emerald-900">+91 98765 43210</p>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Operating Hours</h3>
-              <p className="mt-2 text-lg font-medium text-emerald-900">Mon - Sat: 9:00 AM - 7:00 PM</p>
+              <h3 className="eyebrow mb-4">Operating Hours</h3>
+              <p className="text-[15px] text-[#777]">Monday — Saturday: 9:00 AM – 7:00 PM IST</p>
             </div>
           </div>
 
           {/* Contact Form */}
-          <div className="rounded-[32px] border border-emerald-100 bg-white p-8 shadow-sm">
+          <div className="border border-[#e8e2d9] bg-white p-8 md:p-12">
             {success ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                  <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center text-center py-10">
+                <div className="mb-6 h-12 w-12 flex items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="mt-4 text-xl font-semibold text-emerald-900">Message Sent!</h3>
-                <p className="mt-2 text-emerald-600">We&apos;ll get back to you as soon as possible.</p>
+                <h3 className="text-[25px] serif font-medium text-[#151515]">Message Sent</h3>
+                <p className="mt-2 text-[#777]">We&apos;ll get back to you as soon as possible.</p>
                 <button
                   onClick={() => setSuccess(false)}
-                  className="mt-6 text-sm font-semibold text-emerald-600 hover:underline"
+                  className="mt-8 text-[11px] font-bold uppercase tracking-widest text-[#151515] hover:text-brand-gold"
                 >
                   Send another message
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">Name</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-emerald-100 px-4 py-2 focus:border-emerald-500 focus:outline-none"
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Email</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">Email</label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-emerald-100 px-4 py-2 focus:border-emerald-500 focus:outline-none"
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Subject</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">Subject</label>
                   <input
                     type="text"
                     required
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-emerald-100 px-4 py-2 focus:border-emerald-500 focus:outline-none"
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-900/40">Message</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">Message</label>
                   <textarea
                     required
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-emerald-100 px-4 py-2 focus:border-emerald-500 focus:outline-none"
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
                   ></textarea>
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-full bg-emerald px-6 py-3 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+                  className="w-full bg-[#111] text-white py-4 text-[12px] font-bold uppercase tracking-widest hover:bg-[#333] transition-colors disabled:opacity-50"
                 >
                   {loading ? "Sending..." : "Send Message"}
                 </button>
@@ -127,7 +131,8 @@ export default function ContactPage() {
             )}
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

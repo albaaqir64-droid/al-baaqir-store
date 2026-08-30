@@ -38,6 +38,12 @@ export async function POST(request: Request) {
           gstRate: amount(value.gstRate),
           selectedSize: text(value.selectedSize) || null,
           selectedColor: text(value.selectedColor) || null,
+          dimensions: value.dimensions && typeof value.dimensions === "object" ? {
+            length: amount((value.dimensions as any).length),
+            breadth: amount((value.dimensions as any).breadth),
+            height: amount((value.dimensions as any).height),
+          } : null,
+          weight: value.weight !== undefined ? amount(value.weight) : null,
         };
       })
       .filter((item) => item.id && item.name && item.quantity > 0);
@@ -146,8 +152,22 @@ export async function POST(request: Request) {
     // --- SHIPROCKET INTEGRATION ---
     try {
       const orderDoc = await orderRef.get();
-      const shiprocketResult = await syncOrderToShiprocket(orderId, orderDoc.data());
-      await orderRef.update(shiprocketResult);
+      const orderData = orderDoc.data();
+
+      // Safety: Only sync if it hasn't been synced yet (though it's a new order here)
+      if (orderData && !orderData.shiprocketOrderId) {
+        const shiprocketResult = await syncOrderToShiprocket(orderId, orderData);
+
+        // Update Firestore with the actual result from Shiprocket
+        await orderRef.update(shiprocketResult);
+
+        // Log for server debugging
+        if (shiprocketResult.shiprocketStatus === "FAILED") {
+          console.error(`[Order-Create] Shiprocket Sync FAILED for ${orderId}:`, shiprocketResult.shiprocketError);
+        } else {
+          console.log(`[Order-Create] Shiprocket Sync SUCCESS for ${orderId}. SR Order ID: ${shiprocketResult.shiprocketOrderId}`);
+        }
+      }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
       await orderRef.update({

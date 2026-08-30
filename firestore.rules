@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admin access: Allow full access if the user is authenticated (admin login uses anonymous auth)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Public product access
+    match /products/{productId} {
+      allow read: if true;
+    }
+
+    // Customer order access (if they have their order ID/email)
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+    }
+
+    // User profile access
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

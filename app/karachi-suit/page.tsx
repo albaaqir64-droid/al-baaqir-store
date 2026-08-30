@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
-import Link from "next/link";
-import { fetchProductsByCategory } from "../lib/products";
+import { fetchProducts } from "../lib/products";
+import type { ProductRecord } from "../lib/productTypes";
+import { formatCurrency } from "../lib/utils";
 
-function toCard(product: any) {
+function toCard(product: ProductRecord) {
   const price = Number(product.price) || 0;
   const discountPercent = Number(product.discountPercent) || 0;
   const finalPrice = discountPercent > 0 ? Math.round(price * (1 - discountPercent / 100)) : price;
@@ -14,50 +13,51 @@ function toCard(product: any) {
   return {
     id: product.id,
     name: product.name,
-    price: `₹${finalPrice.toLocaleString('en-IN')}`,
+    price: formatCurrency(finalPrice),
     originalPriceNum: price,
     discountPercent: discountPercent > 0 ? discountPercent : undefined,
     image: product.mainImage ?? product.images?.[0] ?? '',
     description: product.description,
     discount: discountPercent > 0 ? `${discountPercent}%` : undefined,
+    hsnSac: product.hsnSac,
+    gstRate: product.gstRate,
   };
 }
 
 export default async function Page() {
-  const data = await fetchProductsByCategory('Karachi Suit');
+  const allProducts = await fetchProducts(true);
+
+  // Case-insensitive filtering for Karachi Suit
+  const data = allProducts.filter(p =>
+    p.category.trim().toLowerCase() === "karachi suit"
+  );
+
   const products = data.map(toCard);
 
   return (
-    <div className="min-h-screen brand-page text-brand-dark">
+    <div className="min-h-screen bg-[#faf8f4] text-[#151515]">
       <Header />
-      <main className="max-w-7xl mx-auto px-6 py-12">
+
+      <main className="mx-auto max-w-[1200px] px-5 py-20">
         <div className="mb-12">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-brand-green">Karachi Suit</p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-brand-dark">Traditional charm with a tailored finish</h1>
-          <p className="mt-3 text-lg text-brand-teal max-w-2xl">Shop signature Karachi suit options curated for refined festive and occasion wear.</p>
+          <div className="eyebrow">Collection</div>
+          <h1 className="text-[34px] md:text-[42px] serif font-medium mt-2">Karachi Suits</h1>
+          <p className="mt-4 text-[#777] max-w-[600px]">Traditional charm with a tailored finish, curated for refined festive and occasion wear.</p>
         </div>
 
         {products.length > 0 ? (
-          <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-[17px] grid-cols-2 lg:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <div className="flex h-64 flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-brand-light bg-white/50 text-brand-teal">
-            <p>No products found in this category.</p>
+          <div className="border border-[#e8e2d9] bg-white p-20 text-center">
+            <p className="text-[#aaa] text-[12px] font-bold uppercase tracking-widest">No suits found</p>
           </div>
         )}
-
-        <div className="mt-20 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-teal hover:text-brand-green transition-colors"
-          >
-            <span>←</span> Back to Home
-          </Link>
-        </div>
       </main>
+
       <Footer />
     </div>
   );

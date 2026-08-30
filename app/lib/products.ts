@@ -83,6 +83,12 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
     rating: data.rating != null ? Number(data.rating) : undefined,
     hsnSac: String(data.hsnSac ?? data.hsn ?? data.sac ?? "") || undefined,
     gstRate: data.gstRate != null || data.taxRate != null ? Number(data.gstRate ?? data.taxRate) || 0 : undefined,
+    dimensions: data.dimensions ? {
+      length: Number(data.dimensions.length ?? 20),
+      breadth: Number(data.dimensions.breadth ?? 15),
+      height: Number(data.dimensions.height ?? 10),
+    } : undefined,
+    weight: data.weight != null ? Number(data.weight) : undefined,
   };
 }
 

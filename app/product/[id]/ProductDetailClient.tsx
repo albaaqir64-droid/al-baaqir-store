@@ -9,8 +9,11 @@ import type { ProductRecord } from "../../lib/productTypes";
 import { formatCurrency, sanitizeText } from "../../lib/utils";
 import { Toast } from "../../components/Toast";
 
+import { useAuth } from "../../hooks/useAuth";
+
 export default function ProductDetailClient({ product }: { product: ProductRecord }) {
   const router = useRouter();
+  const { user } = useAuth();
 
   // 1. All Base Data and State
   const allImages = Array.from(new Set([product.mainImage ?? product.images?.[0], ...(product.images ?? [])].filter(Boolean)));
@@ -117,23 +120,22 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
   const currentStock = getVariantStock();
 
   return (
-    <div className="grid gap-16 lg:grid-cols-2">
+    <div className="grid gap-12 lg:grid-cols-2 max-w-[1200px] mx-auto px-5">
       {/* Left Side: Images */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div
-          className="relative aspect-square overflow-hidden rounded-[40px] bg-white cursor-zoom-in group border border-brand-light"
+          className="relative aspect-square overflow-hidden bg-[#eee] cursor-zoom-in group border border-[#e8e2d9]"
           onClick={() => openLightbox(mainIndex)}
         >
           <img
             src={allImages[mainIndex] || '/images/products/placeholder.svg'}
             alt={product.name}
             loading="eager"
-            decoding="sync"
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={(event) => { (event.target as HTMLImageElement).src = '/images/products/placeholder.svg'; }}
           />
           {product.discountPercent && (
-            <div className="absolute left-8 top-8 rounded-full bg-brand-green px-4 py-1.5 text-[11px] font-bold tracking-widest text-white uppercase shadow-sm">
+            <div className="absolute left-[10px] top-[10px] bg-[#111] text-white px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider">
               {product.discountPercent}% OFF
             </div>
           )}
@@ -144,8 +146,8 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             <button
               key={String(i)}
               onClick={() => { setMainIndex(i); }}
-              className={`relative aspect-square w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-white border transition-all ${
-                i === mainIndex ? 'border-brand-teal ring-2 ring-brand-teal ring-offset-2' : 'border-brand-light opacity-60 hover:opacity-100'
+              className={`relative aspect-square w-20 flex-shrink-0 bg-[#eee] border transition-all ${
+                i === mainIndex ? 'border-[#111]' : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
               <img
@@ -161,44 +163,39 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
 
       {/* Right Side: Product Details */}
       <div className="flex flex-col">
-        <div className="mb-8">
-          <p className="text-[13px] font-bold uppercase tracking-[0.3em] text-brand-teal mb-4">
-            {product.category}
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-brand-dark sm:text-5xl leading-tight">
+        <div className="mb-6">
+          <div className="eyebrow mb-2">{product.category}</div>
+          <h1 className="text-[34px] md:text-[42px] serif font-medium leading-[1.1] text-[#151515]">
             {sanitizeText(product.name)}
           </h1>
 
-          <div className="mt-6 flex items-baseline gap-4">
-            <span className="text-3xl font-semibold tracking-tight text-brand-dark">
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-[24px] font-bold text-[#151515]">
               {formatCurrency(discountedPrice)}
             </span>
             {product.discountPercent && (
-              <span className="text-lg font-medium text-brand-teal/40 line-through">
+              <span className="text-[18px] text-[#aaa] line-through font-normal">
                 {formatCurrency(product.price)}
               </span>
             )}
           </div>
-          <p className="mt-2 text-sm font-medium text-brand-green">MRP inclusive of all taxes</p>
+          <p className="mt-1 text-[11px] font-bold text-[#888] uppercase tracking-widest">MRP inclusive of all taxes</p>
         </div>
 
         {/* Selection Options */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {product.sizes && product.sizes.length > 0 && (
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark">Select Size</h4>
-                <button className="text-[13px] font-medium text-brand-teal/50 hover:text-brand-dark transition-colors">Size Guide</button>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#151515] mb-3">Select Size</h4>
+              <div className="flex flex-wrap gap-2">
                 {product.sizes.map((s) => (
                   <button
                     key={s}
                     onClick={() => setSize(s)}
-                    className={`rounded-2xl border py-4 text-sm font-bold transition-all ${
+                    className={`min-w-[50px] px-4 py-3 text-[12px] font-bold border transition-all ${
                       size === s
-                        ? 'border-brand-teal bg-brand-teal text-white shadow-sm'
-                        : 'border-brand-light text-brand-teal hover:border-brand-teal'
+                        ? 'border-[#111] bg-[#111] text-white'
+                        : 'border-[#ccc] text-[#151515] hover:border-[#111]'
                     }`}
                   >
                     {s}
@@ -208,27 +205,8 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
             </div>
           )}
 
-          {product.colors && product.colors.length > 0 && (
-            <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-4">Select Color</h4>
-              <div className="flex flex-wrap gap-3">
-                {product.colors.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setColor(c)}
-                    className={`h-10 w-10 rounded-full border-2 transition-all ${
-                      color === c ? "border-brand-teal ring-2 ring-brand-teal/20 ring-offset-2" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: c }}
-                    title={c}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Actions */}
-          <div className="space-y-4 pt-4">
+          <div className="space-y-3 pt-4 border-t border-[#e8e2d9]">
             <button
               onClick={() => {
                 addCartItem({
@@ -244,13 +222,15 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                   stock: currentStock,
                   selectedSize: size ?? undefined,
                   selectedColor: color ?? undefined,
+                  dimensions: product.dimensions,
+                  weight: product.weight,
                 }, qty);
                 router.push('/cart');
               }}
               disabled={currentStock < 1}
-              className="w-full rounded-full bg-brand-teal py-5 text-[15px] font-bold text-white shadow-lg shadow-brand-teal/20 transition-all hover:bg-brand-green hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full bg-[#111] text-white py-4 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-[#333] disabled:opacity-50"
             >
-              {currentStock < 1 ? 'Out of Stock' : 'Add to Bag'}
+              {currentStock < 1 ? 'Out of Stock' : 'ADD TO BAG'}
             </button>
 
             <button
@@ -265,7 +245,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                 const nowWishlisted = nextWishlist.some((item) => item.id === product.id);
                 setWishlisted(nowWishlisted);
               }}
-              className="w-full rounded-full border border-brand-light py-5 text-[15px] font-bold text-brand-dark transition-all hover:border-brand-teal hover:bg-brand-off-white active:scale-[0.98]"
+              className="w-full border border-[#111] text-[#111] py-4 text-[12px] font-bold uppercase tracking-widest hover:bg-[#faf8f4] transition-colors"
             >
               {wishlisted ? '♥ In Wishlist' : '♡ Add to Wishlist'}
             </button>
@@ -273,48 +253,37 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
         </div>
 
         {/* Delivery Check */}
-        <div className="mt-12 rounded-[32px] bg-brand-dark p-8 border border-brand-teal text-white shadow-xl">
-          <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-light mb-6">Delivery Details</h4>
+        <div className="mt-8 p-6 border border-[#e8e2d9] bg-white">
+          <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#151515] mb-4">Delivery Details</h4>
           <div className="flex gap-2">
             <input
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
               placeholder="Enter Pincode"
-              className="flex-1 rounded-2xl border border-brand-teal bg-brand-teal/20 px-6 py-4 text-sm text-white placeholder:text-brand-light/40 focus:outline-none focus:ring-2 focus:ring-brand-teal/40"
+              className="flex-1 border border-[#ccc] px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
             />
             <button
               onClick={() => void checkPincode()}
               disabled={pincodeLoading}
-              className="rounded-2xl bg-brand-green px-8 py-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-brand-teal disabled:opacity-50"
+              className="bg-[#111] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest hover:bg-[#333]"
             >
               Check
             </button>
           </div>
           {pincodeOk !== null && (
-            <div className={`mt-4 text-sm font-medium ${pincodeOk ? 'text-brand-light' : 'text-rose-400'}`}>
+            <div className={`mt-3 text-[12px] font-bold uppercase tracking-widest ${pincodeOk ? 'text-brand-green' : 'text-rose-600'}`}>
               {pincodeOk ? `Fast delivery available to ${pincodeLocation?.city}` : pincodeError}
             </div>
           )}
         </div>
 
-        {/* Description & Details */}
-        <div className="mt-12 space-y-8 border-t border-brand-light pt-12">
+        {/* Description */}
+        <div className="mt-8 space-y-6 pt-8 border-t border-[#e8e2d9]">
           <div>
-            <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-4">Product Description</h4>
-            <p className="text-[15px] leading-relaxed text-brand-teal/70 whitespace-pre-wrap">
+            <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#151515] mb-3">Product Description</h4>
+            <p className="text-[14px] leading-relaxed text-[#777] whitespace-pre-wrap">
               {sanitizeText(product.description || '')}
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-2">Ref. Number</h4>
-              <p className="text-sm text-brand-teal/60">{product.hsnSac || 'AB-2026-001'}</p>
-            </div>
-            <div>
-              <h4 className="text-[13px] font-bold uppercase tracking-widest text-brand-dark mb-2">Material</h4>
-              <p className="text-sm text-brand-teal/60">Premium Handcrafted Leather</p>
-            </div>
           </div>
         </div>
       </div>

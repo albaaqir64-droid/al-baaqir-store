@@ -1,4 +1,9 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Baaqir Lifestyle - Professional Seller Panel
+
+This is a luxury e-commerce platform bootstrapped with [Next.js](https://nextjs.org).
+
+## Overview
+The **Baaqir Lifestyle Admin Dashboard** has been transitioned into a high-performance **Seller Panel** designed for Md Munna, featuring real-time logistics, deep analytics, and automated inventory management.
 
 ## Getting Started
 
@@ -52,9 +57,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
    - *Note*: The frontend automatically receives the `keyId` from the secure server-side order creation API.
 
 ### Visual Identity & Assets
-1. **Hero Banner**: The homepage uses a premium luxury hero section designed for a 1920x900 image.
-   - **Asset Path**: Save your high-resolution luxury banner as `public/images/hero-watch.jpg`.
-2. **Header Behavior**: The header uses a dynamic transparency effect. It is transparent on top of the hero banner and transitions to a blurred white background upon scrolling.
+1. **Hero Banner**: The homepage uses a luxury split-hero section. 
+   - **Asset Path**: Save your high-resolution banner as `public/images/hero banner .png`.
+   - **Recommended Size**: `1200px x 1060px` (Portrait/Square ish) for the side-box layout, or `1920px x 900px` for full-width.
+2. **Header Behavior**: The header uses a dynamic transparency effect. It is transparent on top of the hero banner and transitions to a blurred white background (`bg-brand-off-white/95`) upon scrolling.
 3. **Typography**: Uses bold, wide-tracked uppercase typography for navigation to align with premium watch brand aesthetics.
 
 ### Shiprocket Configuration
@@ -65,26 +71,23 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 3. **Pickup Location**: The integration defaults to a pickup location named "Primary". Ensure this exists in your Shiprocket panel under Settings -> Pickup Locations.
 
 ### Features
-1. **Online Payment Discount**: Automatically offers a 10% discount when selecting Razorpay at checkout.
-2. **Inventory Management**: Real-time stock deduction for both main products and specific variants during checkout.
+1. **Professional Seller Panel**: Live dashboard featuring real-time sales stats, order health tracking, and an automated action center.
+2. **Growth Analytics**: Advanced KPI cards with week-over-week comparison logic for Revenue, Orders, and Average Order Value (AOV).
+3. **Shiprocket Logistics Hub**: 
+   - Real-time AWB tracking via secure server-side proxy.
+   - Bulk Manifest generation and batch label printing.
+   - Live Wallet balance tracking with auto-recharge alerts.
+4. **Inventory Auditing**: Professional inventory management with inline stock editing and reason-based auditing (Damaged, Restock, etc.).
+5. **Customer Insights**: Live Firestore-backed customer database with purchase history and VIP status tiering.
+6. **Online Payment Discount**: Automatically offers a 10% discount when selecting Razorpay at checkout.
+7. **Inventory Sync**: Real-time stock deduction for both main products and specific variants during checkout.
 
 ### Firestore Indexes
    - **Order Search**: `phone` (Ascending) + `createdAt` (Descending)
    - **Order Management**: `status` (Ascending) + `createdAt` (Descending)
-3. **Storage Rules**: Ensure Firebase Storage rules allow writes to the `products/` path using Firebase Auth.
-   - **Production Rules**:
-     ```javascript
-     rules_version = '2';
-     service firebase.storage {
-       match /b/{bucket}/o {
-         match /products/{allPaths=**} {
-           allow read: if true;
-           allow write: if request.auth != null;
-         }
-       }
-     }
-     ```
-   - *Note*: The admin dashboard automatically signs in to Firebase Auth anonymously upon login to satisfy these rules.
-4. **CORS Configuration**: If you see CORS errors during upload, you must set the CORS policy for your bucket using `gsutil`.
+### Firestore Security
+1. **Firestore Rules**: Ensure `firestore.rules` allows authenticated admin access.
+2. **Storage Rules**: Ensure `storage.rules` allows authenticated writes.
+3. **CORS Configuration**: If you see CORS errors during upload, you must set the CORS policy for your bucket using `gsutil`.
 
 You can create Firestore indexes by clicking the links generated in the console logs/terminal when the app encounters a `FirebaseError`.

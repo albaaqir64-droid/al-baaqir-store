@@ -62,6 +62,12 @@ export async function POST(req: Request) {
       sizes: Array.isArray(body.sizes) ? body.sizes : undefined,
       colors: Array.isArray(body.colors) ? body.colors : undefined,
       gender: body.gender !== undefined ? String(body.gender).trim() : undefined,
+      dimensions: body.dimensions ? {
+        length: Number(body.dimensions.length) || 0,
+        breadth: Number(body.dimensions.breadth) || 0,
+        height: Number(body.dimensions.height) || 0,
+      } : undefined,
+      weight: body.weight !== undefined && body.weight !== "" ? Number(body.weight) : undefined,
     };
 
     const createdProduct = await createProduct(payload);
@@ -98,6 +104,12 @@ export async function PUT(req: Request) {
       hsnSac: body.hsnSac !== undefined ? String(body.hsnSac ?? "").trim() : undefined,
       gstRate: body.gstRate !== undefined && body.gstRate !== "" ? Number(body.gstRate) : undefined,
       gender: body.gender !== undefined ? String(body.gender).trim() : undefined,
+      dimensions: body.dimensions ? {
+        length: body.dimensions.length !== undefined ? Number(body.dimensions.length) || 0 : undefined,
+        breadth: body.dimensions.breadth !== undefined ? Number(body.dimensions.breadth) || 0 : undefined,
+        height: body.dimensions.height !== undefined ? Number(body.dimensions.height) || 0 : undefined,
+      } : undefined,
+      weight: body.weight !== undefined ? (body.weight === "" ? null : Number(body.weight)) : undefined,
     };
 
     await updateProduct(String(body.id), payload as any);

@@ -53,6 +53,12 @@ export async function createProduct(payload: ProductSavePayload) {
       featured: payload.featured === true,
       hsnSac: optionalText(payload.hsnSac),
       gstRate: optionalFiniteNumber(payload.gstRate),
+      dimensions: payload.dimensions ? {
+        length: optionalFiniteNumber(payload.dimensions.length),
+        breadth: optionalFiniteNumber(payload.dimensions.breadth),
+        height: optionalFiniteNumber(payload.dimensions.height),
+      } : undefined,
+      weight: optionalFiniteNumber(payload.weight),
       sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : [],
       colors: Array.isArray(payload.colors) ? payload.colors.map(c => String(c)) : [],
     });
@@ -91,6 +97,12 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
     gstRate: payload.gstRate !== undefined ? optionalFiniteNumber(payload.gstRate) ?? null : undefined,
     sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : undefined,
     colors: Array.isArray(payload.colors) ? payload.colors.map(c => String(c)) : undefined,
+    dimensions: payload.dimensions ? {
+      length: payload.dimensions.length !== undefined ? (payload.dimensions.length === null ? null : optionalFiniteNumber(payload.dimensions.length)) : undefined,
+      breadth: payload.dimensions.breadth !== undefined ? (payload.dimensions.breadth === null ? null : optionalFiniteNumber(payload.dimensions.breadth)) : undefined,
+      height: payload.dimensions.height !== undefined ? (payload.dimensions.height === null ? null : optionalFiniteNumber(payload.dimensions.height)) : undefined,
+    } : undefined,
+    weight: payload.weight !== undefined ? (payload.weight === null ? null : optionalFiniteNumber(payload.weight)) : undefined,
     lastUpdated: FieldValue.serverTimestamp()
   });
 
@@ -144,7 +156,7 @@ function normalizeTimestamp(value: unknown): number | null {
   return null;
 }
 
-function normalizeProductFromAdmin(id: string, data: Record<string, unknown>): ProductRecord {
+function normalizeProductFromAdmin(id: string, data: any): ProductRecord {
   const galleryImages = Array.isArray(data.galleryImages)
     ? data.galleryImages.map(normalizeProductImageUrl)
     : Array.isArray(data.images)
@@ -170,11 +182,17 @@ function normalizeProductFromAdmin(id: string, data: Record<string, unknown>): P
     slug: String(data.slug ?? createSlug(String(data.name ?? ""))),
     createdAt: normalizeTimestamp(data.createdAt),
     lastUpdated: normalizeTimestamp(data.lastUpdated),
-    sizes: Array.isArray(data.sizes) ? data.sizes.map((item) => String(item ?? "")) : undefined,
-    colors: Array.isArray(data.colors) ? data.colors.map((item) => String(item ?? "")) : undefined,
+    sizes: Array.isArray(data.sizes) ? data.sizes.map((item: any) => String(item ?? "")) : undefined,
+    colors: Array.isArray(data.colors) ? data.colors.map((item: any) => String(item ?? "")) : undefined,
     rating: data.rating != null ? Number(data.rating) : undefined,
     hsnSac: String(data.hsnSac ?? data.hsn ?? data.sac ?? "") || undefined,
     gstRate: data.gstRate != null || data.taxRate != null ? Number(data.gstRate ?? data.taxRate) || 0 : undefined,
+    dimensions: data.dimensions ? {
+      length: Number(data.dimensions.length || 0) || 0,
+      breadth: Number(data.dimensions.breadth || 0) || 0,
+      height: Number(data.dimensions.height || 0) || 0,
+    } : undefined,
+    weight: data.weight != null ? Number(data.weight) : undefined,
   };
 }
 

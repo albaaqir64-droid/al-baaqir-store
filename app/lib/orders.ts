@@ -25,6 +25,8 @@ export const ORDER_STATUSES = [
   "out_for_delivery",
   "delivered",
   "cancelled",
+  "return_requested",
+  "returned",
 ] as const;
 
 export type OrderStatus = typeof ORDER_STATUSES[number];
@@ -61,6 +63,7 @@ export interface OrderRecord {
   paymentMethod: string;
   subtotal: number;
   shippingCharge: number;
+  discount: number;
   total: number;
   status: OrderStatus;
   createdAt: any;
@@ -105,6 +108,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
     paymentMethod: String(data.paymentMethod ?? "cod"),
     subtotal: Number(data.subtotal ?? 0),
     shippingCharge: Number(data.shippingCharge ?? 0),
+    discount: Number(data.discount ?? 0),
     total: Number(data.total ?? 0),
     status: ORDER_STATUSES.includes(data.status) ? data.status : "pending",
     createdAt: data.createdAt ?? null,

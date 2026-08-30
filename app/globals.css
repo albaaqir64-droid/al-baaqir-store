@@ -1,125 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-dark: #092328;
+  --color-brand-dark: #151515;
   --color-brand-teal: #12544F;
   --color-brand-green: #2A835F;
-  --color-brand-light: #8BBB92;
-
-  --color-emerald-50: #e6f1f0;
-  --color-emerald-100: #cddedc;
-  --color-emerald-200: #8bbb92;
-  --color-emerald-300: #2a835f;
-  --color-emerald-400: #12544f;
-  --color-emerald-500: #12544f;
-  --color-emerald-600: #092328;
+  --color-brand-gold: #b58a4b;
+  --color-brand-off-white: #faf8f4;
+  --color-brand-line: #e8e2d9;
 }
 
 :root {
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  --brand-dark: #092328;
-  --brand-teal: #12544F;
-  --brand-green: #2A835F;
-  --brand-light: #8BBB92;
-  --brand-white: #FFFFFF;
-  --brand-off-white: #F8FAFA;
-}
+  --font-serif: Georgia, Times, serif;
+  --font-sans: Arial, Helvetica, sans-serif;
 
-html, body, #__next {
-  min-height: 100%;
+  --bg: #faf8f4;
+  --ink: #151515;
+  --muted: #777;
+  --line: #e8e2d9;
+  --gold: #b58a4b;
 }
 
 body {
   margin: 0;
-  min-height: 100%;
-  background: var(--brand-off-white);
-  color: var(--brand-dark);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-* {
-  box-sizing: border-box;
+h1, h2, h3, h4, .serif {
+  font-family: var(--font-serif);
 }
 
-button {
-  transition: all 200ms ease;
-  transform: translateZ(0);
-  will-change: transform, box-shadow;
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: bold;
 }
 
-button:not(:disabled):hover {
-  transform: translateY(-1px);
+.luxury-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  transition: all 0.3s ease;
 }
 
-button:not(:disabled):active {
-  transform: translateY(0);
+.luxury-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05);
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.luxury-button {
+  background: #111;
+  color: #fff;
+  padding: 15px 25px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
 }
 
-.brand-page {
-  min-height: 100vh;
-  background: var(--brand-off-white);
-}
-
-.brand-hero {
-  background: var(--brand-dark);
-  color: white;
-}
-
-.brand-card {
-  border: 1px solid var(--brand-light);
-  background: #ffffff;
-  box-shadow: 0 4px 20px rgba(9, 35, 40, 0.05);
-  border-radius: 16px;
-}
-
-.btn-primary {
-  background: var(--brand-teal);
-  color: white;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-weight: 600;
-}
-
-.btn-primary:hover {
-  background: var(--brand-green);
-}
-
-.btn-cta {
-  background: var(--brand-green);
-  color: white;
-  border-radius: 8px;
-  padding: 12px 28px;
-  font-weight: 700;
-}
-
-.btn-cta:hover {
-  background: var(--brand-teal);
-}
-
-.admin-theme {
-  background: #f4f7f7;
-  color: var(--brand-dark);
-}
-
-.admin-theme header {
-  background: var(--brand-dark) !important;
-  color: white !important;
-}
-
-.admin-theme aside {
-  background: white !important;
-  border-right: 1px solid var(--brand-light) !important;
-}
-
-.store-surface {
-  background: var(--brand-off-white);
-}
-
-.img-cover {
-  object-fit: cover;
+.luxury-button:hover {
+  background: #333;
 }

@@ -24,6 +24,12 @@ export interface ProductRecord {
   rating?: number;
   hsnSac?: string;
   gstRate?: number;
+  dimensions?: {
+    length?: number;
+    breadth?: number;
+    height?: number;
+  };
+  weight?: number;
 }
 
 export type ProductSavePayload = Omit<

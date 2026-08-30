@@ -12,8 +12,10 @@ const messages: Record<string, string> = {
   shipped: "Your Al Baaqir order has been shipped.",
   out_for_delivery: "Your Al Baaqir order is out for delivery.",
   delivered: "Your Al Baaqir order has been delivered successfully.",
+  cancelled: "Your Al Baaqir order has been cancelled.",
+  return_requested: "Your return request for Al Baaqir order has been received.",
 };
-const validStatuses = new Set(["pending", "confirmed", "packed", "shipped", "out_for_delivery", "delivered", "cancelled"]);
+const validStatuses = new Set(["pending", "confirmed", "packed", "shipped", "out_for_delivery", "delivered", "cancelled", "return_requested", "returned"]);
 
 export async function POST(request: NextRequest) {
   try {
