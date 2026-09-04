@@ -31,36 +31,45 @@ export async function POST(request: Request) {
       return apiJson({ success: false, error: "Invalid JSON payload" }, 400);
     }
 
+    // Extracting all possible Shiprocket fields
     const awb = String(data.awb || "");
-    const shiprocketOrderId = String(data.order_id || "");
+    const srOrderId = String(data.order_id || "");
     const channelOrderId = String(data.channel_order_id || "");
     const shipmentId = String(data.shipment_id || "");
+
+    // Status fields
     const currentStatus = String(data.current_status || data.shipment_status || "").toLowerCase();
     const statusId = String(data.current_status_id || data.shipment_status_id || "");
+
     const timestamp = data.current_timestamp || data.timestamp || new Date().toISOString();
     const courier = String(data.courier_name || "");
-    const channel = String(data.channel || "");
     const scans = Array.isArray(data.scans) ? data.scans : [];
 
-    // 1. Initial Logging (Always log incoming events)
+    // 1. Initial Logging
     await logRef.set({
       timestamp: FieldValue.serverTimestamp(),
       awb,
-      shiprocketOrderId,
+      shiprocketOrderId: srOrderId,
       channelOrderId,
       shipmentId,
       currentStatus,
       statusId,
       courier,
-      channel,
       payload: data,
       status: "RECEIVED"
     });
 
     // 2. Identification Check
-    if (!awb && !shiprocketOrderId && !channelOrderId && !shipmentId) {
-      await logRef.update({ status: "SKIPPED", error: "No order identifier found (awb/order_id/channel_order_id/shipment_id)" });
-      return apiJson({ success: true, processed: false, message: "Insufficient data to match order" });
+    if (!awb && !srOrderId && !channelOrderId && !shipmentId) {
+      await logRef.update({
+        status: "SKIPPED",
+        error: "Missing all identifiers: awb, order_id, channel_order_id, and shipment_id are all empty."
+      });
+      return apiJson({
+        success: true,
+        processed: false,
+        message: "Insufficient data: Need at least one identifier (awb, order_id, etc.)"
+      });
     }
 
     // 3. Duplicate Protection
@@ -73,41 +82,49 @@ export async function POST(request: Request) {
       return apiJson({ success: true, processed: true, message: "Duplicate event already processed" });
     }
 
-    // 4. Order Matching Logic (Sequential Attempt)
+    // 4. Robust Order Matching Logic
     const ordersRef = db.collection("orders");
     let orderDoc = null;
 
-    // Step A: Match by Invoice Number (This is what we send to Shiprocket as order_id)
-    if (channelOrderId) {
-      const q = ordersRef.where("invoiceNumber", "==", channelOrderId).limit(1);
+    // A. Match by Invoice Number (Shiprocket's 'order_id' or 'channel_order_id' usually contains our Invoice)
+    const possibleInvoiceNumbers = [srOrderId, channelOrderId].filter(id => id && id.startsWith('ALB-'));
+    for (const inv of possibleInvoiceNumbers) {
+      const q = ordersRef.where("invoiceNumber", "==", inv).limit(1);
       const snap = await q.get();
-      if (!snap.empty) orderDoc = snap.docs[0];
+      if (!snap.empty) {
+        orderDoc = snap.docs[0];
+        break;
+      }
     }
 
-    // Step B: Match by Shiprocket's Internal Order ID
-    if (!orderDoc && shiprocketOrderId) {
-      const q = ordersRef.where("shiprocketOrderId", "==", shiprocketOrderId).limit(1);
-      const snap = await q.get();
-      if (!snap.empty) orderDoc = snap.docs[0];
-    }
-
-    // Step C: Match by Shipment ID
-    if (!orderDoc && shipmentId) {
-      const q = ordersRef.where("shiprocketShipmentId", "==", shipmentId).limit(1);
-      const snap = await q.get();
-      if (!snap.empty) orderDoc = snap.docs[0];
-    }
-
-    // Step D: Match by AWB
+    // B. Match by AWB
     if (!orderDoc && awb) {
       const q = ordersRef.where("shiprocketAwb", "==", awb).limit(1);
       const snap = await q.get();
       if (!snap.empty) orderDoc = snap.docs[0];
     }
 
+    // C. Match by Shipment ID
+    if (!orderDoc && shipmentId) {
+      const q = ordersRef.where("shiprocketShipmentId", "==", shipmentId).limit(1);
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
+    }
+
+    // D. Match by Shiprocket Order ID (Internal)
+    if (!orderDoc && srOrderId) {
+      const q = ordersRef.where("shiprocketOrderId", "==", srOrderId).limit(1);
+      const snap = await q.get();
+      if (!snap.empty) orderDoc = snap.docs[0];
+    }
+
     if (!orderDoc) {
-      await logRef.update({ status: "NOT_FOUND", message: "No matching order found in local database", processingTime: Date.now() - startTime });
-      return apiJson({ success: true, processed: false, message: "Order not found in local DB" });
+      await logRef.update({
+        status: "NOT_FOUND",
+        message: `No order matched for Invoice/Order: ${srOrderId}, AWB: ${awb}, Shipment: ${shipmentId}`,
+        processingTime: Date.now() - startTime
+      });
+      return apiJson({ success: true, processed: false, message: "Order not found in database" });
     }
 
     const orderData = orderDoc.data();
@@ -139,10 +156,14 @@ export async function POST(request: Request) {
       shiprocketStatusId: statusId,
       lastUpdated: FieldValue.serverTimestamp(),
       shiprocketAwb: awb || orderData.shiprocketAwb || null,
-      shiprocketOrderId: shiprocketOrderId || orderData.shiprocketOrderId || null,
       courierName: courier || orderData.courierName || null,
       trackingScans: scans
     };
+
+    // If SR provided an internal order_id, save it for future matching
+    if (srOrderId && !srOrderId.startsWith('ALB-')) {
+       updates.shiprocketOrderId = srOrderId;
+    }
 
     if (internalStatus !== orderData.status) {
       updates.status = internalStatus;
@@ -160,7 +181,7 @@ export async function POST(request: Request) {
     if (shouldRestock && orderData.cartItems) {
       for (const item of orderData.cartItems) {
         if (item.id && item.quantity) {
-          await updateProductStockAdmin(item.id, item.quantity, `RTO Restock: ${channelOrderId || orderId}`);
+          await updateProductStockAdmin(item.id, item.quantity, `RTO Restock: ${orderData.invoiceNumber || orderId}`);
         }
       }
       await orderDoc.ref.update({ inventoryRestocked: true, restockedAt: FieldValue.serverTimestamp() });

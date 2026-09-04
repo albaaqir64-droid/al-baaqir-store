@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { fetchOrders, OrderRecord } from "../../lib/orders";
 import { readApiJson } from "../../lib/api/client";
+import { getVisitorCount } from "../../lib/analytics";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -29,14 +30,19 @@ function formatCurrency(value: number) {
 
 export default function AnalyticsPage() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [visitors, setVisitors] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("7d");
 
   async function loadData() {
     setLoading(true);
     try {
-      const ordersData = await fetchOrders();
+      const [ordersData, visitorCount] = await Promise.all([
+        fetchOrders(),
+        getVisitorCount()
+      ]);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setVisitors(visitorCount);
     } catch (error) {
       console.error("Analytics load failed:", error);
     } finally {
@@ -48,83 +54,161 @@ export default function AnalyticsPage() {
     void loadData();
   }, []);
 
-  const stats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
-
-    // Calculate growth percentages
+  const { stats, filteredOrders } = useMemo(() => {
     const now = new Date();
-    const currentWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-    const lastWeekStart = new Date(currentWeekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const startTime = new Date();
+    const prevStartTime = new Date();
 
-    const currentWeekOrders = orders.filter(o => {
-      const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-      return d >= currentWeekStart;
+    let days = 7;
+    if (timeRange === "24h") days = 1;
+    else if (timeRange === "7d") days = 7;
+    else if (timeRange === "30d") days = 30;
+    else if (timeRange === "1y") days = 365;
+
+    startTime.setDate(now.getDate() - days);
+    prevStartTime.setDate(startTime.getDate() - days);
+
+    const currentPeriodOrders = orders.filter(o => {
+      const d = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+      return d && d >= startTime;
     });
 
-    const lastWeekOrders = orders.filter(o => {
-      const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-      return d >= lastWeekStart && d < currentWeekStart;
+    const prevPeriodOrders = orders.filter(o => {
+      const d = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+      return d && d >= prevStartTime && d < startTime;
     });
 
-    const currentWeekRev = currentWeekOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const lastWeekRev = lastWeekOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalRevenue = currentPeriodOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalOrders = currentPeriodOrders.length;
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    const revenueGrowth = lastWeekRev > 0 ? ((currentWeekRev - lastWeekRev) / lastWeekRev) * 100 : 0;
-    const orderGrowth = lastWeekOrders.length > 0 ? ((currentWeekOrders.length - lastWeekOrders.length) / lastWeekOrders.length) * 100 : 0;
+    const prevRevenue = prevPeriodOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const prevOrders = prevPeriodOrders.length;
+    const prevAOV = prevOrders > 0 ? prevRevenue / prevOrders : 0;
 
-    // Avg Order Value Growth
-    const currentAOV = currentWeekOrders.length > 0 ? currentWeekRev / currentWeekOrders.length : 0;
-    const lastAOV = lastWeekOrders.length > 0 ? lastWeekRev / lastWeekOrders.length : 0;
-    const aovGrowth = lastAOV > 0 ? ((currentAOV - lastAOV) / lastAOV) * 100 : 0;
+    // Calculate conversion rate
+    const conversionRate = visitors > 0 ? (totalOrders / visitors) * 100 : 0;
+
+    const revenueGrowth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+    const orderGrowth = prevOrders > 0 ? ((totalOrders - prevOrders) / prevOrders) * 100 : 0;
+    const aovGrowth = prevAOV > 0 ? ((avgOrderValue - prevAOV) / prevAOV) * 100 : 0;
 
     return {
-      totalRevenue,
-      totalOrders: orders.length,
-      avgOrderValue,
-      revenueGrowth: Number(revenueGrowth.toFixed(1)),
-      orderGrowth: Number(orderGrowth.toFixed(1)),
-      aovGrowth: Number(aovGrowth.toFixed(1)),
-      customerGrowth: 0 // Placeholder
+      filteredOrders: currentPeriodOrders,
+      stats: {
+        totalRevenue,
+        totalOrders,
+        avgOrderValue,
+        conversionRate: Number(conversionRate.toFixed(2)),
+        revenueGrowth: Number(revenueGrowth.toFixed(1)),
+        orderGrowth: Number(orderGrowth.toFixed(1)),
+        aovGrowth: Number(aovGrowth.toFixed(1)),
+        customerGrowth: 0
+      }
     };
-  }, [orders]);
+  }, [orders, visitors, timeRange]);
 
   // Generate simple bar chart data for revenue by day
   const dailyRevenue = useMemo(() => {
-    // Group orders by day (last 7 days)
-    const last7DaysLabels = [...Array(7)].map((_, i) => {
+    // Adjust chart range based on selection
+    let days = 7;
+    if (timeRange === "24h") days = 1;
+    else if (timeRange === "7d") days = 7;
+    else if (timeRange === "30d") days = 30;
+    else if (timeRange === "1y") days = 12; // Use months for 1y
+
+    const isYearly = timeRange === "1y";
+
+    const labels = [...Array(days)].map((_, i) => {
       const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d.toLocaleDateString('en-IN', { weekday: 'short' });
+      if (isYearly) {
+        d.setMonth(d.getMonth() - (days - 1 - i));
+        return d.toLocaleDateString('en-IN', { month: 'short' });
+      } else {
+        d.setDate(d.getDate() - (days - 1 - i));
+        return d.toLocaleDateString('en-IN', { weekday: 'short' });
+      }
     });
 
     const dailyMap: Record<string, number> = {};
+    labels.forEach(label => dailyMap[label] = 0);
 
-    // Initialize map
-    [...Array(7)].forEach((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      dailyMap[d.toLocaleDateString('en-IN', { weekday: 'short' })] = 0;
-    });
-
-    orders.forEach(order => {
+    filteredOrders.forEach(order => {
       if (!order.createdAt) return;
       const date = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
-      const day = date.toLocaleDateString('en-IN', { weekday: 'short' });
-      if (dailyMap[day] !== undefined) {
-        dailyMap[day] += order.total || 0;
+      const label = isYearly
+        ? date.toLocaleDateString('en-IN', { month: 'short' })
+        : date.toLocaleDateString('en-IN', { weekday: 'short' });
+
+      if (dailyMap[label] !== undefined) {
+        dailyMap[label] += order.total || 0;
       }
     });
 
     const maxVal = Math.max(...Object.values(dailyMap), 1000);
 
-    return last7DaysLabels.map((day) => ({
+    return labels.map((day) => ({
       day,
       value: dailyMap[day],
       height: (dailyMap[day] / (maxVal * 1.2)) * 100
     }));
-  }, [orders]);
+  }, [filteredOrders, timeRange]);
+
+  const categoryStats = useMemo(() => {
+    const catMap: Record<string, number> = {};
+    filteredOrders.forEach(order => {
+      order.cartItems?.forEach(item => {
+        const cat = (item as any).category || "Other";
+        catMap[cat] = (catMap[cat] || 0) + (item.price * item.quantity);
+      });
+    });
+
+    const sorted = Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
+
+    const total = Object.values(catMap).reduce((a, b) => a + b, 0);
+
+    return sorted.map(([label, val]) => ({
+      label,
+      value: val,
+      percentage: total > 0 ? (val / total) * 100 : 0
+    }));
+  }, [filteredOrders]);
+
+  const distribution = useMemo(() => {
+    let prepaid = 0;
+    let cod = 0;
+    filteredOrders.forEach(o => {
+      if (String(o.paymentMethod).toLowerCase() === 'cod') cod++;
+      else prepaid++;
+    });
+    const total = filteredOrders.length || 1;
+    return {
+      prepaid: Math.round((prepaid / total) * 100),
+      cod: Math.round((cod / total) * 100)
+    };
+  }, [filteredOrders]);
+
+  const regionStats = useMemo(() => {
+    const cityMap: Record<string, number> = {};
+    filteredOrders.forEach(o => {
+      const city = o.shipping?.city || "Unknown";
+      cityMap[city] = (cityMap[city] || 0) + (o.total || 0);
+    });
+
+    const sorted = Object.entries(cityMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
+
+    const total = Object.values(cityMap).reduce((a, b) => a + b, 0);
+
+    return sorted.map(([name, val]) => ({
+      name,
+      amount: val,
+      percentage: total > 0 ? (val / total) * 100 : 0
+    }));
+  }, [filteredOrders]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -181,8 +265,8 @@ export default function AnalyticsPage() {
         />
         <AnalyticsStatCard
           label="Conversion Rate"
-          value="3.2%"
-          trend={stats.customerGrowth}
+          value={stats.conversionRate > 0 ? `${stats.conversionRate}%` : "0%"}
+          trend={0}
           icon={Users}
           color="amber"
         />
@@ -193,8 +277,8 @@ export default function AnalyticsPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Revenue (Last 7 Days)</h2>
-              <p className="text-slate-500 text-xs mt-0.5 font-medium">Daily sales performance based on settled orders</p>
+              <h2 className="text-lg font-bold text-slate-900">Revenue ({timeRange === '24h' ? 'Last 24 Hours' : `Last ${timeRange}`})</h2>
+              <p className="text-slate-500 text-xs mt-0.5 font-medium">Sales performance based on settled orders</p>
             </div>
             <div className="flex items-center gap-4 text-xs font-bold">
               <div className="flex items-center gap-2">
@@ -236,23 +320,36 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 mb-6">Top Categories</h2>
           <div className="space-y-6">
-            <CategoryProgress label="Clothing" percentage={65} color="bg-blue-500" value="₹2.4L" />
-            <CategoryProgress label="Fragrance" percentage={42} color="bg-indigo-500" value="₹1.1L" />
-            <CategoryProgress label="Accessories" percentage={28} color="bg-amber-500" value="₹85k" />
-            <CategoryProgress label="Home Decor" percentage={15} color="bg-emerald-500" value="₹42k" />
+            {categoryStats.length > 0 ? (
+              categoryStats.map((cat, i) => (
+                <CategoryProgress
+                  key={i}
+                  label={cat.label}
+                  percentage={cat.percentage}
+                  color={["bg-blue-500", "bg-indigo-500", "bg-amber-500", "bg-emerald-500"][i % 4]}
+                  value={formatCurrency(cat.value)}
+                />
+              ))
+            ) : (
+              <p className="text-slate-400 text-sm py-8 text-center">No category data available</p>
+            )}
           </div>
 
-          <div className="mt-10 p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-900">
-                <TrendingUp size={16} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">Highest Growth</p>
-                <p className="text-[10px] text-slate-500 font-medium mt-0.5">Fragrance category up 24% this week</p>
+          {categoryStats.length > 0 && (
+            <div className="mt-10 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-900">
+                  <TrendingUp size={16} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Highest Category</p>
+                  <p className="text-[10px] text-slate-500 font-medium mt-0.5">
+                    {categoryStats[0].label} is your top performing category.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -264,16 +361,18 @@ export default function AnalyticsPage() {
               <div className="relative h-32 w-32 flex-shrink-0">
                  {/* Donut Chart Placeholder */}
                  <div className="absolute inset-0 rounded-full border-[12px] border-slate-100"></div>
-                 <div className="absolute inset-0 rounded-full border-[12px] border-slate-900 border-t-transparent border-r-transparent" style={{ transform: 'rotate(45deg)' }}></div>
+                 <div
+                    className="absolute inset-0 rounded-full border-[12px] border-slate-900 border-t-transparent border-r-transparent transition-all duration-1000"
+                    style={{ transform: `rotate(${45 + (distribution.prepaid * 3.6)}deg)` }}
+                 ></div>
                  <div className="absolute inset-0 flex items-center justify-center flex-col">
-                    <span className="text-xl font-bold text-slate-900">72%</span>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Paid</span>
+                    <span className="text-xl font-bold text-slate-900">{distribution.prepaid}%</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Prepaid</span>
                  </div>
               </div>
               <div className="flex-1 space-y-3">
-                 <DistributionItem label="Prepaid (Razorpay)" value="72%" color="bg-slate-900" />
-                 <DistributionItem label="Cash on Delivery" value="28%" color="bg-slate-300" />
-                 <DistributionItem label="Gift Cards" value="0%" color="bg-slate-100" />
+                 <DistributionItem label="Prepaid (Online)" value={`${distribution.prepaid}%`} color="bg-slate-900" />
+                 <DistributionItem label="Cash on Delivery" value={`${distribution.cod}%`} color="bg-slate-300" />
               </div>
             </div>
          </div>
@@ -282,13 +381,16 @@ export default function AnalyticsPage() {
          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center justify-between">
               Top Regions
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">LIVE MAP</span>
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">LIVE DATA</span>
             </h2>
             <div className="space-y-4">
-              <RegionItem name="Mumbai" amount="₹84,200" percentage={45} />
-              <RegionItem name="Delhi" amount="₹52,400" percentage={30} />
-              <RegionItem name="Bangalore" amount="₹31,000" percentage={18} />
-              <RegionItem name="Hyderabad" amount="₹12,800" percentage={7} />
+              {regionStats.length > 0 ? (
+                regionStats.map((region, i) => (
+                  <RegionItem key={i} name={region.name} amount={formatCurrency(region.amount)} percentage={region.percentage} />
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm py-8 text-center">No region data available</p>
+              )}
             </div>
          </div>
       </div>

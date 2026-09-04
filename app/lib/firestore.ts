@@ -6,6 +6,7 @@ export type SanitizedOrderItem = {
   price: number;
   quantity: number;
   image: string;
+  category?: string;
   productUrl: string;
   hsnSac?: string;
   gstRate?: number;
@@ -54,6 +55,7 @@ export function sanitizeCartItem(item: any): SanitizedOrderItem {
     price: Number(item?.price ?? 0) || 0,
     quantity: Number(item?.quantity ?? item?.qty ?? 0) || 0,
     image: String(item?.image ?? ""),
+    category: String(item?.category ?? "") || undefined,
     productUrl: String(item?.productUrl ?? ""),
     hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
     gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,

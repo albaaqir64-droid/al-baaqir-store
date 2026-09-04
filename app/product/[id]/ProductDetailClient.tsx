@@ -220,6 +220,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                   originalPrice: product.price,
                   discountPercent: product.discountPercent,
                   image: product.mainImage ?? product.images?.[0] ?? '',
+                  category: product.category,
                   productUrl: `/product/${product.id}`,
                   hsnSac: product.hsnSac,
                   gstRate: product.gstRate,
@@ -244,6 +245,7 @@ export default function ProductDetailClient({ product }: { product: ProductRecor
                   name: product.name,
                   price: product.price,
                   image: product.mainImage ?? product.images?.[0] ?? '',
+                  category: product.category,
                   productUrl: `/product/${product.id}`,
                 });
                 const nowWishlisted = nextWishlist.some((item) => item.id === product.id);

@@ -40,6 +40,7 @@ export interface OrderItem {
   quantity: number;
   image: string;
   slug: string;
+  category?: string;
   hsnSac?: string;
   gstRate?: number;
 }
@@ -93,6 +94,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
         quantity: Number(item.quantity ?? 0),
         image: String(item.image ?? ""),
         slug: String(item.slug ?? ""),
+        category: String(item.category ?? ""),
         hsnSac: String(item.hsnSac ?? item.hsn ?? item.sac ?? "") || undefined,
         gstRate: Number(item.gstRate ?? item.taxRate ?? 0) || 0,
       }))

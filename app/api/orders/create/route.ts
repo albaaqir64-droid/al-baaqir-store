@@ -36,6 +36,7 @@ export async function POST(request: Request) {
           productUrl: text(value.productUrl),
           hsnSac: text(value.hsnSac) || null,
           gstRate: amount(value.gstRate),
+          category: text(value.category),
           selectedSize: text(value.selectedSize) || null,
           selectedColor: text(value.selectedColor) || null,
           dimensions: value.dimensions && typeof value.dimensions === "object" ? {

@@ -9,6 +9,7 @@ export type WishlistItem = {
   name: string;
   price: number;
   image: string;
+  category?: string;
   productUrl: string;
 };
 
@@ -24,6 +25,7 @@ export function sanitizeWishlistItem(item: any): WishlistItem {
     name: String(item?.name ?? "").trim(),
     price: Number(item?.price ?? 0) || 0,
     image: String(item?.image ?? ""),
+    category: String(item?.category ?? "") || undefined,
     productUrl: String(item?.productUrl ?? ""),
   };
 }

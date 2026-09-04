@@ -12,6 +12,7 @@ export type CartItem = {
   discountPercent?: number;
   qty: number;
   image: string;
+  category?: string;
   productUrl: string;
   hsnSac?: string;
   gstRate?: number;
@@ -50,6 +51,7 @@ export function sanitizeCartItem(item: any): CartItem {
     discountPercent: discountPercent && !isNaN(discountPercent) ? discountPercent : undefined,
     qty: !isNaN(qty) ? qty : 0,
     image: String(item?.image ?? ""),
+    category: String(item?.category ?? "") || undefined,
     productUrl: String(item?.productUrl ?? ""),
     hsnSac: String(item?.hsnSac ?? item?.hsn ?? item?.sac ?? "") || undefined,
     gstRate: Number(item?.gstRate ?? item?.taxRate ?? 0) || 0,
@@ -166,6 +168,7 @@ function serializeCartItem(item: CartItem): Record<string, any> {
     price,
     qty,
     image,
+    category: item.category || null,
     productUrl,
     hsnSac: item.hsnSac || "",
     gstRate,

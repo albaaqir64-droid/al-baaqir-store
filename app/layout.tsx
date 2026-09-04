@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ClientAnalytics from "./components/ClientAnalytics";
 
 export const metadata: Metadata = {
   title: "Al Baaqir | Premium Belts & Bags",
@@ -16,7 +17,10 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col brand-page">{children}</body>
+      <body className="min-h-full flex flex-col brand-page">
+        <ClientAnalytics />
+        {children}
+      </body>
     </html>
   );
 }
