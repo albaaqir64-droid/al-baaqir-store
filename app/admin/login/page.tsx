@@ -6,6 +6,7 @@ import Link from "next/link";
 import { isAdminAuthenticated, loginAdmin } from "../../lib/auth";
 
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,12 +23,12 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const success = await loginAdmin(password);
+      const success = await loginAdmin(email, password);
       if (success) {
         router.push("/admin");
         return;
       }
-      setError("Invalid password. Please try again.");
+      setError("Invalid credentials. Please try again.");
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
     } finally {
@@ -47,6 +48,20 @@ export default function AdminLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal mb-2 ml-1">
+              Admin Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full rounded-2xl border border-brand-light bg-brand-off-white px-6 py-4 text-sm text-brand-dark outline-none transition-all focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/5"
+              placeholder="admin@albaaqir.com"
+              required
+            />
+          </div>
+
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal mb-2 ml-1">
               Admin Password

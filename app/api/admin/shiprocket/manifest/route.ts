@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateShiprocketManifest, printShiprocketManifest } from "../../../../lib/shiprocket";
+import { verifyAdminRequest } from "../../../../lib/adminAuth.server";
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status || 401 });
+
     const { shipmentIds } = await req.json();
 
     if (!shipmentIds || !Array.isArray(shipmentIds) || shipmentIds.length === 0) {

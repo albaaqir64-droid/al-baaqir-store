@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAdminAuthenticated } from "../lib/auth";
 import { auth } from "../lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState(false);
@@ -14,32 +14,27 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let mounted = true;
 
-    // Immediate check to avoid flash of loading state if already authenticated locally
-    if (isAdminAuthenticated()) {
-      setAuthorized(true);
-      setCheckingAuth(false);
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!mounted) return;
 
       if (user) {
-        setAuthorized(true);
-        setCheckingAuth(false);
-      } else if (isAdminAuthenticated()) {
-        // Sync local session to Firebase Auth
         try {
-          const { signInAnonymously } = await import("firebase/auth");
-          await signInAnonymously(auth);
-          if (mounted) {
+          const idTokenResult = await user.getIdTokenResult(true);
+          if (idTokenResult.claims.admin === true) {
             setAuthorized(true);
-            setCheckingAuth(false);
+          } else {
+            // Not an admin, sign out
+            await signOut(auth);
+            localStorage.removeItem("albaaqir_admin_session");
+            setAuthorized(false);
+            router.replace("/admin/login");
           }
-        } catch (e) {
-          console.error("AdminGuard: Firebase auto-sync failed", e);
-          if (mounted) {
-            setCheckingAuth(false);
-          }
+        } catch (error) {
+          console.error("AdminGuard verification error:", error);
+          setAuthorized(false);
+          router.replace("/admin/login");
+        } finally {
+          setCheckingAuth(false);
         }
       } else {
         setAuthorized(false);

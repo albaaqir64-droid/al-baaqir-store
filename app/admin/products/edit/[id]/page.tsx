@@ -17,6 +17,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import Link from "next/link";
+import { adminFetch } from "../../../../lib/adminFetch";
 import { readApiJson } from "../../../../lib/api/client";
 import type { ProductRecord } from "../../../../lib/productTypes";
 
@@ -147,7 +148,7 @@ export default function EditProductPage() {
         images: formData.images.filter(img => img.trim() !== "")
       };
 
-      const res = await fetch("/api/products", {
+      const res = await adminFetch("/api/products", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

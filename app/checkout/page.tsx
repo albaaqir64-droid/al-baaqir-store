@@ -191,11 +191,14 @@ export default function CheckoutPage() {
     saveCustomerContact({ phone: orderMeta.phone, email: orderMeta.email });
 
     if (form.paymentMethod === 'online') {
-      const amountPaise = Math.round(orderTotal * 100);
       const createRes = await fetch('/api/razorpay/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountPaise, currency: 'INR', receipt: invoiceNumber }),
+        body: JSON.stringify({
+          items: cartItems,
+          discount: onlineDiscount,
+          shipping: shippingCharge
+        }),
       });
       const createParsed = await readApiJson<{ order?: { amount: number; currency: string; id: string }; keyId?: string; error?: string }>(createRes);
       if (!createParsed.ok || !createParsed.data?.order || !createParsed.data?.keyId) {

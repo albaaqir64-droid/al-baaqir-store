@@ -19,6 +19,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { readApiJson } from "../../lib/api/client";
+import { adminFetch } from "../../lib/adminFetch";
 import Link from "next/link";
 
 interface InventoryItem {
@@ -64,9 +65,8 @@ export default function InventoryAdminPage() {
   async function loadInventory() {
     try {
       setLoading(true);
-      const response = await fetch("/api/inventory", {
+      const response = await adminFetch("/api/inventory", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "search", data: { query: search || "" } }),
       });
 
@@ -83,9 +83,8 @@ export default function InventoryAdminPage() {
 
   async function loadStats() {
     try {
-      const response = await fetch("/api/inventory", {
+      const response = await adminFetch("/api/inventory", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stats", data: {} }),
       });
 
@@ -119,9 +118,8 @@ export default function InventoryAdminPage() {
     setUpdateMessage({ text: "", type: "" });
 
     try {
-      const response = await fetch("/api/inventory", {
+      const response = await adminFetch("/api/inventory", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "update_stock",
           data: {

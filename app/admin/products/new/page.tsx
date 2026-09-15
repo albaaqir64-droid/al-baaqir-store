@@ -16,6 +16,7 @@ import {
   Sparkles
 } from "lucide-react";
 import Link from "next/link";
+import { adminFetch } from "../../../lib/adminFetch";
 import { readApiJson } from "../../../lib/api/client";
 
 export default function NewProductPage() {
@@ -97,7 +98,7 @@ export default function NewProductPage() {
         images: formData.images.filter(img => img.trim() !== "")
       };
 
-      const res = await fetch("/api/products", {
+      const res = await adminFetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

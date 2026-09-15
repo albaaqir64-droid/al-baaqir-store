@@ -2,12 +2,13 @@
 
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { createProduct, deleteProductById, fetchProductsForApi, updateProduct } from "@/app/lib/products.server";
+import { verifyAdminRequest } from "@/app/lib/adminAuth.server";
 
 export const runtime = "nodejs";
 
 function formatError(error: unknown) {
   if (error instanceof Error) {
-    return { error: error.message, details: error.stack };
+    return { error: error.message };
   }
   return { error: String(error) };
 }
@@ -37,6 +38,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.ok) return apiJson({ error: auth.message }, auth.status || 401);
+
     const parsed = await readRequestJson(req);
     if (!parsed.ok) return parsed.response;
     const body = parsed.data as any;
@@ -80,6 +84,9 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.ok) return apiJson({ error: auth.message }, auth.status || 401);
+
     const parsed = await readRequestJson(req);
     if (!parsed.ok) return parsed.response;
     const body = parsed.data as any;
@@ -122,6 +129,9 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.ok) return apiJson({ error: auth.message }, auth.status || 401);
+
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     if (!id) {

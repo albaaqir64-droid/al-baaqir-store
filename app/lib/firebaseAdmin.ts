@@ -65,15 +65,15 @@ function createServiceAccountFromEnv(): ServiceAccount | null {
     return null;
   }
 
+  // Handle both literal newlines and escaped \n from Vercel env vars
+  const formattedPrivateKey = privateKey.includes("\\n")
+    ? privateKey.replace(/\\n/g, "\n")
+    : privateKey;
+
   return {
     projectId,
-    privateKey: privateKey.replace(/\\n/g, "\n"),
+    privateKey: formattedPrivateKey,
     clientEmail,
-    clientId: process.env.FIREBASE_CLIENT_ID,
-    authUri: "https://accounts.google.com/o/oauth2/auth",
-    tokenUri: "https://oauth2.googleapis.com/token",
-    authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
-    clientX509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
   } as ServiceAccount;
 }
 

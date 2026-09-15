@@ -2,6 +2,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { getAdminApp } from "@/app/lib/firebaseAdmin";
 import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
+import { computeVerifiedOrderTotals } from "@/app/lib/orderPricing.server";
 
 export const runtime = "nodejs";
 
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
       .filter((item) => item.id && item.name && item.quantity > 0);
 
     if (!items.length) return apiError("Your cart is empty.", 400);
+
+    // Verify pricing server-side
+    const pricing = await computeVerifiedOrderTotals(items, "cod");
 
     const shippingValue = body.shipping && typeof body.shipping === "object" ? body.shipping as Record<string, unknown> : {};
     const shipping = {
@@ -136,10 +140,10 @@ export async function POST(request: Request) {
         paymentMethod: "cod",
         paymentStatus: "pending",
         status: "pending",
-        subtotal: amount(body.subtotal),
-        discount: amount(body.discount),
-        shippingCharge: amount(body.shippingCharge),
-        total: amount(body.total),
+        subtotal: pricing.subtotal,
+        discount: pricing.discount,
+        shippingCharge: pricing.shippingCharge,
+        total: pricing.total,
         invoiceNumber: text(body.invoiceNumber),
         shipping,
         cartItems: items,

@@ -6,11 +6,15 @@ import {
   searchInventoryAdmin,
   updateProductStockAdmin,
 } from "@/app/lib/inventory.server";
+import { verifyAdminRequest } from "@/app/lib/adminAuth.server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const auth = await verifyAdminRequest(request);
+    if (!auth.ok) return apiJson({ error: auth.message }, auth.status || 401);
+
     const parsed = await readRequestJson(request);
     if (!parsed.ok) return parsed.response;
 

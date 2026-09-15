@@ -1,4 +1,5 @@
 import { apiError, apiJson, readRequestJson, readUpstreamJson, upstreamError } from "@/app/lib/api/jsonRoute";
+import { computeVerifiedOrderTotals } from "@/app/lib/orderPricing.server";
 
 export const runtime = "nodejs";
 
@@ -7,8 +8,15 @@ export async function POST(req: Request) {
     const parsed = await readRequestJson(req);
     if (!parsed.ok) return parsed.response;
 
-    const body = parsed.data as { amount?: number; currency?: string; receipt?: string };
-    const { amount, currency = "INR", receipt } = body;
+    const body = parsed.data as { items?: any[] };
+    const { items } = body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return apiError("Items are required to create an order", 400);
+    }
+
+    // Server-side price calculation
+    const pricing = await computeVerifiedOrderTotals(items, "online");
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -17,14 +25,10 @@ export async function POST(req: Request) {
       return apiError("Razorpay keys not configured", 500);
     }
 
-    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-      return apiError("A valid payment amount is required", 400);
-    }
-
     const orderPayload = {
-      amount,
-      currency,
-      receipt,
+      amount: Math.round(pricing.total * 100), // Razorpay expects paise
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
       payment_capture: 1,
     };
 

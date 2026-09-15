@@ -1,6 +1,5 @@
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import {
-  signInAnonymously,
   signOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -12,7 +11,6 @@ import {
 import { db, auth } from "./firebase";
 
 const ADMIN_SESSION_KEY = "albaaqir_admin_session";
-const ADMIN_PASSWORD = "Munna@6464";
 const CUSTOMER_CONTACT_KEY = "albaaqir_customer_contact";
 const CURRENT_USER_ID_KEY = "albaaqir_current_user_id";
 const USERS_COLLECTION = "users";
@@ -29,34 +27,40 @@ export interface CustomerProfile {
   updatedAt?: any;
 }
 
-// --- Admin Authentication (Existing) ---
+// --- Admin Authentication (Secure) ---
 
 export function isAdminAuthenticated() {
   if (typeof window === "undefined") return false;
   return localStorage.getItem(ADMIN_SESSION_KEY) === "1";
 }
 
-export async function loginAdmin(password: string) {
-  if (password === ADMIN_PASSWORD) {
-    try {
-      // Ensure Firebase Auth is signed in before setting local session
-      if (!auth.currentUser) {
-        await signInAnonymously(auth);
-      }
+export async function loginAdmin(email: string, pass: string) {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    const idTokenResult = await userCredential.user.getIdTokenResult(true);
+
+    if (idTokenResult.claims.admin === true) {
       localStorage.setItem(ADMIN_SESSION_KEY, "1");
       return true;
-    } catch (error) {
-      console.error("Firebase auth background sign-in failed:", error);
-      throw new Error("Authentication failed. Please check your connection.");
+    } else {
+      await signOut(auth);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      throw new Error("Access denied: Not an administrator.");
     }
+  } catch (error: any) {
+    console.error("Admin login failed:", error);
+    throw new Error(error.message || "Authentication failed. Please check your credentials.");
   }
-  return false;
 }
 
 export async function logoutAdmin() {
   if (typeof window === "undefined") return;
   await signOut(auth);
   localStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+export async function getAdminIdToken() {
+  return auth.currentUser?.getIdToken();
 }
 
 // --- Customer Authentication (New) ---

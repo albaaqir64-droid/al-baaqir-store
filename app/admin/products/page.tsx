@@ -21,6 +21,7 @@ import {
   TrendingDown,
   ArrowUpRight
 } from "lucide-react";
+import { adminFetch } from "../../lib/adminFetch";
 import { readApiJson } from "../../lib/api/client";
 import type { ProductRecord } from "../../lib/productTypes";
 
@@ -35,6 +36,7 @@ export default function ProductsPage() {
   async function fetchProducts() {
     setLoading(true);
     try {
+      // GET remains public as per instructions
       const res = await fetch('/api/products');
       const parsed = await readApiJson<ProductRecord[]>(res);
       if (parsed.ok) {
@@ -51,7 +53,7 @@ export default function ProductsPage() {
     if (!confirm("Are you sure you want to delete this product? This action cannot be undone.")) return;
 
     try {
-      const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+      const res = await adminFetch(`/api/products?id=${id}`, { method: 'DELETE' });
       const parsed = await readApiJson<{ success: boolean }>(res);
       if (parsed.ok && parsed.data?.success) {
         void fetchProducts();

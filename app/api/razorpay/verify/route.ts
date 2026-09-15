@@ -4,6 +4,7 @@ import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { getAdminApp } from "@/app/lib/firebaseAdmin";
 import { sanitizeCartItems, sanitizeShipping } from "@/app/lib/firestore";
 import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
+import { computeVerifiedOrderTotals } from "@/app/lib/orderPricing.server";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,9 @@ export async function POST(req: Request) {
     if (!orderItems.length) {
       return apiError("Invalid order payload", 400);
     }
+
+    // Verify pricing server-side before creating order
+    const serverPricing = await computeVerifiedOrderTotals(orderItems, "online");
 
     // Use the invoice number from metadata if available, otherwise generate one
     const invoiceNumber = String(orderMeta.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
@@ -127,10 +131,10 @@ export async function POST(req: Request) {
         email: String(orderMeta.email ?? ""),
         customerGSTIN: String(orderMeta.customerGSTIN ?? "").trim().toUpperCase(),
         paymentMethod: "online",
-        subtotal: Number(orderMeta.subtotal ?? 0),
-        discount: Number(orderMeta.discount ?? 0),
-        shippingCharge: Number(orderMeta.shippingCharge ?? 0),
-        total: Number(orderMeta.total ?? 0),
+        subtotal: serverPricing.subtotal,
+        discount: serverPricing.discount,
+        shippingCharge: serverPricing.shippingCharge,
+        total: serverPricing.total,
         invoiceNumber,
         status: "confirmed",
         shipping,

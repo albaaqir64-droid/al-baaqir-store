@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { readApiJson } from "../../lib/api/client";
+import { adminFetch } from "../../lib/adminFetch";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
@@ -37,7 +38,7 @@ export default function SettingsPage() {
   async function fetchLogs() {
     setLoadingLogs(true);
     try {
-      const res = await fetch("/api/admin/webhook-logs");
+      const res = await adminFetch("/api/admin/webhook-logs");
       const parsed = await readApiJson<{ logs: any[] }>(res);
       if (parsed.ok && parsed.data) setLogs(parsed.data.logs);
     } catch (err) {

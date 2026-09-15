@@ -20,6 +20,16 @@ export async function GET() {
  * POST: Actual Webhook Processing
  */
 export async function POST(request: Request) {
+  // Security Check: Verify Shiprocket Webhook Secret
+  const incomingApiKey = request.headers.get("x-api-key");
+  const webhookSecret = process.env.SHIPROCKET_WEBHOOK_TOKEN;
+
+  // In production, always require token
+  if (process.env.NODE_ENV === 'production' && (!incomingApiKey || incomingApiKey !== webhookSecret)) {
+    console.error("[Shiprocket-Webhook] Unauthorized access attempt");
+    return apiJson({ success: false, error: "Unauthorized" }, 401);
+  }
+
   const db = getFirestore(getAdminApp());
   const logRef = db.collection("shiprocket_webhook_logs").doc();
   const startTime = Date.now();
