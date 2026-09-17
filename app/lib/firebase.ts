@@ -1,43 +1,26 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { connectFirestoreEmulator, getFirestore, initializeFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-
-// Determine Auth Domain dynamically for production to prevent unauthorized-domain errors
-const getAuthDomain = () => {
-  if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) return process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
-
-  // Fallback to the default firebaseapp.com domain which is always authorized
-  return "al-baaqir-store.firebaseapp.com";
-};
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyD6zHxPXw5YXAVudfk7wMGDjYiglpsE9ww",
-  authDomain: getAuthDomain(),
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "al-baaqir-store",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "al-baaqir-store.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "806944771261",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:806944771261:web:0897e2e02edc3c0417fbd4",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-CZE3JN5695",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-// Firestore's default WebChannel stream is blocked by some browser proxies and
-// security software, which leaves the browser SDK permanently "offline" even
-// though HTTPS access to the Firebase project is available. Long polling uses
-// the same authenticated Firestore endpoint without relying on that stream.
-// Keep the Node/server path on getFirestore: this transport option is browser-only.
-export const db = typeof window === "undefined"
-  ? getFirestore(app)
-  : initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-      ignoreUndefinedProperties: true,
-    });
+// Only initialize if we have an API Key (build safety)
+const app = (getApps().length > 0)
+  ? getApp()
+  : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
 
-export const storage = getStorage(app);
-export const auth = getAuth(app);
-export { GoogleAuthProvider };
+// Exporting helpers to check initialization
+export const isFirebaseInitialized = !!app;
 
-if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
-  connectFirestoreEmulator(db, "localhost", 8080);
-}
+// Exporting instances. During build/SSR where env vars might be missing,
+// these will be null as any to satisfy TypeScript, but can be checked at runtime.
+export const auth = app ? getAuth(app) : (null as any);
+export const db = app ? getFirestore(app) : (null as any);
+export { app };

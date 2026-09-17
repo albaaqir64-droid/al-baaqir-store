@@ -1,134 +1,59 @@
 import "server-only";
 
-import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
-import type { ServiceAccount } from "firebase-admin";
+import { initializeApp, cert, getApps, getApp, App } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
-import fs from "fs";
-import path from "path";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-let adminApp: ReturnType<typeof initializeApp> | null = null;
-
-type ServiceAccountJson = Partial<ServiceAccount> & {
-  project_id?: string;
-  private_key?: string;
-  client_email?: string;
-  storageBucket?: string;
-};
-
-function resolveServiceAccountPath() {
-  const configuredPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
-  if (!configuredPath) return null;
-  return path.resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
-}
-
-function loadServiceAccountFromFile(): ServiceAccountJson | null {
-  const serviceAccountPath = resolveServiceAccountPath();
-  if (!serviceAccountPath) return null;
-
-  try {
-    if (!fs.existsSync(serviceAccountPath)) return null;
-    const raw = fs.readFileSync(serviceAccountPath, "utf8");
-    return JSON.parse(raw) as ServiceAccountJson;
-  } catch (err) {
-    return null;
-  }
-}
-
-function applyServiceAccountToEnv(parsed: ServiceAccountJson | null) {
-  if (!parsed) return;
-  try {
-    const projectId = parsed.project_id || parsed.projectId;
-    if (projectId && !process.env.FIREBASE_PROJECT_ID) {
-      process.env.FIREBASE_PROJECT_ID = String(projectId);
-    }
-    if (parsed.private_key && !process.env.FIREBASE_PRIVATE_KEY) {
-      process.env.FIREBASE_PRIVATE_KEY = String(parsed.private_key);
-    }
-    if (parsed.client_email && !process.env.FIREBASE_CLIENT_EMAIL) {
-      process.env.FIREBASE_CLIENT_EMAIL = String(parsed.client_email);
-    }
-    const bucket = parsed.storageBucket || (projectId ? `${projectId}.firebasestorage.app` : undefined);
-    if (bucket && !process.env.FIREBASE_STORAGE_BUCKET) {
-      process.env.FIREBASE_STORAGE_BUCKET = String(bucket);
-    }
-  } catch {
-    // don't crash here; best-effort only
-  }
-}
-
-function createServiceAccountFromEnv(): ServiceAccount | null {
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+function createAdminApp(): App | null {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-  if (!projectId || !privateKey || !clientEmail) {
+  if (!projectId || !clientEmail || !privateKey) {
     return null;
   }
 
-  // Handle both literal newlines and escaped \n from Vercel env vars
   const formattedPrivateKey = privateKey.includes("\\n")
     ? privateKey.replace(/\\n/g, "\n")
     : privateKey;
 
-  return {
-    projectId,
-    privateKey: formattedPrivateKey,
-    clientEmail,
-  } as ServiceAccount;
+  try {
+    return initializeApp({
+      credential: cert({
+        projectId: projectId,
+        clientEmail: clientEmail,
+        privateKey: formattedPrivateKey,
+      } as any),
+      storageBucket: `${projectId}.firebasestorage.app`,
+    });
+  } catch (error) {
+    console.error("Firebase admin initialization error:", error);
+    return null;
+  }
 }
 
-function getStorageBucket(serviceAccount: ServiceAccountJson | null): string {
-  const explicitBucket = process.env.FIREBASE_STORAGE_BUCKET?.trim();
-  if (explicitBucket) {
-    return explicitBucket;
-  }
-
-  const bucketFromServiceAccount = serviceAccount?.storageBucket;
-  if (bucketFromServiceAccount) {
-    return bucketFromServiceAccount;
-  }
-
-  const projectId = serviceAccount?.project_id || serviceAccount?.projectId;
-  if (projectId) {
-    return `${projectId}.firebasestorage.app`;
-  }
-
-  throw new Error("Missing Firebase storage bucket. Set FIREBASE_STORAGE_BUCKET or include storageBucket / project_id in the service account JSON.");
-}
-
-function createAdminApp() {
-  const serviceAccountFromFile = loadServiceAccountFromFile();
-  if (serviceAccountFromFile) {
-    applyServiceAccountToEnv(serviceAccountFromFile);
-  }
-
-  const serviceAccount = serviceAccountFromFile || createServiceAccountFromEnv();
-
-  if (!serviceAccount) {
-    throw new Error(
-      "Missing Firebase admin credentials. Provide FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL as environment variables."
-    );
-  }
-
-  const storageBucket = getStorageBucket(serviceAccountFromFile || serviceAccount);
-
-  return initializeApp({
-    credential: cert(serviceAccount as ServiceAccount),
-    storageBucket,
-  });
-}
-
-export function getAdminApp() {
-  if (adminApp) return adminApp;
+export function getAdminApp(): App {
   if (getApps().length) {
-    adminApp = getApp();
-    return adminApp;
+    return getApp();
   }
-  adminApp = createAdminApp();
-  return adminApp;
+  const app = createAdminApp();
+  if (!app) {
+    // During build, we return a dummy to satisfy TypeScript.
+    // At runtime, this will throw if used without env vars.
+    return {} as App;
+  }
+  return app;
 }
 
 export function getAdminStorage() {
-  const app = getAdminApp();
-  return getStorage(app);
+  return getStorage(getAdminApp());
+}
+
+export function getAdminAuth() {
+  return getAuth(getAdminApp());
+}
+
+export function getAdminDb() {
+  return getFirestore(getAdminApp());
 }

@@ -37,8 +37,8 @@ export default function Footer() {
         <div>
           <b className="block text-white mb-4 uppercase text-[12px] tracking-widest">FOLLOW</b>
           <div className="flex flex-col gap-2">
-            <a href="#" className="text-[#aaa] text-[13px] hover:text-white transition-colors">Instagram</a>
-            <a href="#" className="text-[#aaa] text-[13px] hover:text-white transition-colors">Facebook</a>
+            <a href="https://www.instagram.com/baaqirlifestyle/" target="_blank" rel="noopener noreferrer" className="text-[#aaa] text-[13px] hover:text-white transition-colors">Instagram</a>
+            <a href="https://www.facebook.com/profile.php?id=61594035410728" target="_blank" rel="noopener noreferrer" className="text-[#aaa] text-[13px] hover:text-white transition-colors">Facebook</a>
             <a href="https://wa.me/917041396464" className="text-[#aaa] text-[13px] hover:text-white transition-colors">WhatsApp</a>
           </div>
         </div>

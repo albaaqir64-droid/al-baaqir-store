@@ -1,102 +1,92 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { isAdminAuthenticated, loginAdmin } from "../../lib/auth";
+import { useState } from 'react';
+import { auth } from '@/app/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
-export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+export default function AdminLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    if (isAdminAuthenticated()) {
-      router.replace("/admin");
-    }
-  }, [router]);
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setError('');
+
     try {
-      const success = await loginAdmin(email, password);
-      if (success) {
-        router.push("/admin");
-        return;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+
+      const response = await fetch('/api/admin/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      if (data.isAdmin) {
+        router.push('/admin');
+      } else {
+        setError('Unauthorized access. Admin privileges required.');
+        await auth.signOut();
       }
-      setError("Invalid credentials. Please try again.");
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      setError('Invalid email or password.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <main className="min-h-screen bg-brand-off-white flex items-center justify-center px-6 py-24">
-      <div className="w-full max-w-md rounded-[40px] border border-brand-light/30 bg-white p-10 shadow-2xl shadow-brand-dark/5">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-brand-dark rounded-3xl flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
-            AB
-          </div>
-          <h1 className="text-3xl font-bold text-brand-dark">Admin Login</h1>
-          <p className="mt-2 text-brand-teal/70 font-medium">Restricted Access</p>
+          <h1 className="text-2xl font-bold tracking-widest uppercase serif">Al Baaqir</h1>
+          <p className="text-gray-500 text-sm">Administration Portal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded mb-6 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal mb-2 ml-1">
-              Admin Email
-            </label>
+            <label className="block text-sm font-medium mb-1">Email Address</label>
             <input
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-2xl border border-brand-light bg-brand-off-white px-6 py-4 text-sm text-brand-dark outline-none transition-all focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/5"
-              placeholder="admin@albaaqir.com"
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border p-2 rounded focus:ring-1 focus:ring-black outline-none"
               required
             />
           </div>
-
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal mb-2 ml-1">
-              Admin Password
-            </label>
+            <label className="block text-sm font-medium mb-1">Password</label>
             <input
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-2xl border border-brand-light bg-brand-off-white px-6 py-4 text-sm text-brand-dark outline-none transition-all focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/5"
-              placeholder="••••••••"
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border p-2 rounded focus:ring-1 focus:ring-black outline-none"
               required
             />
           </div>
-
-          {error && (
-            <div className="rounded-2xl bg-rose-50 border border-rose-100 p-4 text-sm font-semibold text-rose-600 animate-in fade-in zoom-in duration-200">
-              {error}
-            </div>
-          )}
-
           <button
-            disabled={loading}
-            className="w-full rounded-full bg-brand-dark py-4 text-[15px] font-bold text-white shadow-xl shadow-brand-dark/20 transition-all hover:bg-brand-teal hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
             type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors disabled:bg-gray-400"
           >
-            {loading ? "Verifying..." : "Access Dashboard"}
+            {loading ? 'Authenticating...' : 'Login to Dashboard'}
           </button>
         </form>
-
-        <div className="mt-8 pt-8 border-t border-brand-light/20 text-center">
-          <Link href="/" className="text-sm font-bold text-brand-teal hover:text-brand-green transition-colors">
-            ← Back to Store
-          </Link>
-        </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -105,12 +105,14 @@ function sortByCreatedAtDesc(a: ProductRecord, b: ProductRecord) {
 
 /** Firestore rejects undefined values, including optional blank form fields. */
 export async function fetchAllProducts(): Promise<ProductRecord[]> {
+  if (!db) return [];
   const productsRef = collection(db, "products");
   const snapshot = await getDocs(productsRef);
   return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
 }
 
 export async function fetchProducts(activeOnly: boolean = true): Promise<ProductRecord[]> {
+  if (!db) return [];
   const productsRef = collection(db, "products");
   const snapshot = activeOnly
     ? await getDocs(query(productsRef, where("active", "==", true)))
@@ -120,6 +122,7 @@ export async function fetchProducts(activeOnly: boolean = true): Promise<Product
 }
 
 export async function fetchProductById(id: string): Promise<ProductRecord | null> {
+  if (!db) return null;
   const docRef = doc(db, "products", id);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
@@ -127,6 +130,7 @@ export async function fetchProductById(id: string): Promise<ProductRecord | null
 }
 
 export async function fetchProductsByCategory(category: string): Promise<ProductRecord[]> {
+  if (!db) return [];
   const productsRef = collection(db, "products");
   const categoryQuery = query(productsRef, where("category", "==", category), where("active", "==", true));
   const snapshot = await getDocs(categoryQuery);
@@ -139,6 +143,7 @@ export async function fetchProductsByGender(gender: string): Promise<ProductReco
 }
 
 export async function fetchSaleProducts(limit: number = 12): Promise<ProductRecord[]> {
+  if (!db) return [];
   const productsRef = collection(db, "products");
   const saleQuery = query(
     productsRef,
@@ -149,6 +154,7 @@ export async function fetchSaleProducts(limit: number = 12): Promise<ProductReco
   const snapshot = await getDocs(saleQuery);
   return snapshot.docs.map(normalizeProduct).sort(sortByCreatedAtDesc);
 }
+
 
 /**
  * Fetches unique categories that have at least one active product.
