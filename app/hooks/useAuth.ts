@@ -16,6 +16,11 @@ export function useAuth() {
     // Check local admin state
     setIsAdmin(isAdminAuthenticated());
 
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 

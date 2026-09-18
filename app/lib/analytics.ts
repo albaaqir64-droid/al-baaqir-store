@@ -5,7 +5,7 @@ const STATS_COLLECTION = "site_stats";
 const GLOBAL_STATS_DOC = "global";
 
 export async function trackVisit() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !db) return;
 
   // Simple session tracking using sessionStorage
   const sessionKey = "baaqir_session_tracked";
@@ -34,6 +34,7 @@ export async function trackVisit() {
 }
 
 export async function getVisitorCount(): Promise<number> {
+  if (!db) return 0;
   try {
     const statsRef = doc(db, STATS_COLLECTION, GLOBAL_STATS_DOC);
     const snap = await getDoc(statsRef);
