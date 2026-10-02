@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  serverExternalPackages: ["firebase-admin"],
   turbopack: {
     root: path.join(__dirname),
   },
