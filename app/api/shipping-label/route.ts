@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-import { getFirestore } from "firebase-admin/firestore";
 import { apiError } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb } from "@/app/lib/firebaseAdmin";
 import { toOrderRecord } from "@/app/lib/invoiceOrder";
 import { generateShippingLabelPDF } from "@/app/lib/shippingLabel";
 import { getShiprocketLabel } from "@/app/lib/shiprocket";
@@ -13,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (!orderId) return apiError("Order ID is required", 400);
 
   try {
-    const snapshot = await getFirestore(getAdminApp()).collection("orders").doc(orderId).get();
+    const snapshot = await adminDb.collection("orders").doc(orderId).get();
     if (!snapshot.exists) return apiError("Order not found", 404);
 
     const orderData = snapshot.data() ?? {};
@@ -22,7 +21,6 @@ export async function GET(request: NextRequest) {
     let pdfBuffer: Buffer | Uint8Array;
     let filename = `shipping-label-${order.invoiceNumber || order.id}.pdf`;
 
-    // Try to get real Shiprocket label if shipment ID exists
     if (orderData.shiprocketShipmentId && orderData.shiprocketShipmentId !== "null" && orderData.shiprocketShipmentId !== "undefined") {
       try {
         const labelUrl = await getShiprocketLabel(orderData.shiprocketShipmentId);
@@ -43,7 +41,6 @@ export async function GET(request: NextRequest) {
         pdfBuffer = await generateShippingLabelPDF(order);
       }
     } else {
-      // Fallback to manual label if not synced
       pdfBuffer = await generateShippingLabelPDF(order);
     }
 

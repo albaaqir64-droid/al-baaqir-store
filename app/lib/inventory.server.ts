@@ -1,7 +1,6 @@
 import "server-only";
 
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { getAdminApp } from "./firebaseAdmin";
+import { adminDb, FieldValue } from "./firebaseAdmin";
 import { fetchProductsForApi } from "./products.server";
 import type { ProductRecord } from "./productTypes";
 
@@ -27,7 +26,6 @@ function getReorderStatus(stock: number): "sufficient" | "low" | "out_of_stock" 
 function toInventoryItem(product: ProductRecord): InventoryItem {
   let stock = Number(product.stock ?? 0);
 
-  // If variant stock exists, use the sum of variants as the "current stock" for the inventory view
   if (product.variantStock && Object.keys(product.variantStock).length > 0) {
     const variantSum = Object.values(product.variantStock).reduce((a, b) => a + (Number(b) || 0), 0);
     if (variantSum > 0) stock = variantSum;
@@ -84,8 +82,7 @@ export async function updateProductStockAdmin(
   quantityChange: number,
   reason: string = "Manual update"
 ): Promise<boolean> {
-  const db = getFirestore(getAdminApp());
-  const productRef = db.collection("products").doc(productId);
+  const productRef = adminDb.collection("products").doc(productId);
   const snapshot = await productRef.get();
   if (!snapshot.exists) return false;
 
@@ -98,7 +95,7 @@ export async function updateProductStockAdmin(
     lastUpdated: FieldValue.serverTimestamp(),
   });
 
-  await db.collection("stock_logs").add({
+  await adminDb.collection("stock_logs").add({
     productId,
     productName: String(product.name ?? ""),
     quantityChange,
@@ -121,10 +118,9 @@ export async function batchUpdateStockAdmin(
 }
 
 export async function getStockHistoryAdmin(productId?: string, limit = 50) {
-  const db = getFirestore(getAdminApp());
   const snapshot = productId
-    ? await db.collection("stock_logs").where("productId", "==", productId).orderBy("timestamp", "desc").limit(limit).get()
-    : await db.collection("stock_logs").orderBy("timestamp", "desc").limit(limit).get();
+    ? await adminDb.collection("stock_logs").where("productId", "==", productId).orderBy("timestamp", "desc").limit(limit).get()
+    : await adminDb.collection("stock_logs").orderBy("timestamp", "desc").limit(limit).get();
 
-  return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  return snapshot.docs.map((docSnap: any) => ({ id: docSnap.id, ...docSnap.data() }));
 }

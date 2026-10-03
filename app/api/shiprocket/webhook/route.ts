@@ -1,6 +1,5 @@
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb, FieldValue } from "@/app/lib/firebaseAdmin";
 import { updateProductStockAdmin } from "@/app/lib/inventory.server";
 
 export const runtime = "nodejs";
@@ -30,8 +29,7 @@ export async function POST(request: Request) {
     return apiJson({ success: false, error: "Unauthorized" }, 401);
   }
 
-  const db = getFirestore(getAdminApp());
-  const logRef = db.collection("shiprocket_webhook_logs").doc();
+  const logRef = adminDb.collection("shiprocket_webhook_logs").doc();
   const startTime = Date.now();
 
   try {
@@ -84,7 +82,7 @@ export async function POST(request: Request) {
 
     // 3. Duplicate Protection
     const eventSignature = `${awb || 'noawb'}_${statusId || currentStatus}_${timestamp}`;
-    const eventRef = db.collection("shiprocket_processed_events").doc(eventSignature);
+    const eventRef = adminDb.collection("shiprocket_processed_events").doc(eventSignature);
     const eventDoc = await eventRef.get();
 
     if (eventDoc.exists) {
@@ -93,10 +91,10 @@ export async function POST(request: Request) {
     }
 
     // 4. Robust Order Matching Logic
-    const ordersRef = db.collection("orders");
+    const ordersRef = adminDb.collection("orders");
     let orderDoc = null;
 
-    // A. Match by Invoice Number (Shiprocket's 'order_id' or 'channel_order_id' usually contains our Invoice)
+    // A. Match by Invoice Number
     const possibleInvoiceNumbers = [srOrderId, channelOrderId].filter(id => id && id.startsWith('ALB-'));
     for (const inv of possibleInvoiceNumbers) {
       const q = ordersRef.where("invoiceNumber", "==", inv).limit(1);
@@ -170,7 +168,6 @@ export async function POST(request: Request) {
       trackingScans: scans
     };
 
-    // If SR provided an internal order_id, save it for future matching
     if (srOrderId && !srOrderId.startsWith('ALB-')) {
        updates.shiprocketOrderId = srOrderId;
     }

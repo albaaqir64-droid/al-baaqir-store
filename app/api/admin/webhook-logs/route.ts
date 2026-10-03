@@ -1,6 +1,5 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { apiJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb } from "@/app/lib/firebaseAdmin";
 import { verifyAdminRequest } from "@/app/lib/adminAuth.server";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +9,12 @@ export async function GET(req: Request) {
     const auth = await verifyAdminRequest(req);
     if (!auth.ok) return apiJson({ error: auth.message }, auth.status || 401);
 
-    const db = getFirestore(getAdminApp());
-    const snapshot = await db.collection("shiprocket_webhook_logs")
+    const snapshot = await adminDb.collection("shiprocket_webhook_logs")
       .orderBy("timestamp", "desc")
       .limit(50)
       .get();
 
-    const logs = snapshot.docs.map(doc => ({
+    const logs = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
       timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp

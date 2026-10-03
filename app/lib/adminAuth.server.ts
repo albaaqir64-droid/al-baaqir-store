@@ -1,6 +1,5 @@
 import "server-only";
-import { getAuth } from "firebase-admin/auth";
-import { getAdminApp } from "./firebaseAdmin";
+import { adminAuth } from "./firebaseAdmin";
 
 export interface AdminAuthResult {
   ok: boolean;
@@ -18,7 +17,8 @@ export async function verifyAdminRequest(req: Request): Promise<AdminAuthResult>
     }
 
     const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await getAuth(getAdminApp()).verifyIdToken(token);
+    // adminAuth is a safe proxy from our firebaseAdmin utility
+    const decodedToken = await adminAuth.verifyIdToken(token);
 
     if (decodedToken.admin !== true) {
       return { ok: false, status: 403, message: "Forbidden: Admin access required" };

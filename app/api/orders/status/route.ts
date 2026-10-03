@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { getMessaging } from "firebase-admin/messaging";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb, FieldValue, getAdminApp } from "@/app/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -29,9 +27,8 @@ export async function POST(request: NextRequest) {
       return apiError("Invalid order status update.", 400);
     }
 
-    const db = getFirestore(getAdminApp());
-    const orderRef = db.collection("orders").doc(orderId);
-    const result = await db.runTransaction(async (transaction) => {
+    const orderRef = adminDb.collection("orders").doc(orderId);
+    const result = await adminDb.runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(orderRef);
       if (!snapshot.exists) throw new Error("Order not found.");
       const order = snapshot.data() ?? {};
@@ -47,11 +44,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (result.changed && messages[status] && result.customerId) {
-      const user = await db.collection("users").doc(result.customerId).get();
+      const user = await adminDb.collection("users").doc(result.customerId).get();
       const tokens = Array.isArray(user.data()?.fcmTokens)
         ? user.data()!.fcmTokens.filter((token: unknown): token is string => typeof token === "string" && token.length > 0)
         : [];
       if (tokens.length) {
+        // Dynamic import for messaging to avoid top-level ESM issues
+        const { getMessaging } = require("firebase-admin/messaging");
         await getMessaging(getAdminApp()).sendEachForMulticast({
           tokens,
           notification: { title: `Order ${result.invoiceNumber}`, body: messages[status] },

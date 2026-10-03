@@ -1,6 +1,5 @@
 import "server-only";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAdminApp } from "./firebaseAdmin";
+import { adminDb } from "./firebaseAdmin";
 
 export interface OrderLineItem {
   id: string;
@@ -16,15 +15,13 @@ export async function computeVerifiedOrderTotals(
   cartItems: OrderLineItem[],
   paymentMethod: "online" | "cod"
 ) {
-  const db = getFirestore(getAdminApp());
-
   if (!cartItems || !cartItems.length) {
     throw new Error("Cart is empty");
   }
 
   // Fetch all products in one batch
-  const productRefs = cartItems.map(item => db.collection("products").doc(item.id));
-  const productSnaps = await db.getAll(...productRefs);
+  const productRefs = cartItems.map(item => adminDb.collection("products").doc(item.id));
+  const productSnaps = await adminDb.getAll(...productRefs);
 
   let subtotal = 0;
   const verifiedLines = [];

@@ -6,30 +6,16 @@ const nextConfig: NextConfig = {
   staticPageGenerationTimeout: 1200,
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "images.pexels.com",
-      },
-      {
-        protocol: "https",
-        hostname: "storage.googleapis.com",
-      },
-      {
-        protocol: "https",
-        hostname: "firebasestorage.googleapis.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.firebasestorage.app",
-      },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "images.pexels.com" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+      { protocol: "https", hostname: "firebasestorage.googleapis.com" },
+      { protocol: "https", hostname: "**.firebasestorage.app" },
     ],
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  serverExternalPackages: ["firebase-admin"],
+  // Force these packages to stay as external Node modules
+  serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
   turbopack: {
     root: path.join(__dirname),
   },

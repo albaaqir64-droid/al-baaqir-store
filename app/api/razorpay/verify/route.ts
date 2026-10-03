@@ -1,7 +1,6 @@
 import crypto from "crypto";
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb, FieldValue } from "@/app/lib/firebaseAdmin";
 import { sanitizeCartItems, sanitizeShipping } from "@/app/lib/firestore";
 import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
 import { computeVerifiedOrderTotals } from "@/app/lib/orderPricing.server";
@@ -51,23 +50,18 @@ export async function POST(req: Request) {
     // Verify pricing server-side before creating order
     const serverPricing = await computeVerifiedOrderTotals(orderItems, "online");
 
-    // Use the invoice number from metadata if available, otherwise generate one
     const invoiceNumber = String(orderMeta.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
 
-    const db = getFirestore(getAdminApp());
-    const orderRef = db.collection("orders").doc();
+    const orderRef = adminDb.collection("orders").doc();
 
-    // --- STOCK DEDUCTION LOGIC ---
-    await db.runTransaction(async (transaction) => {
-      // 1. Get all unique product IDs from order
+    await adminDb.runTransaction(async (transaction: any) => {
       const productIds = Array.from(new Set(orderItems.map(item => item.id)));
       const snapshots = await Promise.all(
-        productIds.map(id => transaction.get(db.collection("products").doc(id)))
+        productIds.map(id => transaction.get(adminDb.collection("products").doc(id)))
       );
 
-      const productSnapshots = new Map(snapshots.map(s => [s.id, s]));
+      const productSnapshots = new Map(snapshots.map((s: any) => [s.id, s]));
 
-      // Group items by product ID to handle multiple variants of the same product correctly
       const itemsByProduct = new Map<string, typeof orderItems>();
       for (const item of orderItems) {
         const list = itemsByProduct.get(item.id) || [];
@@ -90,7 +84,6 @@ export async function POST(req: Request) {
         for (const item of items) {
           totalQtyForThisProduct += item.quantity;
 
-          // Variant Deduction
           const size = item.selectedSize || "";
           const color = item.selectedColor || "";
           let vKey = "";
@@ -101,8 +94,6 @@ export async function POST(req: Request) {
           if (vKey && variantStock[vKey] !== undefined) {
             const currentVStock = variantStock[vKey] || 0;
             if (currentVStock < item.quantity) {
-              // Note: User has already paid. We deduct what we can,
-              // but you might want to log this for manual refund/customer service.
               console.error(`Oversell detected during payment verification for ${productId} (${vKey})`);
             }
             variantStock[vKey] = Math.max(0, currentVStock - item.quantity);
@@ -111,7 +102,6 @@ export async function POST(req: Request) {
 
         updates.variantStock = variantStock;
 
-        // Main Stock Deduction
         const mainStockField = (product.inventory !== undefined) ? "inventory" :
                               (product.quantity !== undefined && product.stock === undefined) ? "quantity" : "stock";
 
@@ -124,7 +114,6 @@ export async function POST(req: Request) {
         transaction.update(snap.ref, updates);
       }
 
-      // 3. Create Order
       transaction.set(orderRef, {
         customerName: String(orderMeta.customerName ?? ""),
         phone: String(orderMeta.phone ?? ""),
@@ -153,7 +142,6 @@ export async function POST(req: Request) {
 
     const orderId = orderRef.id;
 
-    // --- SHIPROCKET INTEGRATION ---
     try {
       const orderDoc = await orderRef.get();
       const orderData = orderDoc.data();
@@ -161,12 +149,6 @@ export async function POST(req: Request) {
       if (orderData && !orderData.shiprocketOrderId) {
         const shiprocketResult = await syncOrderToShiprocket(orderId, orderData);
         await orderRef.update(shiprocketResult);
-
-        if (shiprocketResult.shiprocketStatus === "FAILED") {
-          console.error(`[Razorpay-Verify] Shiprocket Sync FAILED for ${orderId}:`, shiprocketResult.shiprocketError);
-        } else {
-          console.log(`[Razorpay-Verify] Shiprocket Sync SUCCESS for ${orderId}. SR Order ID: ${shiprocketResult.shiprocketOrderId}`);
-        }
       }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
@@ -179,16 +161,11 @@ export async function POST(req: Request) {
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const invoiceResponse = await fetch(`${baseUrl}/api/invoices/generate`, {
+      await fetch(`${baseUrl}/api/invoices/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
       });
-
-      if (!invoiceResponse.ok) {
-        const invoiceBody = await invoiceResponse.text();
-        console.warn("Failed to generate invoice automatically:", invoiceResponse.status, invoiceBody.slice(0, 500));
-      }
     } catch (invoiceError) {
       console.error("Error triggering invoice generation:", invoiceError);
     }

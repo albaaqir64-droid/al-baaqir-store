@@ -1,8 +1,7 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { generateInvoicePDF } from "@/app/lib/invoice";
 import { sendCustomerOrderEmail, sendAdminOrderEmail } from "@/app/lib/email";
-import { getAdminApp, getAdminStorage } from "@/app/lib/firebaseAdmin";
+import { adminDb, adminStorage } from "@/app/lib/firebaseAdmin";
 import type { OrderRecord } from "@/app/lib/orders";
 import { BUSINESS } from "@/app/lib/business";
 import { toOrderRecord } from "@/app/lib/invoiceOrder";
@@ -15,10 +14,9 @@ function asFiniteNumber(value: unknown): number {
 }
 
 async function enrichTaxDetails(order: OrderRecord): Promise<OrderRecord> {
-  const db = getFirestore(getAdminApp());
   const cartItems = await Promise.all(order.cartItems.map(async (item) => {
     if ((item.hsnSac && item.gstRate !== undefined) || !item.id) return item;
-    const product = await db.collection("products").doc(item.id).get();
+    const product = await adminDb.collection("products").doc(item.id).get();
     if (!product.exists) return item;
     const data = product.data() ?? {};
     return {
@@ -39,10 +37,7 @@ export async function POST(request: Request) {
     const orderId = typeof body?.orderId === "string" ? body.orderId.trim() : "";
     if (!orderId) return apiError("Order ID is required", 400);
 
-    // This must use the Admin SDK. The browser SDK cannot access Firestore from
-    // a Route Handler and was returning its "client is offline" error.
-    const db = getFirestore(getAdminApp());
-    const orderSnapshot = await db.collection("orders").doc(orderId).get();
+    const orderSnapshot = await adminDb.collection("orders").doc(orderId).get();
     if (!orderSnapshot.exists) return apiError("Order not found", 404);
 
     const rawOrder = orderSnapshot.data() ?? {};
@@ -57,12 +52,11 @@ export async function POST(request: Request) {
       storeGST: BUSINESS.gstin,
     });
 
-    const file = getAdminStorage().bucket().file(`invoices/${orderId}/${invoiceNumber}.pdf`);
+    const file = adminStorage.bucket().file(`invoices/${orderId}/${invoiceNumber}.pdf`);
     await file.save(pdfBuffer, { metadata: { contentType: "application/pdf" } });
     const [invoiceUrl] = await file.getSignedUrl({
       version: "v4",
       action: "read",
-      // Google Cloud Storage V4 signed URLs are limited to seven days.
       expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     });
 

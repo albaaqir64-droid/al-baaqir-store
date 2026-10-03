@@ -1,6 +1,5 @@
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb, FieldValue } from "@/app/lib/firebaseAdmin";
 import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
 import { computeVerifiedOrderTotals } from "@/app/lib/orderPricing.server";
 
@@ -52,7 +51,6 @@ export async function POST(request: Request) {
 
     if (!items.length) return apiError("Your cart is empty.", 400);
 
-    // Verify pricing server-side
     const pricing = await computeVerifiedOrderTotals(items, "cod");
 
     const shippingValue = body.shipping && typeof body.shipping === "object" ? body.shipping as Record<string, unknown> : {};
@@ -69,14 +67,13 @@ export async function POST(request: Request) {
       return apiError("Please provide a complete delivery address.", 400);
     }
 
-    const db = getFirestore(getAdminApp());
-    const orderRef = db.collection("orders").doc();
+    const orderRef = adminDb.collection("orders").doc();
     const quantities = new Map<string, number>();
     for (const item of items) quantities.set(item.id, (quantities.get(item.id) ?? 0) + item.quantity);
 
-    await db.runTransaction(async (transaction) => {
+    await adminDb.runTransaction(async (transaction: any) => {
       const products = await Promise.all(
-        [...quantities.keys()].map(async (id) => [id, await transaction.get(db.collection("products").doc(id))] as const)
+        [...quantities.keys()].map(async (id) => [id, await transaction.get(adminDb.collection("products").doc(id))] as const)
       );
 
       for (const [productId, snapshot] of products) {
@@ -92,7 +89,6 @@ export async function POST(request: Request) {
         const variantStock = (product?.variantStock || {}) as Record<string, number>;
         let hasVariantUpdates = false;
 
-        // 1. Check and update variant-specific stock
         for (const item of items.filter(i => i.id === productId)) {
           const size = item.selectedSize || "";
           const color = item.selectedColor || "";
@@ -113,11 +109,8 @@ export async function POST(request: Request) {
           }
         }
 
-        if (hasVariantUpdates) {
-          updates.variantStock = variantStock;
-        }
+        if (hasVariantUpdates) updates.variantStock = variantStock;
 
-        // 2. Update main stock field (fallback lookup: stock -> inventory -> quantity)
         const mainStockField = (product?.inventory !== undefined) ? "inventory" :
                               (product?.quantity !== undefined && product?.stock === undefined) ? "quantity" : "stock";
 
@@ -154,24 +147,13 @@ export async function POST(request: Request) {
 
     const orderId = orderRef.id;
 
-    // --- SHIPROCKET INTEGRATION ---
     try {
       const orderDoc = await orderRef.get();
       const orderData = orderDoc.data();
 
-      // Safety: Only sync if it hasn't been synced yet (though it's a new order here)
       if (orderData && !orderData.shiprocketOrderId) {
         const shiprocketResult = await syncOrderToShiprocket(orderId, orderData);
-
-        // Update Firestore with the actual result from Shiprocket
         await orderRef.update(shiprocketResult);
-
-        // Log for server debugging
-        if (shiprocketResult.shiprocketStatus === "FAILED") {
-          console.error(`[Order-Create] Shiprocket Sync FAILED for ${orderId}:`, shiprocketResult.shiprocketError);
-        } else {
-          console.log(`[Order-Create] Shiprocket Sync SUCCESS for ${orderId}. SR Order ID: ${shiprocketResult.shiprocketOrderId}`);
-        }
       }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);

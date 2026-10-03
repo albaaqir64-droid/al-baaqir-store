@@ -1,30 +1,38 @@
 import "server-only";
 
-import { initializeApp, cert, getApps, getApp, App } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+/**
+ * Solid Firebase Admin provider for Next.js 16 + Vercel.
+ * Uses lazy loading and proxies to prevent ESM/CJS conflicts during build
+ * and to ensure auth modules (which pull in jose/jwks-rsa) are only loaded
+ * when actually needed.
+ */
 
-function createAdminApp(): App | null {
+let app: any;
+
+function initAdminApp() {
+  const { initializeApp, getApps, getApp, cert } = require("firebase-admin/app");
+  if (getApps().length > 0) return getApp();
+
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
-    return null;
+    // Return a dummy object during build to prevent crashes
+    return {
+      options: {},
+      name: "[DEFAULT]",
+      automaticResourceManagement: false
+    };
   }
-
-  const formattedPrivateKey = privateKey.includes("\\n")
-    ? privateKey.replace(/\\n/g, "\n")
-    : privateKey;
 
   try {
     return initializeApp({
       credential: cert({
-        projectId: projectId,
-        clientEmail: clientEmail,
-        privateKey: formattedPrivateKey,
-      } as any),
+        projectId,
+        clientEmail,
+        privateKey: privateKey.replace(/\\n/g, "\n"),
+      }),
       storageBucket: `${projectId}.firebasestorage.app`,
     });
   } catch (error) {
@@ -33,27 +41,44 @@ function createAdminApp(): App | null {
   }
 }
 
-export function getAdminApp(): App {
-  if (getApps().length) {
-    return getApp();
-  }
-  const app = createAdminApp();
-  if (!app) {
-    // During build, we return a dummy to satisfy TypeScript.
-    // At runtime, this will throw if used without env vars.
-    return {} as App;
-  }
+export const getAdminApp = () => {
+  if (!app) app = initAdminApp();
   return app;
-}
+};
 
-export function getAdminStorage() {
-  return getStorage(getAdminApp());
-}
+// Lazy service getters
+export const getAdminDb = () => require("firebase-admin/firestore").getFirestore(getAdminApp());
+export const getAdminAuth = () => require("firebase-admin/auth").getAuth(getAdminApp());
+export const getAdminStorage = () => require("firebase-admin/storage").getStorage(getAdminApp());
 
-export function getAdminAuth() {
-  return getAuth(getAdminApp());
-}
+// Proxies to maintain synchronous-style access without top-level loading
+export const adminDb: any = new Proxy({} as any, {
+  get(_, prop) {
+    const service = getAdminDb();
+    const value = service[prop];
+    return typeof value === 'function' ? value.bind(service) : value;
+  }
+});
 
-export function getAdminDb() {
-  return getFirestore(getAdminApp());
-}
+export const adminAuth: any = new Proxy({} as any, {
+  get(_, prop) {
+    const service = getAdminAuth();
+    const value = service[prop];
+    return typeof value === 'function' ? value.bind(service) : value;
+  }
+});
+
+export const adminStorage: any = new Proxy({} as any, {
+  get(_, prop) {
+    const service = getAdminStorage();
+    const value = service[prop];
+    return typeof value === 'function' ? value.bind(service) : value;
+  }
+});
+
+// Static properties that might be needed (like FieldValue)
+export const FieldValue = new Proxy({} as any, {
+  get(_, prop) {
+    return require("firebase-admin/firestore").FieldValue[prop];
+  }
+});

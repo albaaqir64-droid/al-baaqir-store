@@ -1,7 +1,6 @@
 import "server-only";
 
-import { getAdminStorage, getAdminApp } from "./firebaseAdmin";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { adminDb, adminStorage, getAdminApp, FieldValue } from "./firebaseAdmin";
 import type { ProductSavePayload, ProductRecord } from "./productTypes";
 import { sanitizeText } from "./utils";
 
@@ -25,12 +24,10 @@ function optionalFiniteNumber(value: unknown): number | undefined {
 
 export async function createProduct(payload: ProductSavePayload) {
   try {
-    const firestore = getFirestore(getAdminApp());
-    const docRef = firestore.collection("products").doc();
+    const docRef = adminDb.collection("products").doc();
     const productId = docRef.id;
 
     const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : [];
-
     const discount = Number(payload.discount ?? payload.discountPercent ?? 0) || 0;
 
     const data = withoutUndefined({
@@ -80,8 +77,7 @@ export async function createProduct(payload: ProductSavePayload) {
 }
 
 export async function updateProduct(id: string, payload: Partial<ProductSavePayload>) {
-  const firestore = getFirestore(getAdminApp());
-  const docRef = firestore.collection("products").doc(id);
+  const docRef = adminDb.collection("products").doc(id);
 
   const galleryImages = Array.isArray(payload.galleryImages) ? payload.galleryImages : Array.isArray(payload.images) ? payload.images : undefined;
 
@@ -126,8 +122,7 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
 }
 
 export async function deleteProductById(id: string) {
-  const firestore = getFirestore(getAdminApp());
-  await firestore.collection("products").doc(id).delete();
+  await adminDb.collection("products").doc(id).delete();
 }
 
 function normalizeProductImageUrl(value: unknown): string {
@@ -204,29 +199,28 @@ export async function fetchProductsForApi(options?: {
   activeOnly?: boolean;
   sort?: string;
 }): Promise<ProductRecord[]> {
-  const firestore = getFirestore(getAdminApp());
-  const snapshot = await firestore.collection("products").get();
-  let products = snapshot.docs.map((docSnap) => normalizeProductFromAdmin(docSnap.id, docSnap.data() as Record<string, unknown>));
+  const snapshot = await adminDb.collection("products").get();
+  let products: ProductRecord[] = snapshot.docs.map((docSnap: any) => normalizeProductFromAdmin(docSnap.id, docSnap.data() as Record<string, unknown>));
 
   if (options?.activeOnly) {
-    products = products.filter((product) => product.active);
+    products = products.filter((product: ProductRecord) => product.active);
   }
 
   if (options?.category) {
-    products = products.filter((product) => product.category === options.category);
+    products = products.filter((product: ProductRecord) => product.category === options.category);
   }
 
   if (options?.gender) {
-    products = products.filter((product) => product.gender === options.gender);
+    products = products.filter((product: ProductRecord) => product.gender === options.gender);
   }
 
   if (options?.discount) {
-    products = products.filter((product) => product.discountPercent > 0);
+    products = products.filter((product: ProductRecord) => product.discountPercent > 0);
   }
 
   if (options?.search) {
     const searchTerm = options.search.toLowerCase();
-    products = products.filter((product) =>
+    products = products.filter((product: ProductRecord) =>
       [product.name, product.category, product.description, product.slug]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(searchTerm))
@@ -235,21 +229,20 @@ export async function fetchProductsForApi(options?: {
 
   const sort = options?.sort || "newest";
   if (sort === "price_asc") {
-    products.sort((a, b) => a.price - b.price);
+    products.sort((a: ProductRecord, b: ProductRecord) => a.price - b.price);
   } else if (sort === "price_desc") {
-    products.sort((a, b) => b.price - a.price);
+    products.sort((a: ProductRecord, b: ProductRecord) => b.price - a.price);
   } else {
-    products.sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0));
+    products.sort((a: ProductRecord, b: ProductRecord) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0));
   }
 
   return products;
 }
 
 export async function fetchActiveCategories(): Promise<string[]> {
-  const firestore = getFirestore(getAdminApp());
-  const snapshot = await firestore.collection("products").where("active", "==", true).get();
+  const snapshot = await adminDb.collection("products").where("active", "==", true).get();
   const categories = new Set<string>();
-  snapshot.docs.forEach((doc) => {
+  snapshot.docs.forEach((doc: any) => {
     const data = doc.data();
     if (data.category) {
       categories.add(String(data.category).trim());

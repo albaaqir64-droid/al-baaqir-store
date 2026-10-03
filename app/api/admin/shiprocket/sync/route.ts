@@ -1,6 +1,5 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb } from "@/app/lib/firebaseAdmin";
 import { syncOrderToShiprocket } from "@/app/lib/shiprocket";
 import { verifyAdminRequest } from "@/app/lib/adminAuth.server";
 
@@ -21,8 +20,7 @@ export async function POST(request: Request) {
       return apiError("Order ID is required", 400);
     }
 
-    const db = getFirestore(getAdminApp());
-    const orderRef = db.collection("orders").doc(orderId);
+    const orderRef = adminDb.collection("orders").doc(orderId);
     const orderDoc = await orderRef.get();
 
     if (!orderDoc.exists) {

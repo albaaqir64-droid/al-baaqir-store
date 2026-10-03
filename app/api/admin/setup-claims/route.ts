@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '@/app/lib/firebase-admin';
+import { adminAuth } from '@/app/lib/firebaseAdmin';
 
 // This is a one-time utility to set admin claims
 // For security, in production you should protect this with a secret key

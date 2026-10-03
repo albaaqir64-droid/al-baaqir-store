@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { getFirestore } from "firebase-admin/firestore";
 import { apiError, apiJson, readRequestJson } from "@/app/lib/api/jsonRoute";
 import { resendInvoiceEmail } from "@/app/lib/email";
-import { getAdminApp } from "@/app/lib/firebaseAdmin";
+import { adminDb } from "@/app/lib/firebaseAdmin";
 import { toOrderRecord } from "@/app/lib/invoiceOrder";
 
 export const runtime = "nodejs";
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
       return apiError("Order ID is required", 400);
     }
 
-    const snapshot = await getFirestore(getAdminApp()).collection("orders").doc(orderId).get();
+    const snapshot = await adminDb.collection("orders").doc(orderId).get();
     if (!snapshot.exists) {
       return apiError("Order not found", 404);
     }
