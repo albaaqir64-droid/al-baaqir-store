@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/app/lib/firebaseAdmin';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -21,12 +23,13 @@ export async function GET(request: Request) {
 
     const orders = ordersSnapshot.docs.map((doc: any) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt
     }));
 
     return NextResponse.json(orders);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching orders:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

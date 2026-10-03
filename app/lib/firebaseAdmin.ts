@@ -18,7 +18,7 @@ function initAdminApp() {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
-    // Return a dummy object during build to prevent crashes
+    console.warn("Firebase Admin environment variables are missing. Using dummy app for build.");
     return {
       options: {},
       name: "[DEFAULT]",
@@ -27,11 +27,16 @@ function initAdminApp() {
   }
 
   try {
+    // Handle both literal \n and actual newlines, and strip accidental quotes
+    const formattedKey = privateKey
+      .replace(/\\n/g, "\n")
+      .replace(/^['"]|['"]$/g, "");
+
     return initializeApp({
       credential: cert({
         projectId,
         clientEmail,
-        privateKey: privateKey.replace(/\\n/g, "\n"),
+        privateKey: formattedKey,
       }),
       storageBucket: `${projectId}.firebasestorage.app`,
     });

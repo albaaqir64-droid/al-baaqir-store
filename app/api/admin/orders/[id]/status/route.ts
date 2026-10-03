@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/app/lib/firebaseAdmin';
 
+export const runtime = 'nodejs';
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -27,8 +29,8 @@ export async function PATCH(
     });
 
     return NextResponse.json({ message: 'Order status updated successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating order status:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

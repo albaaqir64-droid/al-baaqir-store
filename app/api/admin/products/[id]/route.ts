@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/app/lib/firebaseAdmin';
 
+export const runtime = 'nodejs';
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -28,9 +30,9 @@ export async function PUT(
     });
 
     return NextResponse.json({ message: 'Product updated successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating product:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }
 
@@ -56,8 +58,8 @@ export async function DELETE(
     await adminDb.collection('products').doc(productId).delete();
 
     return NextResponse.json({ message: 'Product deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting product:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

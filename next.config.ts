@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  // Force these packages to stay as external Node modules
+  // This is crucial for Vercel to not bundle these ESM-conflicting packages
   serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
   turbopack: {
     root: path.join(__dirname),
