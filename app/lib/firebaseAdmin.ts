@@ -1,15 +1,15 @@
 import "server-only";
+import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 /**
- * Production-ready Firebase Admin provider for Next.js 16 + Vercel.
- * Fixes ERR_REQUIRE_ESM by using dynamic imports for Auth while
- * maintaining synchronous proxies for Firestore to support chaining.
+ * Optimized Firebase Admin provider for Next.js 16.
+ * Standard imports are used as next.config.ts now handles bundling.
  */
 
-let app: any;
-
-function initAdminApp() {
-  const { initializeApp, getApps, getApp, cert } = require("firebase-admin/app");
+function initAdminApp(): App {
   if (getApps().length > 0) return getApp();
 
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
@@ -18,7 +18,7 @@ function initAdminApp() {
 
   if (!projectId || !clientEmail || !privateKey) {
     console.warn("Firebase Admin credentials missing. Using placeholder for build.");
-    return { options: {}, name: "[DEFAULT]" };
+    return { options: {}, name: "[DEFAULT]" } as any;
   }
 
   const formattedKey = privateKey
@@ -35,45 +35,14 @@ function initAdminApp() {
   });
 }
 
+// Exports expected by the project
 export const getAdminApp = () => {
-  if (!app) app = initAdminApp();
-  return app;
+  return initAdminApp();
 };
 
-// --- AUTH PROXY (Dynamic Import to fix ERR_REQUIRE_ESM) ---
-export const adminAuth: any = new Proxy({} as any, {
-  get(_, prop: string | symbol) {
-    // Return an async function that imports and calls the real method
-    return async (...args: any[]) => {
-      const { getAuth } = await import("firebase-admin/auth");
-      const service = getAuth(getAdminApp()) as any;
-      return service[prop](...args);
-    };
-  }
-});
+export const adminApp = getAdminApp();
+export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);
+export const adminStorage = getStorage(adminApp);
 
-// --- FIRESTORE PROXY (Synchronous for chaining support) ---
-export const adminDb: any = new Proxy({} as any, {
-  get(_, prop: string | symbol) {
-    const { getFirestore } = require("firebase-admin/firestore");
-    const service = getFirestore(getAdminApp()) as any;
-    const val = service[prop];
-    return typeof val === 'function' ? val.bind(service) : val;
-  }
-});
-
-// --- STORAGE PROXY ---
-export const adminStorage: any = new Proxy({} as any, {
-  get(_, prop: string | symbol) {
-    const { getStorage } = require("firebase-admin/storage");
-    const service = getStorage(getAdminApp()) as any;
-    const val = service[prop];
-    return typeof val === 'function' ? val.bind(service) : val;
-  }
-});
-
-export const FieldValue = new Proxy({} as any, {
-  get(_, prop: string | symbol) {
-    return (require("firebase-admin/firestore").FieldValue as any)[prop];
-  }
-});
+export { FieldValue };
