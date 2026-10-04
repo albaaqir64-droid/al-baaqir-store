@@ -32,11 +32,12 @@ export default function AdminLogin() {
       if (data.isAdmin) {
         router.push('/admin');
       } else {
-        setError('Unauthorized access. Admin privileges required.');
+        const uid = data.uid || userCredential.user.uid;
+        setError(`Unauthorized. Your account (UID: ${uid}) is not an admin. Please run the setup-claims script.`);
         await auth.signOut();
       }
     } catch (err: any) {
-      setError('Invalid email or password.');
+      setError(err.message === 'Failed to fetch' ? 'Server error. Please check if Vercel deployment is successful.' : 'Invalid email or password.');
       console.error(err);
     } finally {
       setLoading(false);
