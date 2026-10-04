@@ -28,20 +28,36 @@ export default function AdminLogin() {
         body: JSON.stringify({ token }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ error: 'Server returned invalid response (possibly 500 error)' }));
 
       if (data.isAdmin) {
         router.push('/admin');
-      } else {
+      } else if (response.status === 403 || response.status === 401) {
         const uid = data.uid || userCredential.user.uid;
         const debugMsg = data.debug ? ` | Project: ${data.debug.projectId} | Claim: ${data.debug.claimValue}` : '';
         setError(`Unauthorized. Your account (UID: ${uid}) is not an admin.${debugMsg}`);
-        console.log("Admin Debug Info:", data.debug);
+        await auth.signOut();
+      } else {
+        setError(data.error || data.details || 'Admin verification failed.');
         await auth.signOut();
       }
     } catch (err: any) {
-      setError(err.message === 'Failed to fetch' ? 'Server error. Please check if Vercel deployment is successful.' : 'Invalid email or password.');
-      console.error(err);
+      console.error("Login Error Details:", err);
+      let errorMessage = 'Login failed.';
+
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'User not found. Check Firebase Console.';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Wrong password.';
+      } else if (err.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid credentials (check email/password).';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Server is down or API crashed (ESM Error).';
+      } else {
+        errorMessage = `Error (${err.code || 'unknown'}): ${err.message}`;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
