@@ -19,7 +19,8 @@ export default function AdminLogin() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
+      // Force refresh the token to get the latest custom claims
+      const token = await userCredential.user.getIdToken(true);
 
       const response = await fetch('/api/admin/verify-token', {
         method: 'POST',
@@ -33,7 +34,9 @@ export default function AdminLogin() {
         router.push('/admin');
       } else {
         const uid = data.uid || userCredential.user.uid;
-        setError(`Unauthorized. Your account (UID: ${uid}) is not an admin. Please run the setup-claims script.`);
+        const debugMsg = data.debug ? ` | Project: ${data.debug.projectId} | Claim: ${data.debug.claimValue}` : '';
+        setError(`Unauthorized. Your account (UID: ${uid}) is not an admin.${debugMsg}`);
+        console.log("Admin Debug Info:", data.debug);
         await auth.signOut();
       }
     } catch (err: any) {

@@ -14,19 +14,25 @@ export async function POST(request: Request) {
     // Verify the ID token
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    console.log(`[Admin Verify] User UID: ${decodedToken.uid}`);
-    console.log(`[Admin Verify] Claims:`, decodedToken.admin);
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    console.log(`[Admin Verify] Project: ${projectId}, UID: ${decodedToken.uid}`);
+    console.log(`[Admin Verify] All Claims:`, JSON.stringify(decodedToken));
 
     // Check if the user has the admin custom claim
     if (decodedToken.admin === true) {
       return NextResponse.json({ isAdmin: true });
     } else {
-      // Very Important: This tells you if the user is logged in but NOT an admin
-      console.warn(`[Admin Verify] Access Denied: User ${decodedToken.email} is not an admin`);
+      console.warn(`[Admin Verify] Access Denied: User ${decodedToken.email} does not have {admin: true}. Current claims:`, decodedToken.admin);
       return NextResponse.json({
         isAdmin: false,
         error: 'Not an admin',
-        uid: decodedToken.uid // Sending UID back to help you set claims
+        uid: decodedToken.uid,
+        debug: {
+          projectId: projectId,
+          hasAdminClaim: !!decodedToken.admin,
+          claimValue: decodedToken.admin,
+          email: decodedToken.email
+        }
       }, { status: 403 });
     }
   } catch (error: any) {
