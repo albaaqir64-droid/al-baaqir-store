@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  // We remove firebase-admin from here to let the bundler handle ESM interop
-  serverExternalPackages: [],
+  // This is the CRITICAL fix for Firebase Admin v14 on Vercel
+  serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
   turbopack: {
     root: path.join(__dirname),
   },

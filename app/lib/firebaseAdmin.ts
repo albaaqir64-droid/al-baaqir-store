@@ -1,48 +1,88 @@
 import "server-only";
-import { initializeApp, getApps, getApp, cert, App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getStorage } from "firebase-admin/storage";
 
 /**
- * Optimized Firebase Admin provider for Next.js 16.
- * Standard imports are used as next.config.ts now handles bundling.
+ * Production-ready Firebase Admin provider for Next.js 16 + Vercel.
+ * Fixes ERR_REQUIRE_ESM by using dynamic imports for Auth while
+ * maintaining synchronous proxies for Firestore to support chaining.
  */
 
-function initAdminApp(): App {
+let app: any;
+
+function initAdminApp() {
+  const { initializeApp, getApps, getApp, cert } = require("firebase-admin/app");
   if (getApps().length > 0) return getApp();
 
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  // Clean environment variables (remove potential quotes and handle newlines)
+  const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "").replace(/['"]/g, "").trim();
+  const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || "").replace(/['"]/g, "").trim();
+  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n").replace(/['"]/g, "").trim();
 
   if (!projectId || !clientEmail || !privateKey) {
-    console.warn("Firebase Admin credentials missing. Using placeholder for build.");
-    return { options: {}, name: "[DEFAULT]" } as any;
+    console.warn("Firebase Admin credentials missing. Check Vercel Environment Variables.");
+    return null;
   }
 
-  const formattedKey = privateKey
-    .replace(/\\n/g, "\n")
-    .replace(/^['"]|['"]$/g, "");
-
-  return initializeApp({
-    credential: cert({
-      projectId,
-      clientEmail,
-      privateKey: formattedKey,
-    }),
-    storageBucket: `${projectId}.firebasestorage.app`,
-  });
+  try {
+    return initializeApp({
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+      storageBucket: `${projectId}.firebasestorage.app`,
+    });
+  } catch (err) {
+    console.error("Firebase Admin Initialization Error:", err);
+    return null;
+  }
 }
 
-// Exports expected by the project
 export const getAdminApp = () => {
-  return initAdminApp();
+  if (!app) app = initAdminApp();
+  return app;
 };
 
-export const adminApp = getAdminApp();
-export const adminAuth = getAuth(adminApp);
-export const adminDb = getFirestore(adminApp);
-export const adminStorage = getStorage(adminApp);
+// --- AUTH PROXY (Dynamic Import to fix ERR_REQUIRE_ESM) ---
+export const adminAuth: any = new Proxy({} as any, {
+  get(_, prop: string | symbol) {
+    // Return an async function that imports and calls the real method
+    return async (...args: any[]) => {
+      const { getAuth } = await import("firebase-admin/auth");
+      const firebaseApp = getAdminApp();
+      if (!firebaseApp) throw new Error("Firebase Admin App not initialized. Check credentials.");
+      const service = getAuth(firebaseApp) as any;
+      return service[prop](...args);
+    };
+  }
+});
 
-export { FieldValue };
+// --- FIRESTORE PROXY (Synchronous for chaining support) ---
+export const adminDb: any = new Proxy({} as any, {
+  get(_, prop: string | symbol) {
+    const { getFirestore } = require("firebase-admin/firestore");
+    const firebaseApp = getAdminApp();
+    if (!firebaseApp) return null;
+    const service = getFirestore(firebaseApp) as any;
+    const val = service[prop];
+    return typeof val === 'function' ? val.bind(service) : val;
+  }
+});
+
+// --- STORAGE PROXY ---
+export const adminStorage: any = new Proxy({} as any, {
+  get(_, prop: string | symbol) {
+    const { getStorage } = require("firebase-admin/storage");
+    const firebaseApp = getAdminApp();
+    if (!firebaseApp) return null;
+    const service = getStorage(firebaseApp) as any;
+    const val = service[prop];
+    return typeof val === 'function' ? val.bind(service) : val;
+  }
+});
+
+export const FieldValue = new Proxy({} as any, {
+  get(_, prop: string | symbol) {
+    const { FieldValue } = require("firebase-admin/firestore");
+    return FieldValue[prop];
+  }
+});
