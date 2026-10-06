@@ -31,9 +31,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing UID or Email' }, { status: 400 });
     }
 
-    // Set custom claims for the user
+    const user = await adminAuth.getUser(targetUid);
+    const existingClaims = user.customClaims || {};
+
+    // Preserve existing custom claims while granting admin access.
     console.log(`[Setup Claims] Setting admin claim for UID: ${targetUid}`);
-    await adminAuth.setCustomUserClaims(targetUid, { admin: true });
+    await adminAuth.setCustomUserClaims(targetUid, { ...existingClaims, admin: true });
 
     return NextResponse.json({
       success: true,

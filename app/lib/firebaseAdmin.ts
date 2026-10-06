@@ -1,38 +1,43 @@
 import "server-only";
 
 /**
- * Production-ready Firebase Admin provider for Next.js 16 + Vercel.
- * Fixes ERR_REQUIRE_ESM by using dynamic imports for Auth while
- * maintaining synchronous proxies for Firestore to support chaining.
+ * Firebase Admin provider for server-side Next.js code.
+ * Supports a local service-account JSON path and environment credentials.
  */
 
 let app: any;
 
 function initAdminApp() {
   const { initializeApp, getApps, getApp, cert } = require("firebase-admin/app");
+  const fs = require("node:fs");
+  const path = require("node:path");
   if (getApps().length > 0) return getApp();
 
-  // Clean environment variables (remove potential quotes and handle newlines)
-  const projectId = (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "").replace(/['"]/g, "").trim();
-  const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || "").replace(/['"]/g, "").trim();
-  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n").replace(/['"]/g, "").trim();
-
-  if (!projectId || !clientEmail || !privateKey) {
-    console.warn("Firebase Admin credentials missing. Check Vercel Environment Variables.");
-    return null;
-  }
-
   try {
-    return initializeApp({
-      credential: cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-      storageBucket: `${projectId}.firebasestorage.app`,
-    });
-  } catch (err) {
-    console.error("Firebase Admin Initialization Error:", err);
+    let credential;
+    let projectId: string;
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
+
+    if (serviceAccountPath) {
+      const resolvedPath = path.resolve(process.cwd(), serviceAccountPath);
+      const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
+      projectId = serviceAccount.project_id;
+      credential = cert(serviceAccount);
+    } else {
+      projectId = (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "").replace(/[\'\"]/g, "").trim();
+      const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || "").replace(/[\'\"]/g, "").trim();
+      const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n").trim().replace(/^[\'"]|[\'"]$/g, "");
+      if (!projectId || !clientEmail || !privateKey) {
+        console.warn("Firebase Admin credentials missing. Configure FIREBASE_SERVICE_ACCOUNT_PATH or the FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY variables.");
+        return null;
+      }
+      credential = cert({ projectId, clientEmail, privateKey });
+    }
+
+    if (!projectId) throw new Error("Firebase service account is missing its project ID.");
+    return initializeApp({ credential, storageBucket: `${projectId}.firebasestorage.app` });
+  } catch {
+    console.error("Firebase Admin initialization failed. Check the server-side credential configuration.");
     return null;
   }
 }
@@ -45,7 +50,6 @@ export const getAdminApp = () => {
 // --- AUTH PROXY (Dynamic Import to fix ERR_REQUIRE_ESM) ---
 export const adminAuth: any = new Proxy({} as any, {
   get(_, prop: string | symbol) {
-    // Return an async function that imports and calls the real method
     return async (...args: any[]) => {
       const { getAuth } = await import("firebase-admin/auth");
       const firebaseApp = getAdminApp();
