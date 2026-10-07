@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/app/lib/firebase';
+import { getAdminIdToken } from '@/app/lib/auth';
 import Image from 'next/image';
 
 interface Product {
@@ -44,7 +44,7 @@ export default function AdminProducts() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAdminIdToken();
 
     const method = editingProduct ? 'PUT' : 'POST';
     const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
@@ -76,7 +76,7 @@ export default function AdminProducts() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
-    const token = await auth.currentUser?.getIdToken();
+    const token = await getAdminIdToken();
     try {
       const response = await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',

@@ -19,13 +19,24 @@ export default function AdminLogin() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Force refresh the token to get the latest custom claims
-      const token = await userCredential.user.getIdToken(true);
+      const currentUser = auth.currentUser;
+      if (!currentUser || currentUser.uid !== userCredential.user.uid) {
+        throw new Error('Unable to confirm the signed-in Firebase user.');
+      }
+
+      // Refresh first, then read and send the token carrying the refreshed claims.
+      const idToken = await currentUser.getIdToken(true);
+      const idTokenResult = await currentUser.getIdTokenResult(true);
+      if (!idToken || idTokenResult.claims.admin !== true) {
+        setError(`Unauthorized. Your account (UID: ${currentUser.uid}) is not an admin.`);
+        await auth.signOut();
+        return;
+      }
 
       const response = await fetch('/api/admin/verify-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: idTokenResult.token }),
       });
 
       const data = await response.json().catch(() => ({ error: 'Server returned invalid response (possibly 500 error)' }));
@@ -33,7 +44,7 @@ export default function AdminLogin() {
       if (data.isAdmin) {
         router.push('/admin');
       } else if (response.status === 403 || response.status === 401) {
-        const uid = data.uid || userCredential.user.uid;
+        const uid = data.uid || currentUser.uid;
         const debugMsg = data.debug ? ` | Project: ${data.debug.projectId} | Claim: ${data.debug.claimValue}` : '';
         setError(`Unauthorized. Your account (UID: ${uid}) is not an admin.${debugMsg}`);
         await auth.signOut();

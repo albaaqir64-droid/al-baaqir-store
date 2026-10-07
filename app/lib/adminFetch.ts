@@ -1,6 +1,7 @@
 "use client";
 
 import { auth } from "./firebase";
+import { getAdminIdToken } from "./auth";
 
 /**
  * A wrapper around the native fetch API that automatically attaches
@@ -16,7 +17,8 @@ export async function adminFetch(input: RequestInfo | URL, init?: RequestInit): 
   }
 
   try {
-    const token = await user.getIdToken();
+    const token = await getAdminIdToken();
+    if (!token) return fetch(input, init);
 
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Bearer ${token}`);

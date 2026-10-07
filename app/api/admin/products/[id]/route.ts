@@ -18,7 +18,7 @@ export async function PUT(
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    if (!decodedToken.admin) {
+    if (decodedToken.admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -51,7 +51,7 @@ export async function DELETE(
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    if (!decodedToken.admin) {
+    if (decodedToken.admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -37,7 +37,12 @@ export function isAdminAuthenticated() {
 export async function loginAdmin(email: string, pass: string) {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-    const idTokenResult = await userCredential.user.getIdTokenResult(true);
+    const currentUser = auth.currentUser;
+    if (!currentUser || currentUser.uid !== userCredential.user.uid) {
+      throw new Error("Unable to confirm the signed-in Firebase user.");
+    }
+    await currentUser.getIdToken(true);
+    const idTokenResult = await currentUser.getIdTokenResult(true);
 
     if (idTokenResult.claims.admin === true) {
       localStorage.setItem(ADMIN_SESSION_KEY, "1");
@@ -60,7 +65,14 @@ export async function logoutAdmin() {
 }
 
 export async function getAdminIdToken() {
-  return auth.currentUser?.getIdToken();
+  const currentUser = auth.currentUser;
+  if (!currentUser) return null;
+  await currentUser.getIdToken(true);
+  const idTokenResult = await currentUser.getIdTokenResult(true);
+  if (idTokenResult.claims.admin !== true) {
+    throw new Error("Access denied: Not an administrator.");
+  }
+  return idTokenResult.token;
 }
 
 // --- Customer Authentication (New) ---

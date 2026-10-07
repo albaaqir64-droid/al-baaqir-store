@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/app/lib/firebase';
+import { getAdminIdToken } from '@/app/lib/auth';
 
 interface Order {
   id: string;
@@ -26,7 +26,7 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const token = await auth.currentUser?.getIdToken();
+      const token = await getAdminIdToken();
       const response = await fetch('/api/admin/orders', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -42,7 +42,7 @@ export default function AdminOrders() {
   };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
-    const token = await auth.currentUser?.getIdToken();
+      const token = await getAdminIdToken();
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',

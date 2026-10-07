@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/app/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getAdminIdToken } from '@/app/lib/auth';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState(false);
@@ -17,7 +18,15 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       }
 
       try {
-        const token = await user.getIdToken();
+        if (auth.currentUser?.uid !== user.uid) {
+          router.push('/admin/login');
+          return;
+        }
+        const token = await getAdminIdToken();
+        if (!token) {
+          router.push('/admin/login');
+          return;
+        }
         const response = await fetch('/api/admin/verify-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

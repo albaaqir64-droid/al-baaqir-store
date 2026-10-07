@@ -17,7 +17,7 @@ export async function PATCH(
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    if (!decodedToken.admin) {
+    if (decodedToken.admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

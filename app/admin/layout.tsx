@@ -20,12 +20,24 @@ export default function AdminLayout({
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Verify admin status via our API
-          const token = await user.getIdToken();
+          const currentUser = auth.currentUser;
+          if (!currentUser || currentUser.uid !== user.uid) {
+            throw new Error('Signed-in Firebase user changed during admin verification.');
+          }
+
+          await currentUser.getIdToken(true);
+          const idTokenResult = await currentUser.getIdTokenResult(true);
+          if (idTokenResult.claims.admin !== true) {
+            setIsAdmin(false);
+            if (pathname !== '/admin/login') router.push('/admin/login');
+            setLoading(false);
+            return;
+          }
+
           const response = await fetch('/api/admin/verify-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
+            body: JSON.stringify({ token: idTokenResult.token }),
           });
 
           const data = await response.json();

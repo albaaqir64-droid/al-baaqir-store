@@ -35,7 +35,7 @@ function initAdminApp() {
     }
 
     if (!projectId) throw new Error("Firebase service account is missing its project ID.");
-    return initializeApp({ credential, storageBucket: `${projectId}.firebasestorage.app` });
+    return initializeApp({ projectId, credential, storageBucket: `${projectId}.firebasestorage.app` });
   } catch {
     console.error("Firebase Admin initialization failed. Check the server-side credential configuration.");
     return null;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/app/lib/firebase';
+import { getAdminIdToken } from '@/app/lib/auth';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = await auth.currentUser?.getIdToken();
+        const token = await getAdminIdToken();
         const ordersRes = await fetch('/api/admin/orders', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
