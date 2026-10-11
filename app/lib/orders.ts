@@ -43,6 +43,7 @@ export interface OrderItem {
   category?: string;
   hsnSac?: string;
   gstRate?: number;
+  taxMode?: "inclusive" | "exclusive";
 }
 
 export interface ShippingInfo {
@@ -63,6 +64,7 @@ export interface OrderRecord {
   customerGSTIN?: string;
   paymentMethod: string;
   subtotal: number;
+  taxMode?: "inclusive" | "exclusive";
   shippingCharge: number;
   discount: number;
   total: number;
@@ -97,6 +99,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
         category: String(item.category ?? ""),
         hsnSac: String(item.hsnSac ?? item.hsn ?? item.sac ?? "") || undefined,
         gstRate: Number(item.gstRate ?? item.taxRate ?? 0) || 0,
+        taxMode: item.taxMode === "inclusive" || item.taxMode === "exclusive" ? item.taxMode : undefined,
       }))
     : [];
 
@@ -109,6 +112,7 @@ function normalizeOrder(id: string, data: DocumentData): OrderRecord {
     customerGSTIN: String(data.customerGSTIN ?? data.gstin ?? ""),
     paymentMethod: String(data.paymentMethod ?? "cod"),
     subtotal: Number(data.subtotal ?? 0),
+    taxMode: data.taxMode === "inclusive" || data.taxMode === "exclusive" ? data.taxMode : undefined,
     shippingCharge: Number(data.shippingCharge ?? 0),
     discount: Number(data.discount ?? 0),
     total: Number(data.total ?? 0),

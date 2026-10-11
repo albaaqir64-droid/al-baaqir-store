@@ -126,7 +126,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   drawText("Description", colX[0], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("HSN/GST", colX[1], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Qty", colX[2], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
-  drawText("Price", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
+  drawText("Price*", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Total", colX[4], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
 
   page.drawRectangle({
@@ -141,7 +141,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   drawText("Description", colX[0], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("HSN/GST", colX[1], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Qty", colX[2], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
-  drawText("Price", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
+  drawText("Price*", colX[3], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
   drawText("Total", colX[4], yPosition, 10, rgb(1, 1, 1), "Helvetica-Bold");
 
   yPosition -= 25;
@@ -149,7 +149,8 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   // Items
   tax.items.forEach((item) => {
 
-    drawText(item.name.substring(0, 30), colX[0], yPosition, 9);
+    const itemLabel = `${item.name.substring(0, item.taxMode ? 22 : 30)}${item.taxMode ? ` (${item.taxMode === "inclusive" ? "GST incl." : "GST excl."})` : ""}`;
+    drawText(itemLabel, colX[0], yPosition, 8);
     drawText(item.hsnSac ? `${item.hsnSac}/${item.gstRate}%` : item.gstRate ? `${item.gstRate}%` : "-", colX[1], yPosition, 8);
     drawText(String(item.quantity), colX[2], yPosition, 9);
     // Standard PDF fonts used here do not contain the Unicode rupee glyph.
@@ -167,12 +168,18 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   // Totals Section
   const totalX = margin + contentWidth - 180;
 
-  drawText("Subtotal:", totalX, yPosition, 10);
-  drawText(`INR ${order.subtotal.toFixed(2)}`, totalX + 120, yPosition, 10, rgb(0, 0, 0), "Helvetica-Bold");
+  drawText("Taxable value:", totalX, yPosition, 10);
+  drawText(`INR ${tax.taxableAmount.toFixed(2)}`, totalX + 120, yPosition, 10, rgb(0, 0, 0), "Helvetica-Bold");
 
   yPosition -= 15;
   drawText("Shipping:", totalX, yPosition, 10);
   drawText(`INR ${order.shippingCharge.toFixed(2)}`, totalX + 120, yPosition, 10);
+
+  if (order.discount > 0) {
+    yPosition -= 15;
+    drawText("Discount:", totalX, yPosition, 10);
+    drawText(`- INR ${order.discount.toFixed(2)}`, totalX + 120, yPosition, 10);
+  }
 
   yPosition -= 15;
   drawText(tax.intraState ? "CGST:" : "IGST:", totalX, yPosition, 10);
@@ -183,9 +190,20 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     drawText(`INR ${tax.sgst.toFixed(2)}`, totalX + 120, yPosition, 10);
   }
 
+  const reconciledComponents = tax.taxableAmount + order.shippingCharge - order.discount + tax.taxAmount;
+  const amountAdjustment = Math.round((order.total - reconciledComponents) * 100) / 100;
+  if (amountAdjustment !== 0) {
+    yPosition -= 15;
+    drawText("Order amount adjustment:", totalX, yPosition, 9);
+    drawText(`INR ${amountAdjustment.toFixed(2)}`, totalX + 120, yPosition, 9);
+  }
+
   yPosition -= 20;
   drawText("TOTAL:", totalX, yPosition, 11, accentColor, "Helvetica-Bold");
   drawText(`INR ${order.total.toFixed(2)}`, totalX + 120, yPosition, 11, accentColor, "Helvetica-Bold");
+
+  yPosition -= 22;
+  drawText("* Unit price; GST treatment is shown beside each product.", totalX - 135, yPosition, 8, secondaryColor);
 
   yPosition -= 30;
   drawDivider(yPosition);
