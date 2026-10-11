@@ -2,9 +2,8 @@
 
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { CartItem, clearCart, loadCartItems } from "../lib/cart";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CartItem, clearCart, getCartItems, loadCartItems } from "../lib/cart";
 import { generateInvoiceNumber } from "../lib/orders";
 import { getCurrentUserId, saveCustomerContact } from "../lib/auth";
 import { useAuth } from "../hooks/useAuth";
@@ -12,6 +11,7 @@ import { fetchPincodeLocation } from "../lib/pincode";
 import { sanitizeCartItems, sanitizeFirestoreData, sanitizeShipping } from "../lib/firestore";
 import { requestOrderStatusNotifications } from "../lib/pushNotifications";
 import { readApiJson } from "../lib/api/client";
+import { getCheckoutValidationErrors } from "../lib/checkoutValidation";
 
 const defaultForm = {
   fullName: "",
@@ -36,12 +36,14 @@ export default function CheckoutPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartLoading, setCartLoading] = useState(true);
   const [form, setForm] = useState(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (!loading && (!user || user.isAnonymous)) {
@@ -52,11 +54,16 @@ export default function CheckoutPage() {
   useEffect(() => {
     let active = true;
     const fetchItems = async () => {
+      // Render the local cart immediately; Firestore hydration can be slow or
+      // unavailable and should not leave Confirm Order disabled without context.
+      setItems(getCartItems());
       try {
         const loaded = await loadCartItems();
         if (active) setItems(loaded || []);
       } catch (err) {
         console.error("Checkout load error:", err);
+      } finally {
+        if (active) setCartLoading(false);
       }
     };
     fetchItems();
@@ -98,17 +105,7 @@ export default function CheckoutPage() {
   }
 
   function validate() {
-    const nextErrors: Record<string, string> = {};
-    if (!form.fullName.trim()) nextErrors.fullName = "Full name is required.";
-    if (!/^[6-9][0-9]{9}$/.test(form.mobile)) nextErrors.mobile = "Enter a valid 10-digit mobile number.";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = "Enter a valid email address.";
-    if (form.customerGSTIN && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/i.test(form.customerGSTIN.trim())) nextErrors.customerGSTIN = "Enter a valid 15-character GSTIN.";
-    if (!form.house.trim()) nextErrors.house = "House / flat number is required.";
-    if (!form.street.trim()) nextErrors.street = "Street / area is required.";
-    if (!/^[1-9][0-9]{5}$/.test(form.pincode)) nextErrors.pincode = "Enter a valid 6-digit pincode.";
-    if (!form.city.trim()) nextErrors.city = "City is required.";
-    if (!form.state.trim()) nextErrors.state = "State is required.";
-    if (!items.length) nextErrors.cart = "Your cart is empty. Add items before placing an order.";
+    const nextErrors = getCheckoutValidationErrors(form, items.length);
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -116,6 +113,7 @@ export default function CheckoutPage() {
   function handleInput(field: string, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: "" }));
+    setSaveError("");
   }
 
   async function checkPincode() {
@@ -134,22 +132,34 @@ export default function CheckoutPage() {
         city: location.city,
         state: location.state,
       }));
-    } catch {
-      // Lookup is only a convenience. A correctly formatted pincode remains
-      // valid for checkout and the customer can enter city/state themselves.
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Unable to fetch pincode details.";
+      setErrors((current) => ({
+        ...current,
+        pincode: `Pincode lookup failed: ${reason} Enter city and state manually.`,
+      }));
     } finally {
       setPincodeLoading(false);
     }
   }
 
   async function placeOrder() {
+    if (submittingRef.current) return;
     if (!validate()) {
       setSubmitted(false);
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setSaveError("");
+
+    const releaseSubmission = () => {
+      submittingRef.current = false;
+      setSubmitting(false);
+    };
+
+    try {
 
     const cartItems = sanitizeCartItems(items);
     const shipping = sanitizeShipping({
@@ -184,11 +194,15 @@ export default function CheckoutPage() {
 
     if (!validateOrderPayload(orderMeta)) {
       setSaveError('Unable to prepare your order. Please try again.');
-      setSubmitting(false);
+      releaseSubmission();
       return;
     }
 
-    saveCustomerContact({ phone: orderMeta.phone, email: orderMeta.email });
+    try {
+      saveCustomerContact({ phone: orderMeta.phone, email: orderMeta.email });
+    } catch (error) {
+      console.warn("Unable to save checkout contact locally:", error);
+    }
 
     if (form.paymentMethod === 'online') {
       const createRes = await fetch('/api/razorpay/create-order', {
@@ -203,7 +217,7 @@ export default function CheckoutPage() {
       const createParsed = await readApiJson<{ order?: { amount: number; currency: string; id: string }; keyId?: string; error?: string }>(createRes);
       if (!createParsed.ok || !createParsed.data?.order || !createParsed.data?.keyId) {
         setSaveError(createParsed.error || 'Unable to initiate payment. Please try again later.');
-        setSubmitting(false);
+        releaseSubmission();
         return;
       }
       const razorpayOrder = createParsed.data.order;
@@ -246,7 +260,7 @@ export default function CheckoutPage() {
             const verifyParsed = await readApiJson<{ orderId?: string; error?: string }>(verifyRes);
             if (!verifyParsed.ok || !verifyParsed.data?.orderId) {
               setSaveError(verifyParsed.error || 'Payment verification failed. Please contact support.');
-              setSubmitting(false);
+              releaseSubmission();
               return;
             }
             const verifiedOrderId = verifyParsed.data.orderId;
@@ -258,13 +272,13 @@ export default function CheckoutPage() {
             setErrors({});
 
             window.location.href = `/order-success?orderId=${encodeURIComponent(verifiedOrderId)}`;
-          } catch {
-            setSaveError('Payment verification failed. Please contact support.');
-          } finally {
-            setSubmitting(false);
+          } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            setSaveError(`Payment verification failed: ${reason}`);
+            releaseSubmission();
           }
         },
-        modal: { ondismiss: () => setSubmitting(false) },
+        modal: { ondismiss: releaseSubmission },
       };
 
       const rzp = new (window as any).Razorpay(rzpOptions);
@@ -300,11 +314,13 @@ export default function CheckoutPage() {
     const orderParsed = await readApiJson<{ orderId?: string; error?: string }>(orderResponse);
     if (!orderParsed.ok || !orderParsed.data?.orderId) {
       setSaveError(orderParsed.error || "Unable to create your order. Please try again.");
-      setSubmitting(false);
+      releaseSubmission();
       return;
     }
     const orderId = String(orderParsed.data.orderId);
-    void requestOrderStatusNotifications();
+    void requestOrderStatusNotifications().catch((error) => {
+      console.warn("Order status notification setup failed:", error);
+    });
 
     try {
       await fetch('/api/invoices/generate', {
@@ -324,6 +340,12 @@ export default function CheckoutPage() {
 
     window.location.href = `/order-success?orderId=${encodeURIComponent(orderId)}`;
     return;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error("Checkout submission failed:", error);
+      setSaveError(reason ? `Unable to complete your order: ${reason}` : "Unable to complete your order. Please try again.");
+      releaseSubmission();
+    }
   }
 
   return (
@@ -421,10 +443,21 @@ export default function CheckoutPage() {
                   <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">City</label>
                   <input
                     value={form.city}
-                    readOnly
-                    className="w-full border border-[#eee] bg-[#f9f9f9] px-4 py-3 text-sm text-[#888]"
-                    placeholder="Auto-filled"
+                    onChange={(event) => handleInput("city", event.target.value)}
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
+                    placeholder="City"
                   />
+                  {errors.city && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.city}</p>}
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-[#151515] block mb-2">State</label>
+                  <input
+                    value={form.state}
+                    onChange={(event) => handleInput("state", event.target.value)}
+                    className="w-full border border-[#ccc] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#111]"
+                    placeholder="State"
+                  />
+                  {errors.state && <p className="mt-2 text-xs font-semibold text-rose-600">{errors.state}</p>}
                 </div>
               </div>
             </div>
@@ -507,13 +540,14 @@ export default function CheckoutPage() {
 
               <button
                 onClick={placeOrder}
-                disabled={submitting || !items.length}
+                disabled={submitting || cartLoading || !items.length}
                 className="mt-8 w-full bg-[#111] text-white py-4 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-[#333] disabled:opacity-50"
               >
-                {submitting ? "Processing..." : "CONFIRM ORDER"}
+                {submitting ? "Processing..." : cartLoading ? "Loading cart..." : !items.length ? "Cart is empty" : "CONFIRM ORDER"}
               </button>
 
-              {saveError && <p className="mt-4 text-center text-xs font-bold text-rose-600 uppercase tracking-widest">{saveError}</p>}
+              {errors.cart && <p className="mt-4 text-center text-xs font-semibold text-rose-600" role="alert">{errors.cart}</p>}
+              {saveError && <p className="mt-4 text-center text-xs font-bold text-rose-600" role="alert">{saveError}</p>}
             </div>
           </aside>
         </div>

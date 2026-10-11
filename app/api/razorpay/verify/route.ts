@@ -152,11 +152,17 @@ export async function POST(req: Request) {
       }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
-      await orderRef.update({
-        shiprocketStatus: "FAILED",
-        shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
-        shiprocketSyncAt: FieldValue.serverTimestamp(),
-      });
+      try {
+        await orderRef.update({
+          shiprocketStatus: "FAILED",
+          shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
+          shiprocketSyncAt: FieldValue.serverTimestamp(),
+        });
+      } catch (statusError) {
+        // Payment verification and order creation already committed. Keep
+        // fulfilment-status persistence failures from masking that success.
+        console.error("Unable to store Shiprocket failure status for order", orderId, statusError);
+      }
     }
 
     try {

@@ -157,11 +157,17 @@ export async function POST(request: Request) {
       }
     } catch (shiprocketErr) {
       console.error("Shiprocket sync failed for order", orderId, shiprocketErr);
-      await orderRef.update({
-        shiprocketStatus: "FAILED",
-        shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
-        shiprocketSyncAt: FieldValue.serverTimestamp(),
-      });
+      try {
+        await orderRef.update({
+          shiprocketStatus: "FAILED",
+          shiprocketError: shiprocketErr instanceof Error ? shiprocketErr.message : String(shiprocketErr),
+          shiprocketSyncAt: FieldValue.serverTimestamp(),
+        });
+      } catch (statusError) {
+        // The order transaction already committed. A Shiprocket status write
+        // failure must not turn a successfully created order into an API error.
+        console.error("Unable to store Shiprocket failure status for order", orderId, statusError);
+      }
     }
 
     return apiJson({ success: true, orderId });
