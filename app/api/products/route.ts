@@ -45,9 +45,15 @@ export async function POST(req: Request) {
     if (!parsed.ok) return parsed.response;
     const body = parsed.data as any;
 
-    if (!body?.name || !body?.price) {
-      return apiError("Product name and price are required", 400);
+    if (!body?.name?.trim() || !body?.sku?.trim() || !Number.isFinite(Number(body.price)) || Number(body.price) < 0 || !body.category?.trim()) {
+      return apiError("Product name, unique SKU, category and a valid price are required", 400);
     }
+    if (body.stock !== undefined && (!Number.isInteger(Number(body.stock)) || Number(body.stock) < 0)) return apiError("Stock must be a non-negative whole number", 400);
+    if (body.gstRate !== undefined && body.gstRate !== null && body.gstRate !== "" && (!Number.isFinite(Number(body.gstRate)) || Number(body.gstRate) < 0 || Number(body.gstRate) > 100)) return apiError("GST rate must be from 0 to 100", 400);
+    if (body.hsnSac && !/^[A-Za-z0-9]{4,8}$/.test(String(body.hsnSac))) return apiError("HSN/SAC must be 4 to 8 letters or digits", 400);
+    const sku = String(body.sku).trim().toUpperCase();
+    const duplicateSku = await (await import("@/app/lib/firebaseAdmin")).adminDb.collection("products").where("sku", "==", sku).limit(1).get();
+    if (!duplicateSku.empty) return apiError("That SKU is already in use", 409);
 
     const payload = {
       name: String(body.name).trim(),
@@ -72,6 +78,9 @@ export async function POST(req: Request) {
         height: Number(body.dimensions.height) || 0,
       } : undefined,
       weight: body.weight !== undefined && body.weight !== "" ? Number(body.weight) : undefined,
+      sku, slug: body.slug, subcategory: body.subcategory, material: body.material, specifications: body.specifications,
+      mrp: body.mrp === "" ? undefined : body.mrp, taxMode: body.taxMode === "exclusive" ? "exclusive" as const : "inclusive" as const,
+      lowStockThreshold: body.lowStockThreshold, variants: Array.isArray(body.variants) ? body.variants : [],
     };
 
     const createdProduct = await createProduct(payload);
@@ -95,6 +104,15 @@ export async function PUT(req: Request) {
       return apiJson({ success: false, error: "Product id is required" }, 400);
     }
 
+    if (body.sku) {
+      const sku = String(body.sku).trim().toUpperCase();
+      const matches = await (await import("@/app/lib/firebaseAdmin")).adminDb.collection("products").where("sku", "==", sku).limit(2).get();
+      if (matches.docs.some((doc: any) => doc.id !== body.id)) return apiError("That SKU is already in use", 409);
+      body.sku = sku;
+    }
+    if (body.gstRate !== undefined && body.gstRate !== null && (Number(body.gstRate) < 0 || Number(body.gstRate) > 100)) return apiError("GST rate must be from 0 to 100", 400);
+    if (body.hsnSac && !/^[A-Za-z0-9]{4,8}$/.test(String(body.hsnSac))) return apiError("HSN/SAC must be 4 to 8 letters or digits", 400);
+
     const payload = {
       name: body.name !== undefined ? String(body.name).trim() : undefined,
       category: body.category !== undefined ? String(body.category).trim() : undefined,
@@ -117,6 +135,9 @@ export async function PUT(req: Request) {
         height: body.dimensions.height !== undefined ? Number(body.dimensions.height) || 0 : undefined,
       } : undefined,
       weight: body.weight !== undefined ? (body.weight === "" ? null : Number(body.weight)) : undefined,
+      sku: body.sku, slug: body.slug, subcategory: body.subcategory, material: body.material, specifications: body.specifications,
+      mrp: body.mrp, taxMode: body.taxMode, lowStockThreshold: body.lowStockThreshold,
+      variants: Array.isArray(body.variants) ? body.variants : undefined,
     };
 
     await updateProduct(String(body.id), payload as any);

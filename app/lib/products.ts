@@ -89,6 +89,15 @@ function normalizeProduct(docSnap: DocumentData): ProductRecord {
       height: Number(data.dimensions.height ?? 10),
     } : undefined,
     weight: data.weight != null ? Number(data.weight) : undefined,
+    sku: String(data.sku ?? "") || undefined,
+    subcategory: String(data.subcategory ?? "") || undefined,
+    material: String(data.material ?? "") || undefined,
+    specifications: String(data.specifications ?? "") || undefined,
+    mrp: data.mrp != null ? Number(data.mrp) : undefined,
+    taxMode: data.taxMode === "exclusive" ? "exclusive" : "inclusive",
+    lowStockThreshold: data.lowStockThreshold != null ? Number(data.lowStockThreshold) : 5,
+    variants: Array.isArray(data.variants) ? data.variants : undefined,
+    variantStock: data.variantStock && typeof data.variantStock === "object" ? data.variantStock : undefined,
   };
 }
 

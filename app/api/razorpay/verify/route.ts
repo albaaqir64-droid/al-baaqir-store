@@ -49,6 +49,7 @@ export async function POST(req: Request) {
 
     // Verify pricing server-side before creating order
     const serverPricing = await computeVerifiedOrderTotals(orderItems, "online");
+    const trustedOrderItems = orderItems.map(item => ({ ...item, ...serverPricing.lines.find(line => line.id === item.id) }));
 
     const invoiceNumber = String(orderMeta.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
 
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
         invoiceNumber,
         status: "confirmed",
         shipping,
-        cartItems: orderItems,
+        cartItems: trustedOrderItems,
         payment: {
           provider: "razorpay",
           paymentId: razorpay_payment_id,

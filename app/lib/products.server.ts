@@ -38,7 +38,7 @@ export async function createProduct(payload: ProductSavePayload) {
       price: Number(payload.price) || 0,
       stock: Number(payload.stock) || 0,
       active: payload.active !== false,
-      slug: createSlug(payload.name),
+      slug: createSlug(payload.slug || payload.name),
       createdAt: FieldValue.serverTimestamp(),
       lastUpdated: FieldValue.serverTimestamp(),
       mainImage: String(payload.mainImage ?? "").trim(),
@@ -56,6 +56,15 @@ export async function createProduct(payload: ProductSavePayload) {
         height: optionalFiniteNumber(payload.dimensions.height),
       } : undefined,
       weight: optionalFiniteNumber(payload.weight),
+      sku: optionalText(payload.sku)?.toUpperCase(),
+      subcategory: optionalText(payload.subcategory),
+      material: optionalText(payload.material),
+      specifications: optionalText(payload.specifications),
+      mrp: optionalFiniteNumber(payload.mrp),
+      taxMode: payload.taxMode === "exclusive" ? "exclusive" : "inclusive",
+      lowStockThreshold: optionalFiniteNumber(payload.lowStockThreshold) ?? 5,
+      variants: Array.isArray(payload.variants) ? payload.variants : [],
+      variantStock: Array.isArray(payload.variants) && payload.variants.length ? Object.fromEntries(payload.variants.map(v => [v.size && v.color ? `${v.size}_${v.color}` : v.size ? `size_${v.size}` : `color_${v.color}`, Number(v.stock) || 0])) : {},
       sizes: Array.isArray(payload.sizes) ? payload.sizes.map(s => String(s)) : [],
       colors: Array.isArray(payload.colors) ? payload.colors.map(c => String(c)) : [],
     });
@@ -99,6 +108,15 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
       height: payload.dimensions.height !== undefined ? (payload.dimensions.height === null ? null : optionalFiniteNumber(payload.dimensions.height)) : undefined,
     } : undefined,
     weight: payload.weight !== undefined ? (payload.weight === null ? null : optionalFiniteNumber(payload.weight)) : undefined,
+    sku: payload.sku !== undefined ? optionalText(payload.sku)?.toUpperCase() ?? null : undefined,
+    subcategory: payload.subcategory !== undefined ? optionalText(payload.subcategory) ?? null : undefined,
+    material: payload.material !== undefined ? optionalText(payload.material) ?? null : undefined,
+    specifications: payload.specifications !== undefined ? optionalText(payload.specifications) ?? null : undefined,
+    mrp: payload.mrp !== undefined ? (payload.mrp === null ? null : optionalFiniteNumber(payload.mrp)) : undefined,
+    taxMode: payload.taxMode !== undefined ? payload.taxMode : undefined,
+    lowStockThreshold: payload.lowStockThreshold !== undefined ? Number(payload.lowStockThreshold) : undefined,
+    variants: Array.isArray(payload.variants) ? payload.variants : undefined,
+    variantStock: Array.isArray(payload.variants) ? Object.fromEntries(payload.variants.map(v => [v.size && v.color ? `${v.size}_${v.color}` : v.size ? `size_${v.size}` : `color_${v.color}`, Number(v.stock) || 0])) : undefined,
     lastUpdated: FieldValue.serverTimestamp()
   });
 
@@ -116,7 +134,8 @@ export async function updateProduct(id: string, payload: Partial<ProductSavePayl
   if (discount !== undefined) updatePayload.discount = updatePayload.discountPercent = Number(discount) || 0;
 
   if (payload.featured !== undefined) updatePayload.featured = payload.featured;
-  if (payload.name) updatePayload.slug = createSlug(payload.name);
+  if (payload.slug !== undefined) updatePayload.slug = createSlug(payload.slug || String(payload.name || ""));
+  else if (payload.name) updatePayload.slug = createSlug(payload.name);
 
   await docRef.update(updatePayload);
 }
@@ -188,6 +207,15 @@ function normalizeProductFromAdmin(id: string, data: any): ProductRecord {
       height: Number(data.dimensions.height || 0) || 0,
     } : undefined,
     weight: data.weight != null ? Number(data.weight) : undefined,
+    sku: String(data.sku ?? "") || undefined,
+    subcategory: String(data.subcategory ?? "") || undefined,
+    material: String(data.material ?? "") || undefined,
+    specifications: String(data.specifications ?? "") || undefined,
+    mrp: data.mrp != null ? Number(data.mrp) : undefined,
+    taxMode: data.taxMode === "exclusive" ? "exclusive" : "inclusive",
+    lowStockThreshold: data.lowStockThreshold != null ? Number(data.lowStockThreshold) : 5,
+    variants: Array.isArray(data.variants) ? data.variants : undefined,
+    variantStock: data.variantStock && typeof data.variantStock === "object" ? data.variantStock : undefined,
   };
 }
 

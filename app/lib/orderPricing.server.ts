@@ -46,6 +46,11 @@ export async function computeVerifiedOrderTotals(
       price = price - (price * discountPercent) / 100;
     }
 
+    const gstRate = Number(data.gstRate ?? data.taxRate ?? 0) || 0;
+    // Invoice rows use the existing tax-inclusive calculation. Convert explicitly
+    // exclusive catalog prices to their tax-inclusive order amount exactly once.
+    if (data.taxMode === "exclusive" && gstRate > 0) price *= 1 + gstRate / 100;
+
     subtotal += price * quantity;
 
     verifiedLines.push({
@@ -54,6 +59,9 @@ export async function computeVerifiedOrderTotals(
       price: price,
       quantity: quantity,
       image: data.images?.[0] || data.image || ""
+      ,hsnSac: String(data.hsnSac ?? data.hsn ?? data.sac ?? "") || undefined,
+      gstRate,
+      taxMode: "inclusive"
     });
   }
 

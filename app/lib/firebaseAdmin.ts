@@ -15,29 +15,51 @@ function initAdminApp() {
 
   try {
     let credential;
-    let projectId: string;
+    let projectId = "";
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
 
     if (serviceAccountPath) {
-      const resolvedPath = path.resolve(process.cwd(), serviceAccountPath);
-      const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
-      projectId = serviceAccount.project_id;
-      credential = cert(serviceAccount);
-    } else {
-      projectId = (process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "").replace(/[\'\"]/g, "").trim();
+      try {
+        const resolvedPath = path.resolve(process.cwd(), serviceAccountPath);
+        if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
+          const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, "utf8").replace(/^\uFEFF/, ""));
+          const serviceAccountProjectId = typeof serviceAccount.project_id === "string"
+            ? serviceAccount.project_id.trim()
+            : "";
+
+          if (serviceAccountProjectId) {
+            credential = cert(serviceAccount);
+            projectId = serviceAccountProjectId;
+          }
+        }
+      } catch {
+        // A local-only or unreadable file must not prevent env-based initialization.
+      }
+    }
+
+    if (!credential) {
+      projectId = (process.env.FIREBASE_PROJECT_ID || "").replace(/[\'\"]/g, "").trim();
       const clientEmail = (process.env.FIREBASE_CLIENT_EMAIL || "").replace(/[\'\"]/g, "").trim();
-      const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n").trim().replace(/^[\'"]|[\'"]$/g, "");
+      const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "")
+        .replace(/\\n/g, "\n")
+        .trim()
+        .replace(/^[\'"]|[\'"]$/g, "");
+
       if (!projectId || !clientEmail || !privateKey) {
-        console.warn("Firebase Admin credentials missing. Configure FIREBASE_SERVICE_ACCOUNT_PATH or the FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY variables.");
+        console.warn("Firebase Admin credentials missing. Configure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.");
         return null;
       }
+
       credential = cert({ projectId, clientEmail, privateKey });
     }
 
     if (!projectId) throw new Error("Firebase service account is missing its project ID.");
     return initializeApp({ projectId, credential, storageBucket: `${projectId}.firebasestorage.app` });
-  } catch {
-    console.error("Firebase Admin initialization failed. Check the server-side credential configuration.");
+  } catch (error) {
+    // Keep the underlying SDK message in server logs so credential and project
+    // configuration problems can be diagnosed without exposing secrets.
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error("Firebase Admin initialization failed:", reason);
     return null;
   }
 }
@@ -65,7 +87,9 @@ export const adminDb: any = new Proxy({} as any, {
   get(_, prop: string | symbol) {
     const { getFirestore } = require("firebase-admin/firestore");
     const firebaseApp = getAdminApp();
-    if (!firebaseApp) return null;
+    if (!firebaseApp) {
+      throw new Error("Firebase Admin is unavailable: initialization failed. Check the preceding server log for the cause.");
+    }
     const service = getFirestore(firebaseApp) as any;
     const val = service[prop];
     return typeof val === 'function' ? val.bind(service) : val;

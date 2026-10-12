@@ -30,6 +30,14 @@ export interface ProductRecord {
     height?: number;
   };
   weight?: number;
+  sku?: string;
+  subcategory?: string;
+  material?: string;
+  specifications?: string;
+  mrp?: number;
+  taxMode?: "inclusive" | "exclusive";
+  lowStockThreshold?: number;
+  variants?: Array<{ size?: string; color?: string; sku?: string; stock: number; price?: number | null }>;
 }
 
 export type ProductSavePayload = Omit<
@@ -40,4 +48,5 @@ export type ProductSavePayload = Omit<
   images?: string[];
   discount?: number;
   discountPercent?: number;
+  slug?: string;
 };

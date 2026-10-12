@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     if (!items.length) return apiError("Your cart is empty.", 400);
 
     const pricing = await computeVerifiedOrderTotals(items, "cod");
+    const trustedItems = items.map(item => ({ ...item, ...pricing.lines.find(line => line.id === item.id) }));
 
     const shippingValue = body.shipping && typeof body.shipping === "object" ? body.shipping as Record<string, unknown> : {};
     const shipping = {
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
         total: pricing.total,
         invoiceNumber: text(body.invoiceNumber),
         shipping,
-        cartItems: items,
+        cartItems: trustedItems,
         createdAt: FieldValue.serverTimestamp(),
         lastUpdated: FieldValue.serverTimestamp(),
       });

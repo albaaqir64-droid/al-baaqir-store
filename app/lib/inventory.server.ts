@@ -83,17 +83,24 @@ export async function updateProductStockAdmin(
   reason: string = "Manual update"
 ): Promise<boolean> {
   const productRef = adminDb.collection("products").doc(productId);
-  const snapshot = await productRef.get();
-  if (!snapshot.exists) return false;
-
-  const product = snapshot.data() ?? {};
-  const currentStock = Math.max(0, Math.floor(Number(product.stock ?? 0)));
-  const newStock = Math.max(0, currentStock + quantityChange);
-
-  await productRef.update({
-    stock: newStock,
-    lastUpdated: FieldValue.serverTimestamp(),
-  });
+  if (!Number.isFinite(quantityChange) || !Number.isInteger(quantityChange)) return false;
+  let product: Record<string, any> = {};
+  let newStock = 0;
+  try {
+    await adminDb.runTransaction(async (transaction: any) => {
+      const snapshot = await transaction.get(productRef);
+      if (!snapshot.exists) throw new Error("Product not found");
+      product = snapshot.data() ?? {};
+      const currentStock = Number(product.stock ?? 0);
+      newStock = currentStock + quantityChange;
+      if (!Number.isInteger(currentStock) || newStock < 0) throw new Error("Stock update would result in negative inventory");
+      transaction.update(productRef, { stock: newStock, lastUpdated: FieldValue.serverTimestamp() });
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Product not found") return false;
+    if (error instanceof Error && error.message.includes("negative inventory")) return false;
+    throw error;
+  }
 
   await adminDb.collection("stock_logs").add({
     productId,
