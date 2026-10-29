@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientAnalytics from "./components/ClientAnalytics";
+import FloatingChat from "./components/FloatingChat";
 
 export const metadata: Metadata = {
   title: "Al Baaqir | Premium Belts & Bags",
@@ -19,6 +20,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col brand-page">
         <ClientAnalytics />
+        <FloatingChat />
         {children}
       </body>
     </html>

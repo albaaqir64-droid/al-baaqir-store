@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  Settings,
   User,
   Bell,
   Lock,
@@ -15,15 +14,42 @@ import {
   Smartphone,
   History,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { readApiJson } from "../../lib/api/client";
 import { adminFetch } from "../../lib/adminFetch";
+import { DEFAULT_STORE_SETTINGS, type StoreSettings } from "../../lib/storeSettings";
+
+interface WebhookLog {
+  id: string;
+  timestamp: string | number | Date;
+  channelOrderId?: string;
+  shiprocketOrderId?: string;
+  awb?: string;
+  currentStatus?: string;
+  status?: string;
+  restockDone?: boolean;
+  payload?: unknown;
+}
+
+async function loadWebhookLogs(): Promise<WebhookLog[]> {
+  const response = await adminFetch("/api/admin/webhook-logs");
+  const parsed = await readApiJson<{ logs: WebhookLog[] }>(response);
+  if (!parsed.ok || !Array.isArray(parsed.data?.logs)) {
+    throw new Error(parsed.error || "Could not load webhook logs.");
+  }
+  return parsed.data.logs;
+}
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   const TABS = [
     { id: "general", label: "Store Info", icon: Store },
@@ -38,21 +64,86 @@ export default function SettingsPage() {
   async function fetchLogs() {
     setLoadingLogs(true);
     try {
-      const res = await adminFetch("/api/admin/webhook-logs");
-      const parsed = await readApiJson<{ logs: any[] }>(res);
-      if (parsed.ok && parsed.data) setLogs(parsed.data.logs);
-    } catch (err) {
-      console.error("Logs fetch failed:", err);
+      setLogs(await loadWebhookLogs());
+    } catch (error) {
+      console.error("Logs fetch failed:", error);
     } finally {
       setLoadingLogs(false);
     }
   }
 
   useEffect(() => {
-    if (activeTab === "logs") {
-      fetchLogs();
-    }
+    if (activeTab !== "logs") return;
+    let active = true;
+    void loadWebhookLogs()
+      .then((data) => {
+        if (active) setLogs(data);
+      })
+      .catch((error: unknown) => {
+        if (active) console.error("Logs fetch failed:", error);
+      })
+      .finally(() => {
+        if (active) setLoadingLogs(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [activeTab]);
+
+  useEffect(() => {
+    let active = true;
+    void adminFetch("/api/admin/settings")
+      .then((response) => readApiJson<StoreSettings>(response))
+      .then((result) => {
+        if (!result.ok || !result.data) {
+          throw new Error(result.error || "Could not load store settings.");
+        }
+        if (active) setSettings({ ...DEFAULT_STORE_SETTINGS, ...result.data });
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        console.error("Store settings fetch failed:", error);
+        setSettingsError(error instanceof Error ? error.message : "Could not load store settings.");
+      })
+      .finally(() => {
+        if (active) setLoadingSettings(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function updateSetting<Key extends keyof StoreSettings>(key: Key, value: StoreSettings[Key]) {
+    setSettings((current) => ({ ...current, [key]: value }));
+    setSettingsSaved(false);
+  }
+
+  async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingSettings(true);
+    setSettingsError("");
+    setSettingsSaved(false);
+    try {
+      const response = await adminFetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      const result = await readApiJson<{ settings: StoreSettings }>(response);
+      if (!result.ok || !result.data?.settings) {
+        throw new Error(result.error || "Could not save store settings.");
+      }
+      setSettings({ ...DEFAULT_STORE_SETTINGS, ...result.data.settings });
+      setSettingsSaved(true);
+    } catch (error) {
+      console.error("Store settings save failed:", error);
+      setSettingsError(error instanceof Error ? error.message : "Could not save store settings.");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -86,26 +177,41 @@ export default function SettingsPage() {
         {/* Settings Content */}
         <div className="flex-1 space-y-6">
           {activeTab === "general" && (
-            <div className="space-y-6">
+            <form onSubmit={saveSettings} className="space-y-6">
+              {settingsError && (
+                <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                  {settingsError}
+                </p>
+              )}
+              {settingsSaved && (
+                <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                  Store settings saved successfully.
+                </p>
+              )}
+
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                   <h2 className="font-bold text-slate-900">Store Profile</h2>
-                  <p className="text-xs text-slate-500 mt-1">This information will be displayed on your storefront and invoices.</p>
+                  <p className="text-xs text-slate-500 mt-1">Store identity and customer contact details used on the storefront.</p>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Store Name</label>
-                      <input type="text" defaultValue="Baaqir Lifestyle" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:bg-white transition-all" />
+                      <input type="text" value={settings.storeName} onChange={(event) => updateSetting("storeName", event.target.value)} maxLength={80} required disabled={loadingSettings} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:bg-white transition-all disabled:opacity-60" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Store Email</label>
-                      <input type="email" defaultValue="hello@albaaqir.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                      <input type="email" value={settings.storeEmail} onChange={(event) => updateSetting("storeEmail", event.target.value)} required disabled={loadingSettings} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all disabled:opacity-60" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Store Phone</label>
+                      <input type="tel" value={settings.storePhone} onChange={(event) => updateSetting("storePhone", event.target.value)} maxLength={30} required disabled={loadingSettings} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all disabled:opacity-60" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Description</label>
-                    <textarea rows={3} defaultValue="Modern luxury clothing for the discerning individual." className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                    <textarea rows={3} value={settings.storeDescription} onChange={(event) => updateSetting("storeDescription", event.target.value)} maxLength={500} disabled={loadingSettings} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all disabled:opacity-60" />
                   </div>
                 </div>
               </section>
@@ -113,36 +219,73 @@ export default function SettingsPage() {
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                   <h2 className="font-bold text-slate-900">Business Address</h2>
+                  <p className="text-xs text-slate-500 mt-1">Optional. This address is kept in store settings and is not shown publicly.</p>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Address Line</label>
-                    <input type="text" defaultValue="123 Luxury Lane, Business District" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                    <input type="text" value={settings.businessAddress} onChange={(event) => updateSetting("businessAddress", event.target.value)} maxLength={300} disabled={loadingSettings} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all disabled:opacity-60" />
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                </div>
+              </section>
+
+              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-900">Floating WhatsApp Chat</h2>
+                  <p className="text-xs text-slate-500 mt-1">Configure the round chat button on your public storefront.</p>
+                </div>
+                <div className="p-6 space-y-5">
+                  <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 p-4">
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-800">Show floating chat button</span>
+                      <span className="mt-1 block text-xs text-slate-500">The button is hidden on admin pages.</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={settings.whatsappEnabled}
+                      onChange={(event) => updateSetting("whatsappEnabled", event.target.checked)}
+                      disabled={loadingSettings}
+                      className="h-5 w-5 rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 disabled:opacity-60"
+                    />
+                  </label>
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">City</label>
-                      <input type="text" defaultValue="Mumbai" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">WhatsApp Number</label>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={settings.whatsappNumber}
+                        onChange={(event) => updateSetting("whatsappNumber", event.target.value)}
+                        placeholder="919876543210"
+                        required
+                        disabled={loadingSettings}
+                        className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5 disabled:opacity-60"
+                      />
+                      <p className="text-[11px] text-slate-400">Include country code, digits only (example: 919876543210).</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">State</label>
-                      <input type="text" defaultValue="Maharashtra" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">PIN Code</label>
-                      <input type="text" defaultValue="400001" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none transition-all" />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Prefilled Message</label>
+                      <textarea
+                        rows={3}
+                        value={settings.whatsappMessage}
+                        onChange={(event) => updateSetting("whatsappMessage", event.target.value)}
+                        maxLength={500}
+                        required
+                        disabled={loadingSettings}
+                        className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/5 disabled:opacity-60"
+                      />
                     </div>
                   </div>
                 </div>
               </section>
 
               <div className="flex justify-end">
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
+                <button type="submit" disabled={loadingSettings || savingSettings} className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
                   <Save size={18} />
-                  Save Changes
+                  {loadingSettings ? "Loading settings..." : savingSettings ? "Saving..." : "Save Changes"}
                 </button>
               </div>
-            </div>
+            </form>
           )}
 
           {activeTab === "notifications" && (
@@ -316,7 +459,12 @@ export default function SettingsPage() {
   );
 }
 
-function NotificationToggle({ title, desc, email, push }: any) {
+function NotificationToggle({ title, desc, email, push }: {
+  title: string;
+  desc: string;
+  email: boolean;
+  push: boolean;
+}) {
   return (
     <div className="flex items-center justify-between pb-6 border-b border-slate-50 last:pb-0 last:border-0">
       <div className="space-y-1">

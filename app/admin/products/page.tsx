@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getAdminIdToken } from '@/app/lib/auth';
+import { adminFetch } from '@/app/lib/adminFetch';
+import { readApiJson } from '@/app/lib/api/client';
 import Image from 'next/image';
 
 interface Product {
@@ -9,13 +11,26 @@ interface Product {
   name: string;
   price: number;
   category: string;
-  image: string;
+  image?: string;
+  mainImage?: string;
+  images?: string[];
+  galleryImages?: string[];
   description?: string;
+}
+
+async function loadProducts(): Promise<Product[]> {
+  const response = await adminFetch('/api/admin/products');
+  const result = await readApiJson<Product[]>(response);
+  if (!result.ok || !Array.isArray(result.data)) {
+    throw new Error(result.error || 'The products API returned an invalid response.');
+  }
+  return result.data;
 }
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
@@ -26,21 +41,42 @@ export default function AdminProducts() {
     description: ''
   });
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/products');
-      const data = await response.json();
+      const data = await loadProducts();
+      setError('');
       setProducts(data);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
+      setError(error instanceof Error ? error.message : 'Could not load products.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void loadProducts()
+      .then((data) => {
+        if (!active) return;
+        setError('');
+        setProducts(data);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        console.error('Error fetching products:', error);
+        setProducts([]);
+        setError(error instanceof Error ? error.message : 'Could not load products.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +133,7 @@ export default function AdminProducts() {
       name: product.name,
       price: product.price.toString(),
       category: product.category,
-      image: product.image,
+      image: product.mainImage || product.image || product.galleryImages?.[0] || product.images?.[0] || '',
       description: product.description || ''
     });
     setIsModalOpen(true);
@@ -120,18 +156,29 @@ export default function AdminProducts() {
           Add Product
         </button>
       </div>
+      {error && (
+        <p role="alert" className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product) => (
           <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm border group relative">
             <div className="aspect-square relative mb-4">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                className="object-cover rounded"
-                unoptimized
-              />
+              {(product.mainImage || product.image || product.galleryImages?.[0] || product.images?.[0]) ? (
+                <Image
+                  src={(product.mainImage || product.image || product.galleryImages?.[0] || product.images?.[0]) ?? ''}
+                  alt={product.name}
+                  fill
+                  className="object-cover rounded"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center rounded bg-gray-100 text-sm text-gray-500">
+                  No image available
+                </div>
+              )}
             </div>
             <h3 className="font-bold">{product.name}</h3>
             <p className="text-gray-600">₹{product.price}</p>
