@@ -26,6 +26,16 @@
     "ignore": [
       "node_modules",
       ".git",
+      ".next",
+      ".deploy-staging-*",
+      ".deploy-staging-*/**",
+      "**/.deploy-staging-*/**",
+      ".env*",
+      "**/.env*",
+      "service-account*.json",
+      "**/service-account*.json",
+      "**/*firebase-adminsdk*.json",
+      "**/*.pem",
       "firebase-debug.log",
       "firebase-debug.*.log",
       "functions"
